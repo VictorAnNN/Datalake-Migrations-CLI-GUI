@@ -1,0 +1,35 @@
+manifest_id: pp_silver_order_tracking_2h_20260630
+environment: DEV
+operation: ensure
+owner: dlctl-agent
+resource_type: DataPipeline
+displayName: pp_silver_order_tracking_2h
+description: "Pipeline Silver Order Tracking (roda a cada 2h). Sem trigger definido; não executado por deployment de API."
+safety:
+  allow_write: true
+  delete_allowed: false
+  allow_move_existing: true
+desired_state:
+  displayName: pp_silver_order_tracking_2h
+  description: "Pipeline Silver Order Tracking (roda a cada 2h). Sem trigger definido; não executado por deployment de API."
+  folderPath: pipelines/SUPRIMENTOS
+  definition_file: ../../fabric_definitions/pp_silver_order_tracking_2h.definition.json
+  parameters:
+    TARGET_LAKEHOUSES_JSON:
+      value: '["LH_CONTROLADORIA","LH_FINANCEIRO","LH_SUPRIMENTOS"]'
+      type: string
+    CONTROL_SCHEMA:
+      value: control
+      type: string
+    CREATE_SCHEMAS:
+      value: true
+      type: bool
+    CREATE_CONTROL_TABLES:
+      value: true
+      type: bool
+    REFRESH_TRANSFORM_CONFIG:
+      value: true
+      type: bool
+    DRY_RUN:
+      value: false
+      type: bool

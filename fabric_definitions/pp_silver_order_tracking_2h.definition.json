@@ -1,0 +1,22 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Silver_Order_Tracking_Notebook",
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "REPLACE_WITH_REAL_NOTEBOOK_ID",
+          "workspaceId": "REPLACE_WITH_REAL_WORKSPACE_ID",
+          "parameters": {
+            "TARGET_LAKEHOUSES_JSON": {"value": "[\"LH_CONTROLADORIA\",\"LH_FINANCEIRO\",\"LH_SUPRIMENTOS\"]", "type": "string"},
+            "CONTROL_SCHEMA": {"value": "control", "type": "string"},
+            "CREATE_SCHEMAS": {"value": true, "type": "bool"},
+            "CREATE_CONTROL_TABLES": {"value": true, "type": "bool"},
+            "REFRESH_TRANSFORM_CONFIG": {"value": true, "type": "bool"},
+            "DRY_RUN": {"value": false, "type": "bool"}
+          }
+        }
+      }
+    ]
+  }
+}

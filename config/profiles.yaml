@@ -1,0 +1,56 @@
+# Perfis do dlctl. Cada perfil descreve um tenant/ambiente e suas permissões de escrita.
+# Espelha o conceito de "profile" usado pelas skills (ms_client_constellation, accountctl profile show).
+
+profiles:
+  ms_client_constellation:
+    description: "Tenant Constellation - Fabric + Oracle Fusion"
+    environment: DEV
+    microsoft:
+      allow_write: false          # troque para true somente quando autorizado explicitamente
+      allow_production: false     # troque para true somente em PRD, com autorização explícita
+      tenant_id_env: FABRIC_TENANT_ID
+      client_id_env: FABRIC_CLIENT_ID
+      client_secret_env: FABRIC_CLIENT_SECRET
+      auth_mode_env: FABRIC_AUTH_MODE
+      default_workspace_name_env: FABRIC_WORKSPACE_NAME
+      default_workspace_id_env: FABRIC_WORKSPACE_ID
+      scopes:
+        - "https://api.fabric.microsoft.com/.default"
+    oracle:
+      dsn_env: ORACLE_DB_DSN
+      user_env: ORACLE_DB_USER
+      password_env: ORACLE_DB_PASSWORD
+      bip_base_url_env: ORACLE_BIP_BASE_URL
+      bip_user_env: ORACLE_BIP_USER
+      bip_password_env: ORACLE_BIP_PASSWORD
+    paths:
+      state_root: state
+      evidence_root: state/evidence
+      manifests_root: manifests
+      mappings_root: mappings
+      notebooks_silver_root: notebooks/silver
+      notebooks_gold_root: notebooks/gold
+
+# Domínios de negócio suportados pelo router (constellation-order-tracking-etl).
+domains:
+  ORDER_TRACKING:
+    description: "Order Tracking - Suprimentos"
+    folder_path: pipelines/SUPRIMENTOS
+    silver_lakehouse: LH_SUPRIMENTOS
+    gold_lakehouse: LH_SUPRIMENTOS
+    bronze_table_count: 24
+  FINANCEIRO:
+    description: "Financeiro"
+    folder_path: pipelines/FINANCEIRO
+    silver_lakehouse: LH_FINANCEIRO
+    gold_lakehouse: LH_FINANCEIRO
+  CONTROLADORIA:
+    description: "Controladoria"
+    folder_path: pipelines/CONTROLADORIA
+    silver_lakehouse: LH_CONTROLADORIA
+    gold_lakehouse: LH_CONTROLADORIA
+  MASTER_DATA:
+    description: "Master Data"
+    folder_path: pipelines/MASTER_DATA
+    silver_lakehouse: LH_MASTER_DATA
+    gold_lakehouse: LH_MASTER_DATA

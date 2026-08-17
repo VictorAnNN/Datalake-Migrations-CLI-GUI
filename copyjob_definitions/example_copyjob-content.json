@@ -1,0 +1,21 @@
+{
+  "properties": {
+    "tableMappings": [
+      {
+        "sourceTableName": "AP_INVOICES_ALL",
+        "columnMappings": [
+          {"sourceColumnName": "INVOICE_ID", "sourceType": "NUMBER(15,0)"},
+          {"sourceColumnName": "INVOICE_AMOUNT", "sourceType": "NUMBER"},
+          {"sourceColumnName": "VENDOR_ID", "sourceType": "NUMBER(15,0)"}
+        ]
+      },
+      {
+        "sourceTableName": "PO_HEADERS_ALL",
+        "columnMappings": [
+          {"sourceColumnName": "PO_HEADER_ID", "sourceType": "NUMBER(15,0)"},
+          {"sourceColumnName": "AGENT_ID", "sourceType": "NUMBER"}
+        ]
+      }
+    ]
+  }
+}

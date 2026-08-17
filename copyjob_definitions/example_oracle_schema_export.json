@@ -1,0 +1,10 @@
+[
+  {"table": "AP_INVOICES_ALL", "column": "INVOICE_ID", "data_type": "NUMBER(15,0)"},
+  {"table": "AP_INVOICES_ALL", "column": "INVOICE_AMOUNT", "data_type": "NUMBER"},
+  {"table": "AP_INVOICES_ALL", "column": "VENDOR_ID", "data_type": "NUMBER(15,0)"},
+  {"table": "AP_INVOICES_ALL", "column": "DESCRIPTION", "data_type": "VARCHAR2(240)"},
+  {"table": "PO_HEADERS_ALL", "column": "PO_HEADER_ID", "data_type": "NUMBER(15,0)"},
+  {"table": "PO_HEADERS_ALL", "column": "AGENT_ID", "data_type": "NUMBER"},
+  {"table": "PO_HEADERS_ALL", "column": "CREATION_DATE", "data_type": "DATE"},
+  {"table": "PO_DISTRIBUTIONS_ALL", "column": "PO_DISTRIBUTION_ID", "data_type": "NUMBER(15,0)"}
+]

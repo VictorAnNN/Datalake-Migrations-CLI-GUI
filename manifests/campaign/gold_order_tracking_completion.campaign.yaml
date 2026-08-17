@@ -1,0 +1,12 @@
+campaign_id: gold_order_tracking_completion_20260814
+targets:
+  - name: gold_pr_requisition
+    manifest: manifests/datapipeline/pp_silver_order_tracking_2h.manifest.yaml
+    execution_manifest: null
+    sql_endpoint_tables: ["gold.pr_requisition"]
+    depends_on: []
+  - name: gold_order_tracking_status
+    manifest: null
+    execution_manifest: null
+    sql_endpoint_tables: ["gold.order_tracking_status"]
+    depends_on: ["gold_pr_requisition"]

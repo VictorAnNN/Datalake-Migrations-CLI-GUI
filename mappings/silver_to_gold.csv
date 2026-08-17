@@ -1,0 +1,6 @@
+domain,source_table,target_table,sql_file,schema_file,status,notes
+ORDER_TRACKING,SLV_PO_HEADERS,GLD_PR_REQUISITION,sql/gold_pr_requisition.sql,,spark_ready,Consolidado para o dashboard Order Tracking
+ORDER_TRACKING,SLV_PO_LINES,GLD_PR_REQUISITION,sql/gold_pr_requisition.sql,,spark_ready,Mesma tabela consolidada
+ORDER_TRACKING,SLV_RCV_SHIPMENT_HEADERS,GLD_ORDER_TRACKING_STATUS,sql/gold_order_tracking_status.sql,,needs_rewrite,Power Query M precisa virar Spark SQL
+ORDER_TRACKING,SLV_AP_INVOICES,GLD_AP_SUMMARY,sql/gold_ap_summary.sql,,manual_review,Depende de validação Silver AP Invoices
+FINANCEIRO,SLV_GL_JE_HEADERS,GLD_GL_SUMMARY,sql/gold_gl_summary.sql,,spark_ready,

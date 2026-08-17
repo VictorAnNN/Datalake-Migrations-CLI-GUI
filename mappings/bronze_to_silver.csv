@@ -1,0 +1,9 @@
+domain,source_table,target_table,sql_file,schema_file,status,notes
+ORDER_TRACKING,BRZ_PO_HEADERS_ALL,SLV_PO_HEADERS,sql/po_headers.sql,schema/slv_po_headers.tab,spark_ready,Adaptado de OTBI PO Headers
+ORDER_TRACKING,BRZ_PO_LINES_ALL,SLV_PO_LINES,sql/po_lines.sql,schema/slv_po_lines.tab,spark_ready,Adaptado de OTBI PO Lines
+ORDER_TRACKING,BRZ_PO_DISTRIBUTIONS_ALL,SLV_PO_DISTRIBUTIONS,sql/po_distributions.sql,schema/slv_po_distributions.tab,needs_rewrite,SQL original usa PL/SQL function precisa reescrita
+ORDER_TRACKING,BRZ_RCV_SHIPMENT_HEADERS,SLV_RCV_SHIPMENT_HEADERS,sql/rcv_shipment_headers.sql,schema/slv_rcv_shipment_headers.tab,spark_ready,
+ORDER_TRACKING,BRZ_RCV_SHIPMENT_LINES,SLV_RCV_SHIPMENT_LINES,sql/rcv_shipment_lines.sql,schema/slv_rcv_shipment_lines.tab,spark_ready,
+ORDER_TRACKING,BRZ_AP_INVOICES_ALL,SLV_AP_INVOICES,sql/ap_invoices.sql,schema/slv_ap_invoices.tab,manual_review,Pendente validação do Suprimentos focal point
+ORDER_TRACKING,BRZ_AP_INVOICE_LINES_ALL,SLV_AP_INVOICE_LINES,,,missing_sql,SQL do Data Model ainda não localizado
+FINANCEIRO,BRZ_GL_JE_HEADERS,SLV_GL_JE_HEADERS,sql/gl_je_headers.sql,schema/slv_gl_je_headers.tab,spark_ready,

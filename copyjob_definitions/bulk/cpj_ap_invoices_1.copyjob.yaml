@@ -1,0 +1,5 @@
+display_name: cpj_ap_invoices_1
+folder_path: copyjobs/SUPRIMENTOS
+definition_file: ../example_copyjob-content.json
+source_signature: "ORACLE:AP_INVOICES_ALL->LAKEHOUSE:LH_SUPRIMENTOS.bronze.ap_invoices_all_dup"
+job_mode: Batch
