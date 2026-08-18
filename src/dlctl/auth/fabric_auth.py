@@ -55,11 +55,8 @@ class AzCliAuth:
         if result.returncode != 0:
             stderr = result.stderr.strip()
             raise FabricAuthError(
-                f"'az account get-access-token' falhou (exit {result.returncode}).
-"
-                f"{stderr}
-
-"
+                f"'az account get-access-token' falhou (exit {result.returncode}).\n"
+                f"{stderr}\n"
                 "Execute 'az login' para autenticar, entao tente novamente."
             )
 

@@ -37,7 +37,12 @@ st.caption(
     "profile + confirmação explícita nesta página). Nada é aplicado silenciosamente."
 )
 
-profile_name = st.sidebar.text_input("Profile", value="ms_client_constellation", key="act_profile_name")
+profile_name = st.sidebar.text_input(
+    "Profile",
+    value="ms_client_constellation",
+    key="act_profile_name",
+    help="📄 Nome do profile em config/profiles.yaml. Usa o padrão se não tem múltiplos."
+)
 try:
     profile = load_profile(profile_name)
 except Exception as exc:
@@ -55,7 +60,11 @@ if not profile.microsoft.allow_write:
     st.sidebar.warning("Escrita desabilitada no profile. Ajuste em Configuração > Ambiente & Escrita.")
 
 domains = load_domains()
-domain = st.sidebar.selectbox("Domínio", options=list(domains.keys()) or ["ORDER_TRACKING"])
+domain = st.sidebar.selectbox(
+    "Domínio",
+    options=list(domains.keys()) or ["ORDER_TRACKING"],
+    help="📊 Domínio de negócio (ex: ORDER_TRACKING, FINANCEIRO) que filtra dados e ações."
+)
 
 (
     tab_inventory,
@@ -73,7 +82,11 @@ with tab_inventory:
     st.subheader("Inventário e reconciliação de escopo")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Rodar inventário Silver (Bronze->Silver)", type="primary"):
+        if st.button(
+            "Rodar inventário Silver (Bronze->Silver)",
+            type="primary",
+            help="📋 Compara mapeamentos locais com schema Bronze/Silver. Mostra status GO/BLOQUEADO."
+        ):
             inv = build_inventory(profile, layer="bronze_to_silver", domain=domain)
             st.session_state["inv_silver"] = inv
         if "inv_silver" in st.session_state:
@@ -81,7 +94,11 @@ with tab_inventory:
             st.write(f"Total: {inv['total']} | GO: {inv['go_count']} | Bloqueados: {inv['blocked_count']}")
             st.dataframe(inv["entries"], use_container_width=True)
     with col2:
-        if st.button("Rodar inventário Gold (Silver->Gold)", type="primary"):
+        if st.button(
+            "Rodar inventário Gold (Silver->Gold)",
+            type="primary",
+            help="📋 Valida transformações Silver->Gold. Mostra status GO/BLOQUEADO."
+        ):
             inv = build_inventory(profile, layer="silver_to_gold", domain=domain)
             st.session_state["inv_gold"] = inv
         if "inv_gold" in st.session_state:
@@ -90,8 +107,16 @@ with tab_inventory:
             st.dataframe(inv["entries"], use_container_width=True)
 
     st.divider()
-    layer_pick = st.radio("Camada para reconcile-scope", options=["bronze_to_silver", "silver_to_gold"], horizontal=True)
-    if st.button("Rodar reconcile-scope"):
+    layer_pick = st.radio(
+        "Camada para reconcile-scope",
+        options=["bronze_to_silver", "silver_to_gold"],
+        horizontal=True,
+        help="🔍 Escolha qual camada verificar (validação de completude)"
+    )
+    if st.button(
+        "Rodar reconcile-scope",
+        help="🔍 Verifica se há missing/conflicting/orphaned items na camada"
+    ):
         result = reconcile_scope(profile, layer=layer_pick, domain=domain)
         st.write(f"Veredito: **{result['verdict']}**")
         if result["blocked"]:
@@ -107,11 +132,34 @@ with tab_gen_silver:
     if not go_entries:
         st.info("Nenhuma tabela GO disponível para este domínio.")
     else:
-        table_pick = st.selectbox("Tabela Silver (target_table)", options=[e.target_table for e in go_entries])
-        bronze_base_path = st.text_input("Bronze base path", value="Files/Bronze", key="silver_bronze_path")
-        silver_base_path = st.text_input("Silver base path", value="Tables/silver", key="silver_silver_path")
-        write_to_disk = st.checkbox("Gravar notebook em disco (--write)", value=True, key="silver_write")
-        if st.button("Gerar notebook Silver", type="primary"):
+        table_pick = st.selectbox(
+            "Tabela Silver (target_table)",
+            options=[e.target_table for e in go_entries],
+            help="📊 Tabela alvo Silver para gerar notebook"
+        )
+        bronze_base_path = st.text_input(
+            "Bronze base path",
+            value="Files/Bronze",
+            key="silver_bronze_path",
+            help="📁 Caminho base dos arquivos Bronze (ex: Files/Bronze)"
+        )
+        silver_base_path = st.text_input(
+            "Silver base path",
+            value="Tables/silver",
+            key="silver_silver_path",
+            help="📁 Caminho base da lakehouse Silver (ex: Tables/silver)"
+        )
+        write_to_disk = st.checkbox(
+            "Gravar notebook em disco (--write)",
+            value=True,
+            key="silver_write",
+            help="💾 Salva notebook gerado em disco (necessário para validação)"
+        )
+        if st.button(
+            "Gerar notebook Silver",
+            type="primary",
+            help="🔧 Gera PySpark notebook para transformação Bronze->Silver"
+        ):
             entry = next(e for e in go_entries if e.target_table == table_pick)
             nb = generate_silver_notebook(entry, bronze_base_path, silver_base_path, project_root=PROJECT_ROOT)
             out_path = profile.paths.notebooks_silver_root / f"{table_pick}.ipynb"
@@ -137,11 +185,34 @@ with tab_gen_gold:
     if not go_gold:
         st.info("Nenhuma tabela GO disponível para este domínio.")
     else:
-        table_pick_g = st.selectbox("Tabela Gold (target_table)", options=[e.target_table for e in go_gold])
-        silver_base_path_g = st.text_input("Silver base path", value="Tables/silver", key="gold_silver_path")
-        gold_base_path_g = st.text_input("Gold base path", value="Tables/gold", key="gold_gold_path")
-        write_to_disk_g = st.checkbox("Gravar notebook em disco (--write)", value=True, key="gold_write")
-        if st.button("Gerar notebook Gold", type="primary"):
+        table_pick_g = st.selectbox(
+            "Tabela Gold (target_table)",
+            options=[e.target_table for e in go_gold],
+            help="📊 Tabela alvo Gold para gerar notebook"
+        )
+        silver_base_path_g = st.text_input(
+            "Silver base path",
+            value="Tables/silver",
+            key="gold_silver_path",
+            help="📁 Caminho base da lakehouse Silver (origem)"
+        )
+        gold_base_path_g = st.text_input(
+            "Gold base path",
+            value="Tables/gold",
+            key="gold_gold_path",
+            help="📁 Caminho base da lakehouse Gold (destino)"
+        )
+        write_to_disk_g = st.checkbox(
+            "Gravar notebook em disco (--write)",
+            value=True,
+            key="gold_write",
+            help="💾 Salva notebook gerado em disco"
+        )
+        if st.button(
+            "Gerar notebook Gold",
+            type="primary",
+            help="🔧 Gera PySpark notebook para transformação Silver->Gold"
+        ):
             entry = next(e for e in go_gold if e.target_table == table_pick_g)
             try:
                 nb = generate_gold_notebook(entry, silver_base_path_g, gold_base_path_g, project_root=PROJECT_ROOT)
@@ -167,12 +238,21 @@ with tab_manifest:
     st.subheader("Manifest — Canonical Write Workflow (validate -> plan -> dry-run -> apply)")
     manifests_dir = profile.paths.manifests_root
     existing = sorted(manifests_dir.glob("**/*.yaml"))
-    mode = st.radio("Fonte do manifest", options=["Selecionar existente", "Criar/editar novo"], horizontal=True)
+    mode = st.radio(
+        "Fonte do manifest",
+        options=["Selecionar existente", "Criar/editar novo"],
+        horizontal=True,
+        help="📋 Escolha trabalhar com manifest existente ou criar um novo"
+    )
 
     manifest_path: Path | None = None
     if mode == "Selecionar existente" and existing:
         rel_options = [str(p.relative_to(PROJECT_ROOT)) for p in existing]
-        picked = st.selectbox("Manifest", options=rel_options)
+        picked = st.selectbox(
+            "Manifest",
+            options=rel_options,
+            help="📄 Manifest YAML para executar workflow"
+        )
         manifest_path = PROJECT_ROOT / picked
         st.code(manifest_path.read_text(encoding="utf-8"), language="yaml")
     else:
@@ -196,9 +276,21 @@ with tab_manifest:
             "  definition_file: ../../fabric_definitions/CHANGE_ME.definition.json\n"
             "  parameters: {}\n"
         )
-        yaml_text = st.text_area("Conteúdo YAML", value=default_yaml, height=300)
-        new_filename = st.text_input("Nome do arquivo (será salvo em manifests/datapipeline/)", value="novo_manifest.yaml")
-        if st.button("Salvar manifest"):
+        yaml_text = st.text_area(
+            "Conteúdo YAML",
+            value=default_yaml,
+            height=300,
+            help="📄 Manifesto de recurso Fabric (DataPipeline, SemanticModel, Notebook, etc)"
+        )
+        new_filename = st.text_input(
+            "Nome do arquivo (será salvo em manifests/datapipeline/)",
+            value="novo_manifest.yaml",
+            help="📝 Arquivo YAML a criar (sem /; usa estrutura padrão)"
+        )
+        if st.button(
+            "Salvar manifest",
+            help="💾 Valida YAML e salva no projeto"
+        ):
             try:
                 yaml.safe_load(yaml_text)  # valida sintaxe antes de salvar
                 target = manifests_dir / "datapipeline" / new_filename

@@ -265,7 +265,13 @@ O dashboard tem 5 páginas, acessíveis pela barra lateral esquerda.
 - **5. Execute (gated)**: monta um "pedido de execução" (item + parâmetros), roda Plan→Dry-run, e só dispara com o checkbox de confirmação marcado.
 - **6. Pipeline Router**: formulário único para rodar o fluxo completo de ponta a ponta, com checkboxes para escrita/publicação/execução.
 
-### 4.4. Página "Diagnósticos Avançados" — ferramentas extras
+### 4.4. Página "Copy Jobs — Gerenciamento ao Vivo" — listar, executar e bulk operations
+- **1. List & Run**: lista todos os Copy Jobs de um workspace e executa um específico (com `--confirm-execute`).
+- **2. Bulk Plan**: compara definições locais (`copyjob_definitions/bulk/*.copyjob.yaml`) contra o Fabric — mostra o que vai ser criado/atualizado/não alterado.
+- **3. Bulk Apply**: aplica o plano (cria/atualiza Copy Jobs em lote) com `--confirm-write` e `--confirm-production`.
+- **4. Bulk Reconcile**: mostra o que falta no Fabric (definições locais não aplicadas) e o que sobra (Copy Jobs órfãs no Fabric) — nunca deleta automaticamente.
+
+### 4.5. Página "Diagnósticos Avançados" — ferramentas extras
 - **📋 Backlog Tracker**: tabela com lacunas conhecidas de CLIs deste tipo (P0/P1/P2) e o que já foi resolvido aqui.
 - **🔎 Auditoria Copy Job**: roda a auditoria de colunas Oracle `NUMBER` direto na tela.
 - **🔒 Leases**: adquirir/listar/liberar cadeados pela interface.
@@ -273,7 +279,7 @@ O dashboard tem 5 páginas, acessíveis pela barra lateral esquerda.
 - **🧬 Definitions Inspect**: cola/aponta um arquivo de definição e vê os 3 hashes.
 - **📜 Log Classifier**: cola um log e recebe o veredito na hora.
 
-### 4.5. Página "Retro / Melhoria Contínua"
+### 4.6. Página "Retro / Melhoria Contínua"
 - Botão para rodar a análise (mesma coisa que `dlctl retro analyze`).
 - Tabela filtrável de sugestões, com aviso especial **⚠ GATE-CHANGE** quando a sugestão é sobre um gate de segurança (nunca é sugestão para enfraquecê-lo).
 - Botões **Aprovar**/**Rejeitar** por sugestão.

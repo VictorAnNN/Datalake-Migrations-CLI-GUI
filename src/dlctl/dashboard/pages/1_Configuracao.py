@@ -157,16 +157,42 @@ with tab_oracle:
     with st.form("form_oracle"):
         st.markdown("**Banco de dados**")
         dsn = st.text_input("ORACLE_DB_DSN", value=env_values.get("ORACLE_DB_DSN", ""))
-        db_user = st.text_input("ORACLE_DB_USER", value=env_values.get("ORACLE_DB_USER", ""))
+        db_user = st.text_input(
+            "ORACLE_DB_USER",
+            value=env_values.get("ORACLE_DB_USER", ""),
+            help="👤 Usuário do banco Oracle (ex: scott, system)"
+        )
         db_pass_placeholder = "ja configurado -- deixe em branco para manter" if secrets_ok.get("ORACLE_DB_PASSWORD") else "nao configurado"
-        db_password = st.text_input(f"ORACLE_DB_PASSWORD ({db_pass_placeholder})", value="", type="password")
+        db_password = st.text_input(
+            f"ORACLE_DB_PASSWORD ({db_pass_placeholder})",
+            value="",
+            type="password",
+            help="🔐 Senha do usuário Oracle (armazenada com segurança no .env)"
+        )
 
         st.markdown("**BI Publisher (SOAP)**")
-        bip_url = st.text_input("ORACLE_BIP_BASE_URL", value=env_values.get("ORACLE_BIP_BASE_URL", ""))
-        bip_user = st.text_input("ORACLE_BIP_USER", value=env_values.get("ORACLE_BIP_USER", ""))
+        bip_url = st.text_input(
+            "ORACLE_BIP_BASE_URL",
+            value=env_values.get("ORACLE_BIP_BASE_URL", ""),
+            help="🌐 URL base do BI Publisher (ex: https://bip.example.com/xmlpserver)"
+        )
+        bip_user = st.text_input(
+            "ORACLE_BIP_USER",
+            value=env_values.get("ORACLE_BIP_USER", ""),
+            help="👤 Usuário BI Publisher (conta com permissão para fazer requests SOAP)"
+        )
         bip_pass_placeholder = "ja configurado -- deixe em branco para manter" if secrets_ok.get("ORACLE_BIP_PASSWORD") else "nao configurado"
-        bip_password = st.text_input(f"ORACLE_BIP_PASSWORD ({bip_pass_placeholder})", value="", type="password")
-        submitted_oracle = st.form_submit_button("Salvar configuracao Oracle", type="primary")
+        bip_password = st.text_input(
+            f"ORACLE_BIP_PASSWORD ({bip_pass_placeholder})",
+            value="",
+            type="password",
+            help="🔐 Senha do usuário BI Publisher"
+        )
+        submitted_oracle = st.form_submit_button(
+            "Salvar configuracao Oracle",
+            type="primary",
+            help="💾 Persiste credenciais no .env (senhas salvas criptografadas)"
+        )
     if submitted_oracle:
         updates = {
             "ORACLE_DB_DSN": dsn, "ORACLE_DB_USER": db_user,
@@ -184,18 +210,32 @@ with tab_oracle:
 with tab_flags:
     st.subheader("Ambiente e permissoes de escrita (gates)")
     with st.form("form_flags"):
-        environment = st.selectbox("Ambiente", options=["DEV", "HML", "PRD"],
-                                    index=["DEV", "HML", "PRD"].index(current_profile.environment) if current_profile else 0)
-        allow_write = st.checkbox("microsoft.allow_write (permite escritas gated)",
-                                   value=current_profile.microsoft.allow_write if current_profile else False)
-        allow_production = st.checkbox("microsoft.allow_production (obrigatorio em PRD)",
-                                        value=current_profile.microsoft.allow_production if current_profile else False)
+        environment = st.selectbox(
+            "Ambiente",
+            options=["DEV", "HML", "PRD"],
+            index=["DEV", "HML", "PRD"].index(current_profile.environment) if current_profile else 0,
+            help="🌍 Ambiente alvo (DEV=testes, HML=validação, PRD=produção). Afeta confirmações obrigatórias."
+        )
+        allow_write = st.checkbox(
+            "microsoft.allow_write (permite escritas gated)",
+            value=current_profile.microsoft.allow_write if current_profile else False,
+            help="✍️ Habilita escrita no Fabric (requer --confirm-write + permission_scope=contributor)"
+        )
+        allow_production = st.checkbox(
+            "microsoft.allow_production (obrigatorio em PRD)",
+            value=current_profile.microsoft.allow_production if current_profile else False,
+            help="🚀 Obrigatório em PRD. Evita mudanças acidentais em produção."
+        )
         st.info(
             "Isto so habilita a *possibilidade* de escrita no profile. Cada comando "
             "ainda exige `--confirm-write`/`--confirm-execute` (ou o checkbox equivalente "
             "na pagina Acoes) para realmente mutar algo."
         )
-        submitted_flags = st.form_submit_button("Salvar ambiente/permissoes", type="primary")
+        submitted_flags = st.form_submit_button(
+            "Salvar ambiente/permissoes",
+            type="primary",
+            help="💾 Atualiza config/profiles.yaml com novas configurações"
+        )
     if submitted_flags:
         update_profile_flags(
             profile_name, allow_write=allow_write, allow_production=allow_production,
@@ -220,20 +260,47 @@ with tab_domains:
 
     with st.form("form_domain"):
         st.markdown("**Adicionar / editar dominio**")
-        d_key = st.text_input("Chave do dominio (ex.: ORDER_TRACKING)")
-        d_desc = st.text_input("Descricao")
-        d_folder = st.text_input("folder_path (ex.: pipelines/SUPRIMENTOS)")
-        d_silver = st.text_input("silver_lakehouse")
-        d_gold = st.text_input("gold_lakehouse")
-        submitted_domain = st.form_submit_button("Salvar dominio", type="primary")
+        d_key = st.text_input(
+            "Chave do dominio (ex.: ORDER_TRACKING)",
+            help="🔑 Identificador único (sem espaços, UPPERCASE com _)"
+        )
+        d_desc = st.text_input(
+            "Descricao",
+            help="📝 Descrição legível do domínio"
+        )
+        d_folder = st.text_input(
+            "folder_path (ex.: pipelines/SUPRIMENTOS)",
+            help="📁 Caminho relativo para pasta do domínio no workspace"
+        )
+        d_silver = st.text_input(
+            "silver_lakehouse",
+            help="🏦 Nome do lakehouse Silver deste domínio"
+        )
+        d_gold = st.text_input(
+            "gold_lakehouse",
+            help="🏆 Nome do lakehouse Gold deste domínio"
+        )
+        submitted_domain = st.form_submit_button(
+            "Salvar dominio",
+            type="primary",
+            help="💾 Salva em config/profiles.yaml"
+        )
     if submitted_domain and d_key:
         upsert_domain(d_key, d_desc, d_folder, d_silver, d_gold)
         st.success(f"Dominio '{d_key}' salvo.")
         st.rerun()
 
     if domains:
-        del_key = st.selectbox("Remover dominio", options=["(nenhum)"] + list(domains.keys()))
-        if del_key != "(nenhum)" and st.button("Remover dominio selecionado", type="secondary"):
+        del_key = st.selectbox(
+            "Remover dominio",
+            options=["(nenhum)"] + list(domains.keys()),
+            help="🗑️ Selecione um domínio para remover"
+        )
+        if del_key != "(nenhum)" and st.button(
+            "Remover dominio selecionado",
+            type="secondary",
+            help="🗑️ Deleta o domínio escolhido permanentemente"
+        ):
             delete_domain(del_key)
             st.success(f"Dominio '{del_key}' removido.")
             st.rerun()
@@ -243,7 +310,11 @@ with tab_test:
     st.subheader("Testar conexoes configuradas")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Testar Microsoft Fabric", type="primary"):
+        if st.button(
+            "Testar Microsoft Fabric",
+            type="primary",
+            help="🧪 Valida autenticação az CLI e lista workspaces acessíveis"
+        ):
             try:
                 from dlctl.connectors.fabric_api import FabricApiError, build_client_from_profile
                 p = load_profile(profile_name)
@@ -254,7 +325,11 @@ with tab_test:
             except Exception as exc:
                 st.error(f"Falha: {exc}")
     with col2:
-        if st.button("Testar Oracle DB", type="primary"):
+        if st.button(
+            "Testar Oracle DB",
+            type="primary",
+            help="🧪 Valida conexão Oracle (DSN, user, password)"
+        ):
             try:
                 from dlctl.connectors.oracle_connector import OracleDbConnector
                 p = load_profile(profile_name)
