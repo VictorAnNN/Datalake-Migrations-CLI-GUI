@@ -1,12 +1,11 @@
 """Fixtures compartilhadas de teste: profile isolado em diretório temporário."""
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
 
-from dlctl.config import load_profile
+from dlctl.config import MicrosoftConfig, OracleConfig, PathsConfig, Profile, load_profile
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 

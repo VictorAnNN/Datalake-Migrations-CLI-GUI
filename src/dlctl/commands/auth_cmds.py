@@ -11,7 +11,7 @@ app = typer.Typer(help="Autenticação e diagnóstico de perfil (equivalente a a
 
 @app.command("profile-show")
 def profile_show(profile: str = typer.Option(None, "--profile")):
-    """Mostra o profile ativo (tenant, workspace, flags de escrita) sem segredos."""
+    """Mostra o profile ativo (workspace, flags de escrita, escopo az) sem segredos."""
     p = get_profile(profile)
     print_table(
         f"Profile: {p.name}",
@@ -21,10 +21,10 @@ def profile_show(profile: str = typer.Option(None, "--profile")):
             ["allow_write", p.microsoft.allow_write],
             ["allow_production", p.microsoft.allow_production],
             ["auth_mode", p.microsoft.auth_mode],
-            ["workspace_name", p.microsoft.default_workspace_name],
+            ["permission_scope", p.microsoft.permission_scope],
+            ["az_tenant_id", p.microsoft.az_tenant_id or "(padrão da conta az)"],
+            ["workspace_name", p.microsoft.default_workspace_name or "(não configurado)"],
             ["workspace_id", p.microsoft.default_workspace_id or "(não configurado)"],
-            ["tenant_id_configurado", bool(p.microsoft.tenant_id)],
-            ["client_id_configurado", bool(p.microsoft.client_id)],
         ],
     )
 
@@ -32,15 +32,18 @@ def profile_show(profile: str = typer.Option(None, "--profile")):
 @app.command("doctor")
 @handle_security_error
 def doctor(profile: str = typer.Option(None, "--profile")):
-    """Verifica credenciais Fabric configuradas e tenta uma chamada de leitura simples."""
+    """Verifica autenticação az CLI e tenta uma chamada de leitura simples na API Fabric."""
+    import subprocess
     p = get_profile(profile)
-    if not p.microsoft.tenant_id or not p.microsoft.client_id:
-        console.print("[yellow]manual_required[/yellow]: FABRIC_TENANT_ID/FABRIC_CLIENT_ID ausentes no .env.")
+    # Verifica se az está autenticado
+    result = subprocess.run(["az", "account", "show"], capture_output=True, text=True, timeout=15)
+    if result.returncode != 0:
+        console.print("[yellow]manual_required[/yellow]: az CLI não está autenticado. Execute 'az login'.")
         raise typer.Exit(code=1)
     try:
         client = build_client_from_profile(p)
         workspaces = client.list_workspaces()
-        console.print(f"[green]OK[/green]: autenticado, {len(workspaces)} workspace(s) visível(eis).")
+        console.print(f"[green]OK[/green]: autenticado via az CLI, {len(workspaces)} workspace(s) visível(eis).")
     except FabricApiError as exc:
         console.print(f"[red]Falha de autenticação/API:[/red] {exc}")
         raise typer.Exit(code=1)

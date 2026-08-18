@@ -19,12 +19,12 @@ from dlctl.config import CONFIG_PATH, PROJECT_ROOT, load_profile
 
 ENV_PATH = PROJECT_ROOT / ".env"
 
-SECRET_ENV_KEYS = {"FABRIC_CLIENT_SECRET", "ORACLE_DB_PASSWORD", "ORACLE_BIP_PASSWORD"}
+SECRET_ENV_KEYS = {"ORACLE_DB_PASSWORD", "ORACLE_BIP_PASSWORD"}
 
 ALL_ENV_KEYS = [
     "DLCTL_PROFILE",
-    "FABRIC_TENANT_ID", "FABRIC_CLIENT_ID", "FABRIC_CLIENT_SECRET", "FABRIC_AUTH_MODE",
     "FABRIC_WORKSPACE_NAME", "FABRIC_WORKSPACE_ID",
+    "FABRIC_AZ_TENANT_ID", "FABRIC_AZ_PERMISSION_SCOPE",
     "ORACLE_DB_DSN", "ORACLE_DB_USER", "ORACLE_DB_PASSWORD",
     "ORACLE_BIP_BASE_URL", "ORACLE_BIP_USER", "ORACLE_BIP_PASSWORD",
     "DLCTL_ALLOW_WRITE", "DLCTL_ALLOW_PRODUCTION",
@@ -55,6 +55,7 @@ def read_env_for_form() -> dict[str, str]:
 
 
 def secret_status() -> dict[str, bool]:
+    """Retorna quais variáveis de segredo Oracle estão configuradas (sem expor os valores)."""
     raw = read_env_raw()
     return {k: bool(raw.get(k)) for k in SECRET_ENV_KEYS}
 

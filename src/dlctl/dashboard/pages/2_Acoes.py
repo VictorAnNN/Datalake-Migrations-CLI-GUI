@@ -44,7 +44,13 @@ except Exception as exc:
     st.error(f"Não foi possível carregar o profile '{profile_name}': {exc}")
     st.stop()
 
+st.sidebar.markdown(f"**Auth:** `az_cli`")
+st.sidebar.markdown(f"**Escopo:** `{profile.microsoft.permission_scope}`")
+if profile.microsoft.az_tenant_id:
+    st.sidebar.markdown(f"**Tenant:** `{profile.microsoft.az_tenant_id}`")
 st.sidebar.markdown(f"**allow_write:** `{profile.microsoft.allow_write}`")
+if profile.microsoft.is_read_only:
+    st.sidebar.warning("🔒 Escopo read_only: ações de escrita/execução no Fabric estão bloqueadas. Altere em Configuração > Microsoft Fabric.")
 if not profile.microsoft.allow_write:
     st.sidebar.warning("Escrita desabilitada no profile. Ajuste em Configuração > Ambiente & Escrita.")
 
@@ -247,10 +253,13 @@ with tab_manifest:
 
         st.divider()
         st.markdown("**④ Apply — requer confirmação explícita (equivalente a `--confirm-write`)**")
-        confirm_write = st.checkbox("Confirmo a escrita (--confirm-write)", key="manifest_confirm_write")
-        confirm_production = st.checkbox("Confirmo produção (--confirm-production, só necessário em PRD)", key="manifest_confirm_prod")
-        confirm_move = st.checkbox("Confirmo mover item existente (--confirm-move, se aplicável)", key="manifest_confirm_move")
-        if st.button("Aplicar manifest (APPLY)", type="primary"):
+        _write_blocked = profile.microsoft.is_read_only
+        if _write_blocked:
+            st.warning("🔒 Escopo read_only: ações de escrita/apply estão desabilitadas. Altere o escopo em Configuração > Microsoft Fabric para 'contributor'.")
+        confirm_write = st.checkbox("Confirmo a escrita (--confirm-write)", key="manifest_confirm_write", disabled=_write_blocked)
+        confirm_production = st.checkbox("Confirmo produção (--confirm-production, só necessário em PRD)", key="manifest_confirm_prod", disabled=_write_blocked)
+        confirm_move = st.checkbox("Confirmo mover item existente (--confirm-move, se aplicável)", key="manifest_confirm_move", disabled=_write_blocked)
+        if st.button("Aplicar manifest (APPLY)", type="primary", disabled=_write_blocked):
             m = st.session_state.get("manifest_loaded") or manifest_engine.load_manifest(manifest_path)
             plan_result = st.session_state.get("manifest_plan")
             if not plan_result:
@@ -311,8 +320,12 @@ with tab_execute:
                     st.success("dry-run OK")
 
         st.divider()
-        confirm_execute = st.checkbox("Confirmo a execução (--confirm-execute)", key="execute_confirm")
-        if st.button("③ Apply (disparar execução)", type="primary"):
+        admin_actions_blocked = False
+        _exec_blocked = profile.microsoft.is_read_only
+        if _exec_blocked:
+            st.warning("🔒 Escopo read_only: execução no Fabric desabilitada. Altere em Configuração > Microsoft Fabric para 'contributor'.")
+        confirm_execute = st.checkbox("Confirmo a execução (--confirm-execute)", key="execute_confirm", disabled=_exec_blocked)
+        if st.button("③ Apply (disparar execução)", type="primary", disabled=_exec_blocked):
             try:
                 client = None
                 try:
@@ -335,10 +348,13 @@ with tab_pipeline:
         silver_base_path_pl = st.text_input("Silver base path", value="Tables/silver")
         gold_base_path_pl = st.text_input("Gold base path", value="Tables/gold")
         write_pl = st.checkbox("Gravar notebooks em disco (--write)", value=True)
-        publish_pl = st.checkbox("Tentar publicar Silver/Gold via manifest (--publish)")
-        confirm_write_pl = st.checkbox("Confirmo escrita (--confirm-write)")
-        confirm_execute_pl = st.checkbox("Confirmo execução (--confirm-execute)")
-        run_button = st.form_submit_button("🚀 Rodar pipeline completo", type="primary")
+        _pl_blocked = profile.microsoft.is_read_only
+        if _pl_blocked:
+            st.warning("🔒 Escopo read_only: publish, escrita e execução do pipeline estão desabilitados. Altere em Configuração > Microsoft Fabric.")
+        publish_pl = st.checkbox("Tentar publicar Silver/Gold via manifest (--publish)", disabled=_pl_blocked)
+        confirm_write_pl = st.checkbox("Confirmo escrita (--confirm-write)", disabled=_pl_blocked)
+        confirm_execute_pl = st.checkbox("Confirmo execução (--confirm-execute)", disabled=_pl_blocked)
+        run_button = st.form_submit_button("🚀 Rodar pipeline completo", type="primary", disabled=_pl_blocked)
 
     if run_button:
         progress_area = st.container()

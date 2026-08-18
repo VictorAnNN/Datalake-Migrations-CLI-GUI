@@ -1,8 +1,14 @@
 """dlctl.config
 
-Carrega o arquivo config/profiles.yaml e variáveis de ambiente (.env), expondo
-um objeto `Profile` fortemente tipado — equivalente ao `accountctl profile show`
-mencionado nas skills, mas local e autocontido.
+Carrega o arquivo config/profiles.yaml e variaveis de ambiente (.env), expondo
+um objeto `Profile` fortemente tipado.
+
+Autenticacao com o Fabric e delegada ao az CLI (`az account get-access-token`).
+Nenhuma credencial MSAL/client_id/secret e necessaria.
+
+permission_scope controla quais acoes sao permitidas:
+  - ``contributor``: escrita, execucao, publish (requer role Contributor no workspace).
+  - ``read_only``: somente leitura (inventario, gerac?o de notebooks local, dry-run).
 """
 from __future__ import annotations
 
@@ -12,37 +18,113 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+except ImportError:
+    pass
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_PATH = PROJECT_ROOT / "config" / "profiles.yaml"
 
-load_dotenv(PROJECT_ROOT / ".env", override=False)
+# Escopos de permissao az CLI para acoes Fabric
+PERMISSION_SCOPE_CONTRIBUTOR = "contributor"
+PERMISSION_SCOPE_READ_ONLY = "read_only"
 
 
-class MicrosoftConfig(BaseModel):
-    allow_write: bool = False
-    allow_production: bool = False
-    tenant_id: Optional[str] = None
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    auth_mode: str = "device_code"
-    default_workspace_name: Optional[str] = None
-    default_workspace_id: Optional[str] = None
-    scopes: list[str] = Field(default_factory=list)
+class MicrosoftConfig:
+    """Configuracao do lado Microsoft Fabric.
+
+    auth_mode suportado: ``az_cli`` (padrao e unico obrigatorio).
+    O token e obtido via ``az account get-access-token``.
+
+    permission_scope indica o nivel de acesso que a conta az tem no workspace:
+      - ``contributor``: pode criar/atualizar/executar itens Fabric.
+      - ``read_only``: somente pode listar/ler. Acoes de escrita sao bloqueadas.
+    """
+
+    def __init__(
+        self,
+        allow_write: bool = False,
+        allow_production: bool = False,
+        auth_mode: str = "az_cli",
+        az_tenant_id: Optional[str] = None,
+        permission_scope: str = PERMISSION_SCOPE_READ_ONLY,
+        default_workspace_name: Optional[str] = None,
+        default_workspace_id: Optional[str] = None,
+    ):
+        self.allow_write = allow_write
+        self.allow_production = allow_production
+        self.auth_mode = auth_mode
+        self.az_tenant_id = az_tenant_id
+        self.permission_scope = permission_scope
+        self.default_workspace_name = default_workspace_name
+        self.default_workspace_id = default_workspace_id
+
+    @property
+    def is_read_only(self) -> bool:
+        return self.permission_scope == PERMISSION_SCOPE_READ_ONLY
+
+    @property
+    def is_contributor(self) -> bool:
+        return self.permission_scope == PERMISSION_SCOPE_CONTRIBUTOR
+
+    @property
+    def scope_label(self) -> str:
+        if self.is_contributor:
+            return "Contributor (escrita/execucao habilitadas)"
+        return "Read-only (somente leitura ? acoes de escrita bloqueadas)"
+
+    def __repr__(self) -> str:
+        return (
+            f"MicrosoftConfig(auth_mode={self.auth_mode!r}, "
+            f"permission_scope={self.permission_scope!r}, "
+            f"workspace={self.default_workspace_name!r}, "
+            f"allow_write={self.allow_write})"
+        )
 
 
-class OracleConfig(BaseModel):
-    dsn: Optional[str] = None
-    user: Optional[str] = None
-    password: Optional[str] = None
-    bip_base_url: Optional[str] = None
-    bip_user: Optional[str] = None
-    bip_password: Optional[str] = None
+class OracleConfig:
+    def __init__(
+        self,
+        dsn: Optional[str] = None,
+        user: Optional[str] = None,
+        password: Optional[str] = None,
+        bip_base_url: Optional[str] = None,
+        bip_user: Optional[str] = None,
+        bip_password: Optional[str] = None,
+    ):
+        self.dsn = dsn
+        self.user = user
+        self.password = password
+        self.bip_base_url = bip_base_url
+        self.bip_user = bip_user
+        self.bip_password = bip_password
 
 
-class PathsConfig(BaseModel):
+class ResolvedPaths:
+    def __init__(
+        self,
+        state_root: Path,
+        evidence_root: Path,
+        manifests_root: Path,
+        mappings_root: Path,
+        notebooks_silver_root: Path,
+        notebooks_gold_root: Path,
+    ):
+        self.state_root = state_root
+        self.evidence_root = evidence_root
+        self.manifests_root = manifests_root
+        self.mappings_root = mappings_root
+        self.notebooks_silver_root = notebooks_silver_root
+        self.notebooks_gold_root = notebooks_gold_root
+
+    def model_dump(self) -> dict:
+        return {k: str(v) for k, v in self.__dict__.items()}
+
+
+class PathsConfig:
     state_root: str = "state"
     evidence_root: str = "state/evidence"
     manifests_root: str = "manifests"
@@ -50,7 +132,12 @@ class PathsConfig(BaseModel):
     notebooks_silver_root: str = "notebooks/silver"
     notebooks_gold_root: str = "notebooks/gold"
 
-    def resolve(self, root: Path) -> "ResolvedPaths":
+    def __init__(self, **kwargs):
+        for key in ("state_root", "evidence_root", "manifests_root",
+                    "mappings_root", "notebooks_silver_root", "notebooks_gold_root"):
+            setattr(self, key, kwargs.get(key, getattr(PathsConfig, key)))
+
+    def resolve(self, root: Path) -> ResolvedPaths:
         return ResolvedPaths(
             state_root=root / self.state_root,
             evidence_root=root / self.evidence_root,
@@ -61,22 +148,22 @@ class PathsConfig(BaseModel):
         )
 
 
-class ResolvedPaths(BaseModel):
-    state_root: Path
-    evidence_root: Path
-    manifests_root: Path
-    mappings_root: Path
-    notebooks_silver_root: Path
-    notebooks_gold_root: Path
-
-
-class Profile(BaseModel):
-    name: str
-    description: str = ""
-    environment: str = "DEV"
-    microsoft: MicrosoftConfig
-    oracle: OracleConfig
-    paths: ResolvedPaths
+class Profile:
+    def __init__(
+        self,
+        name: str,
+        description: str = "",
+        environment: str = "DEV",
+        microsoft: Optional[MicrosoftConfig] = None,
+        oracle: Optional[OracleConfig] = None,
+        paths: Optional[ResolvedPaths] = None,
+    ):
+        self.name = name
+        self.description = description
+        self.environment = environment
+        self.microsoft = microsoft or MicrosoftConfig()
+        self.oracle = oracle or OracleConfig()
+        self.paths = paths  # type: ignore[assignment]
 
 
 def _env(name: Optional[str]) -> Optional[str]:
@@ -94,32 +181,35 @@ def _env_bool(name: Optional[str], default: bool) -> bool:
 
 @lru_cache(maxsize=8)
 def load_profile(profile_name: Optional[str] = None) -> Profile:
-    """Carrega um profile do config/profiles.yaml, resolvendo variáveis de ambiente."""
+    """Carrega um profile do config/profiles.yaml, resolvendo variaveis de ambiente."""
     if not CONFIG_PATH.exists():
-        raise FileNotFoundError(f"Arquivo de configuração não encontrado: {CONFIG_PATH}")
+        raise FileNotFoundError(f"Arquivo de configuracao nao encontrado: {CONFIG_PATH}")
 
     raw = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")) or {}
     profiles = raw.get("profiles", {})
 
     name = profile_name or os.environ.get("DLCTL_PROFILE") or next(iter(profiles), None)
     if not name or name not in profiles:
-        raise KeyError(f"Profile '{name}' não encontrado em {CONFIG_PATH}")
+        raise KeyError(f"Profile '{name}' nao encontrado em {CONFIG_PATH}")
 
     data = profiles[name]
     ms_raw = data.get("microsoft", {})
     oracle_raw = data.get("oracle", {})
     paths_raw = data.get("paths", {})
 
+    permission_scope = (
+        _env("FABRIC_AZ_PERMISSION_SCOPE")
+        or ms_raw.get("permission_scope", PERMISSION_SCOPE_READ_ONLY)
+    )
+
     microsoft = MicrosoftConfig(
         allow_write=_env_bool("DLCTL_ALLOW_WRITE", ms_raw.get("allow_write", False)),
         allow_production=_env_bool("DLCTL_ALLOW_PRODUCTION", ms_raw.get("allow_production", False)),
-        tenant_id=_env(ms_raw.get("tenant_id_env")),
-        client_id=_env(ms_raw.get("client_id_env")),
-        client_secret=_env(ms_raw.get("client_secret_env")),
-        auth_mode=_env(ms_raw.get("auth_mode_env")) or "device_code",
+        auth_mode=ms_raw.get("auth_mode", "az_cli"),
+        az_tenant_id=_env("FABRIC_AZ_TENANT_ID") or ms_raw.get("az_tenant_id"),
+        permission_scope=permission_scope,
         default_workspace_name=_env(ms_raw.get("default_workspace_name_env")),
         default_workspace_id=_env(ms_raw.get("default_workspace_id_env")),
-        scopes=ms_raw.get("scopes", []),
     )
     oracle = OracleConfig(
         dsn=_env(oracle_raw.get("dsn_env")),

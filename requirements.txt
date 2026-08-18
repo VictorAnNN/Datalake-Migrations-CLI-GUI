@@ -1,5 +1,6 @@
-﻿# Base install for dlctl
+# Base install for dlctl
 # Use: python -m pip install -r requirements.txt
+# Autenticação com o Fabric via az CLI — sem MSAL necessário.
 
 typer>=0.12.3
 rich>=13.7.1
@@ -7,7 +8,6 @@ pydantic>=2.7.0
 pydantic-settings>=2.2.1
 PyYAML>=6.0.1
 requests>=2.31.0
-msal>=1.28.0
 nbformat>=5.10.4
 pandas>=2.2.2
 sqlmodel>=0.0.21

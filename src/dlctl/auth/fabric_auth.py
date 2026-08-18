@@ -1,81 +1,141 @@
 """dlctl.auth.fabric_auth
 
-Autenticação real contra o Microsoft Entra ID / Fabric REST API usando MSAL.
-Suporta device_code (usuário interativo) e client_credentials (aplicação/serviço),
-conforme configurado no profile (FABRIC_AUTH_MODE).
+Autenticacao contra a Fabric REST API via az CLI.
+
+O token e obtido com ``az account get-access-token``:
+
+    az account get-access-token \
+        --resource https://api.fabric.microsoft.com \
+        [--tenant <tenant_id>]
+
+Sem credenciais MSAL, client_id ou secret. O az CLI ja gerencia o login
+interativo. Se o usuario nao estiver autenticado, ``az_login_device_code()``
+inicia o fluxo device code e retorna o codigo/URL para exibicao no front-end.
 """
 from __future__ import annotations
 
-import time
-from pathlib import Path
+import json
+import subprocess
 from typing import Optional
 
-import msal
-
-from dlctl.config import Profile
-
-TOKEN_CACHE_DIR = ".token_cache"
+FABRIC_RESOURCE = "https://api.fabric.microsoft.com"
 
 
 class FabricAuthError(RuntimeError):
     pass
 
 
-class FabricAuth:
-    def __init__(self, profile: Profile):
-        self.profile = profile
-        ms = profile.microsoft
-        if not ms.tenant_id or not ms.client_id:
-            raise FabricAuthError(
-                "FABRIC_TENANT_ID/FABRIC_CLIENT_ID não configurados. Preencha o .env (veja .env.example)."
-            )
-        self.authority = f"https://login.microsoftonline.com/{ms.tenant_id}"
-        self.scopes = ms.scopes or ["https://api.fabric.microsoft.com/.default"]
-        self._cache_path = profile.paths.state_root / TOKEN_CACHE_DIR
-        self._cache_path.mkdir(parents=True, exist_ok=True)
-        self._token_cache_file = self._cache_path / f"{profile.name}.bin"
-        self._app = self._build_app()
+class AzCliAuth:
+    """Obtem token Bearer para a Fabric API usando o az CLI ja autenticado.
 
-    def _serializable_cache(self) -> msal.SerializableTokenCache:
-        cache = msal.SerializableTokenCache()
-        if self._token_cache_file.exists():
-            cache.deserialize(self._token_cache_file.read_text(encoding="utf-8"))
-        return cache
+    Args:
+        tenant_id: Se informado, passa ``--tenant <tenant_id>`` ao az CLI.
+                   Util quando a conta az tem acesso a multiplos tenants.
+    """
 
-    def _persist_cache(self, cache: msal.SerializableTokenCache) -> None:
-        if cache.has_state_changed:
-            self._token_cache_file.write_text(cache.serialize(), encoding="utf-8")
-
-    def _build_app(self):
-        ms = self.profile.microsoft
-        cache = self._serializable_cache()
-        if ms.auth_mode == "client_credentials":
-            if not ms.client_secret:
-                raise FabricAuthError("FABRIC_CLIENT_SECRET ausente para auth_mode=client_credentials.")
-            return msal.ConfidentialClientApplication(
-                client_id=ms.client_id, client_credential=ms.client_secret,
-                authority=self.authority, token_cache=cache,
-            )
-        return msal.PublicClientApplication(
-            client_id=ms.client_id, authority=self.authority, token_cache=cache,
-        )
+    def __init__(self, resource: str = FABRIC_RESOURCE, tenant_id: Optional[str] = None):
+        self.resource = resource
+        self.tenant_id = tenant_id
 
     def get_token(self) -> str:
-        ms = self.profile.microsoft
-        if ms.auth_mode == "client_credentials":
-            result = self._app.acquire_token_for_client(scopes=self.scopes)
+        """Retorna o access token como string. Levanta FabricAuthError se falhar."""
+        cmd = ["az", "account", "get-access-token", "--resource", self.resource]
+        if self.tenant_id:
+            cmd += ["--tenant", self.tenant_id]
+
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        except FileNotFoundError:
+            raise FabricAuthError(
+                "az CLI nao encontrado. Instale via: https://aka.ms/installazurecli"
+            )
+        except subprocess.TimeoutExpired:
+            raise FabricAuthError("Timeout ao chamar 'az account get-access-token'.")
+
+        if result.returncode != 0:
+            stderr = result.stderr.strip()
+            raise FabricAuthError(
+                f"'az account get-access-token' falhou (exit {result.returncode}).
+"
+                f"{stderr}
+
+"
+                "Execute 'az login' para autenticar, entao tente novamente."
+            )
+
+        try:
+            payload = json.loads(result.stdout)
+            token: Optional[str] = payload.get("accessToken")
+        except (json.JSONDecodeError, AttributeError):
+            raise FabricAuthError(
+                f"Resposta inesperada do az CLI: {result.stdout[:200]}"
+            )
+
+        if not token:
+            raise FabricAuthError(
+                "az CLI retornou JSON mas sem 'accessToken'. "
+                "Verifique se a conta esta autenticada: 'az account show'."
+            )
+
+        return token
+
+    def get_account_info(self) -> Optional[dict]:
+        """Retorna informacoes da conta az ativa, ou None se nao autenticado."""
+        try:
+            result = subprocess.run(
+                ["az", "account", "show"], capture_output=True, text=True, timeout=10
+            )
+            if result.returncode == 0:
+                return json.loads(result.stdout)
+        except (FileNotFoundError, subprocess.TimeoutExpired, json.JSONDecodeError):
+            pass
+        return None
+
+
+def az_login_device_code(tenant_id: Optional[str] = None) -> dict:
+    """Inicia ``az login --use-device-code`` bloqueante e retorna resultado.
+
+    Roda de forma sincrona (bloqueia ate o usuario autenticar ou timeout).
+    No Streamlit, chame dentro de st.spinner().
+
+    Returns:
+        dict com chaves:
+          - ``ok`` (bool): True se o login foi concluido com sucesso.
+          - ``message`` (str): Mensagem ou erro.
+          - ``user`` (str | None): e-mail da conta logada se ok=True.
+    """
+    cmd = ["az", "login", "--use-device-code"]
+    if tenant_id:
+        cmd += ["--tenant", tenant_id]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    except FileNotFoundError:
+        return {"ok": False, "message": "az CLI nao encontrado. Instale via: https://aka.ms/installazurecli", "user": None}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "message": "Timeout aguardando az login (3 min). Tente novamente.", "user": None}
+
+    if result.returncode != 0:
+        return {"ok": False, "message": result.stderr.strip() or "Falha no az login.", "user": None}
+
+    try:
+        accounts = json.loads(result.stdout)
+        if isinstance(accounts, list) and accounts:
+            user = accounts[0].get("user", {}).get("name", "?")
         else:
-            accounts = self._app.get_accounts()
-            result = None
-            if accounts:
-                result = self._app.acquire_token_silent(self.scopes, account=accounts[0])
-            if not result:
-                flow = self._app.initiate_device_flow(scopes=self.scopes)
-                if "user_code" not in flow:
-                    raise FabricAuthError(f"Falha ao iniciar device flow: {flow}")
-                print(flow["message"])  # instrução para o usuário logar no navegador
-                result = self._app.acquire_token_by_device_flow(flow)
-        self._persist_cache(self._app.token_cache)  # type: ignore[arg-type]
-        if not result or "access_token" not in result:
-            raise FabricAuthError(f"Falha de autenticação: {result.get('error_description') if result else 'sem resposta'}")
-        return result["access_token"]
+            user = "?"
+        return {"ok": True, "message": "Login realizado com sucesso.", "user": user}
+    except (json.JSONDecodeError, AttributeError):
+        return {"ok": True, "message": "Login realizado.", "user": None}
+
+
+# Retrocompatibilidade com FabricAuth(profile)
+class FabricAuth:
+    """Wrapper de compatibilidade -- delega para AzCliAuth, respeitando tenant do profile."""
+
+    def __init__(self, profile=None):
+        tenant_id = getattr(getattr(profile, "microsoft", None), "az_tenant_id", None)
+        self._auth = AzCliAuth(tenant_id=tenant_id)
+
+    def get_token(self) -> str:
+        return self._auth.get_token()

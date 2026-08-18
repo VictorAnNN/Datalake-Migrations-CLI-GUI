@@ -42,8 +42,14 @@ except Exception as exc:
     st.stop()
 
 st.sidebar.markdown(f"**Ambiente:** `{profile.environment}`")
+st.sidebar.markdown(f"**Auth:** `az_cli`")
+st.sidebar.markdown(f"**Escopo:** `{profile.microsoft.permission_scope}`")
+if profile.microsoft.az_tenant_id:
+    st.sidebar.markdown(f"**Tenant:** `{profile.microsoft.az_tenant_id}`")
 st.sidebar.markdown(f"**allow_write:** `{profile.microsoft.allow_write}`")
 st.sidebar.markdown(f"**Workspace:** `{profile.microsoft.default_workspace_name or '(não configurado)'}`")
+if profile.microsoft.is_read_only:
+    st.sidebar.warning("🔒 Escopo read_only: ações de escrita/execução no Fabric bloqueadas.")
 
 domains = load_domains()
 domain = st.sidebar.selectbox("Domínio", options=["(todos)"] + list(domains.keys()))
