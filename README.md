@@ -54,17 +54,19 @@ src/dlctl/
     retro.py                -> motor de "Improvement Proposals": analisa a telemetria
                                 própria (ActivityLog/PipelineStep/CampaignStep/
                                 CommandInvocation) e gera propostas categorizadas
+    lineage.py              -> extrator de linhagem Fabric (JSON/ZIP -> 3 Excels + grafo)
   generators/
     silver_generator.py     -> gera notebooks Bronze->Silver (Notebook Contract)
     gold_generator.py       -> gera notebooks Silver->Gold (Gold Gates)
     validators.py           -> valida os gates acima (bloqueia geração inválida)
-  commands/                 -> um módulo Typer por área (skills + backlog + retro)
+  commands/                 -> um módulo Typer por área (skills + backlog + retro + lineage)
   dashboard/
     app.py                  -> painel principal (somente leitura do state)
     pages/1_Configuracao.py -> editar credenciais/conexões pelo front-end
     pages/2_Acoes.py        -> acionar todos os fluxos pelo front-end (gated)
     pages/3_Diagnosticos_Avancados.py -> backlog tracker + auditoria/leases/campaign/logs
     pages/4_Retro_Melhoria_Continua.py -> motor de retro + aprovação manual (Stage B)
+    pages/5_Linhagem_Fabric.py -> geração de linhagem + download dos Excels + grafo filtrável
 mappings/                   -> CSVs de mapeamento Bronze->Silver / Silver->Gold (exemplo)
 manifests/                  -> manifests YAML (DataPipeline/Notebook/Environment/Campaign/...)
 fabric_definitions/         -> definitions JSON referenciadas pelos manifests
@@ -90,6 +92,7 @@ tests/                      -> pytest cobrindo gates, manifest engine, generator
 | `git_workflow.md` | `dlctl git status\|diff-summary\|plan-commit\|commit\|update-from-git` |
 | `variable_libraries_workflow.md` | `dlctl variable-libraries list\|definition\|create` |
 | `copyjob_surface.md` | `dlctl copyjobs list\|run\|mappings-inspect\|oracle-number-audit` |
+| `fabric-lineage.md` | `dlctl lineage generate` + dashboard página **Linhagem Fabric** |
 
 ### Backlog incorporado (`fabric-fullctl-backlog.zip` — 3 incidentes reais)
 
@@ -297,6 +300,9 @@ dlctl copyjobs bulk reconcile --definitions-dir copyjob_definitions/bulk
 
 # Git plan-commit com seleção de itens
 dlctl git plan-commit --workspace LAKEHOUSE-DEV --item-ids "id1,id2"
+
+# Lineage Fabric (gera Original + Simplified + Detailed)
+dlctl lineage generate --input C:\dados\Workspaces.zip
 
 # Painel de controle
 dlctl dashboard

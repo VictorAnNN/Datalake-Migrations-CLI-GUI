@@ -10,3 +10,6 @@ notebooks/gold/*.ipynb
 manifests/**/*.plan.json
 .token_cache/
 .streamlit/
+venv
+venv/*
+./venv/
