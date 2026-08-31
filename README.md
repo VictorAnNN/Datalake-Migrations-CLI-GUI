@@ -328,6 +328,18 @@ dlctl etl-silver validate notebooks/silver/SLV_PO_HEADERS.ipynb
 dlctl etl-gold generate --table GLD_PR_REQUISITION --silver-base-path Tables/silver --gold-base-path Tables/gold --write
 dlctl etl-gold validate notebooks/gold/GLD_PR_REQUISITION.ipynb
 
+# Criação controlada de um piloto no Fabric (não executa o notebook)
+dlctl notebooks plan-create \
+  --notebook notebooks/silver/SLV_PO_HEADERS.ipynb \
+  --display-name codex_test_delete_me_slv_po_headers \
+  --contract silver \
+  --out-plan state/plans/codex_test_delete_me_slv_po_headers.plan.json
+
+# Só após revisão do plano e com o profile DEV explicitamente habilitado para escrita:
+dlctl notebooks apply-create \
+  --plan state/plans/codex_test_delete_me_slv_po_headers.plan.json \
+  --confirm-write
+
 # Manifests (Canonical Write Workflow)
 dlctl manifest validate --manifest manifests/datapipeline/pp_silver_order_tracking_2h.manifest.yaml
 dlctl manifest plan --manifest manifests/datapipeline/pp_silver_order_tracking_2h.manifest.yaml
@@ -640,7 +652,11 @@ coberto e o que **não** está, por honestidade:
 ### ❌ Não coberto (fora do caminho crítico documentado)
 - Gateways e Connections (create/update/delete/roles) — RBAC de workspace, OneLake Data Access Security, `sqlsec` (DDM/RLS/CLS)
 - `lakehouses` de leitura de dados (`table-query`, `delta-read`, `table-stats`, `aggregate`, `schema-diff`) e `onelake` (download/upload/transfer)
-- Criação/resolução direta de Notebooks/Pipelines/Dataflows (`notebooks create`, `pipelines create`, `dataflows create`) — hoje só manifest genérico cobre isso indiretamente
+- Criação direta de Notebook: `notebooks plan-create|apply-create` ✅, usando
+  definição pública `format=ipynb`, parte `notebook-content.ipynb`, plano
+  selado por SHA-256, bloqueio de overwrite e confirmação explícita.
+- Criação direta de Pipelines/Dataflows (`pipelines create`, `dataflows create`) ❌;
+  hoje o manifest genérico cobre esses tipos indiretamente.
 - `jobs run/status/cancel/schedules`, `spark sessions`, `capacities`, `semantic refresh-plan`, `evidence list/pack`, `recipes`, `ownership list/verify` como comandos dedicados, `cleanup plan/apply`, `api request`
 
 Se algum desses itens for necessário para o seu fluxo real, me diga qual e eu

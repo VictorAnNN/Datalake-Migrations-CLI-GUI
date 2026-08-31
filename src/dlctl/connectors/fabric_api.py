@@ -244,6 +244,59 @@ class FabricClient:
 
     # ---------------- notebooks / pipelines / dataflows / copy jobs ----------------
 
+    def create_notebook(
+        self,
+        display_name: str,
+        definition: dict,
+        folder_id: Optional[str] = None,
+        description: str = "",
+        max_polls: int = 20,
+    ) -> dict:
+        """Cria Notebook pela API específica e confirma o LRO quando houver."""
+        body: dict[str, Any] = {
+            "displayName": display_name,
+            "description": description,
+            "definition": definition,
+        }
+        if folder_id:
+            body["folderId"] = folder_id
+        resp = self._request(
+            "POST",
+            f"/workspaces/{self.workspace_id}/notebooks",
+            is_write=True,
+            json=body,
+        )
+        if resp.status_code == 201:
+            return {"status": "SUCCEEDED", "item": _safe_json(resp), "operationId": None}
+        if resp.status_code != 202:
+            raise FabricApiError(f"Status inesperado na criação do Notebook: {resp.status_code}")
+
+        operation_url = resp.headers.get("Location")
+        operation_id = resp.headers.get("x-ms-operation-id")
+        if not operation_url:
+            raise FabricApiError("Criação aceita sem Location; conclusão não verificável.")
+        for _ in range(max_polls):
+            retry_after = int(resp.headers.get("Retry-After", "5"))
+            time.sleep(min(max(retry_after, 1), 30))
+            operation_resp = self._request("GET", operation_url)
+            operation = _safe_json(operation_resp)
+            status = operation.get("status")
+            if status == "Succeeded":
+                result_resp = self._request("GET", f"{operation_url.rstrip('/')}/result")
+                result = _safe_json(result_resp)
+                return {
+                    "status": "SUCCEEDED",
+                    "item": result.get("item", result),
+                    "operationId": operation_id,
+                }
+            if status in {"Failed", "Cancelled"}:
+                raise FabricApiError(
+                    f"Criação do Notebook terminou em {status}.",
+                    payload=redact(operation),
+                )
+            resp = operation_resp
+        raise FabricApiError("Criação do Notebook excedeu o tempo de espera.")
+
     def run_item_job(self, item_id: str, job_type: str = "RunNotebook", parameters: Optional[dict] = None) -> dict:
         """Dispara a execução. A Fabric API responde 202 Accepted com o corpo
         tipicamente vazio e o ID da instância no header `Location`; capturamos

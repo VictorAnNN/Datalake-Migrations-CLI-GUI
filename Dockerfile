@@ -33,7 +33,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 
 # Instala o pacote com todos os extras necessários para uso completo (Oracle + dashboard).
-RUN pip install --no-cache-dir -e ".[oracle,dashboard]"
+RUN pip install --no-cache-dir -e ".[oracle,dashboard,dev]"
 
 COPY . .
 

@@ -30,6 +30,17 @@ GOLD_PLACEHOLDERS = [
     "abfss://Gold@",
 ]
 
+SILVER_CELL_TITLES = [
+    "C1_HEADER_METADATA", "C2_PARAMETERS", "C3_SPARK_SESSION",
+    "C4_BRONZE_TEMPVIEWS", "C5_SPARK_SQL", "C6_SCHEMA_TAB",
+    "C7_PK_QUARANTINE", "C8_DELTA_WRITE", "C9_OPTIMIZE", "C10_METRICS",
+]
+GOLD_CELL_TITLES = [
+    "G1_HEADER_METADATA", "G2_PARAMETERS", "G3_SPARK_SESSION",
+    "G4_SILVER_TEMPVIEWS", "G5_SPARK_SQL", "G6_SCHEMA_CONTRACT",
+    "G7_PK_QUARANTINE", "G8_DELTA_WRITE", "G9_OPTIMIZE", "G10_METRICS",
+]
+
 
 def _all_source(nb) -> str:
     return "\n".join(
@@ -52,11 +63,25 @@ def _check_raw_cell_shape(path: str | Path) -> list[str]:
     return errors
 
 
+def _check_cell_contract(nb, expected_titles: list[str]) -> list[str]:
+    errors: list[str] = []
+    if len(nb.cells) != len(expected_titles):
+        return [f"Contrato exige {len(expected_titles)} células; encontrado: {len(nb.cells)}."]
+    for index, (cell, title) in enumerate(zip(nb.cells, expected_titles, strict=True)):
+        source = "".join(cell.source) if isinstance(cell.source, list) else cell.source
+        if cell.cell_type != "code":
+            errors.append(f"Célula {index + 1} ({title}) deve ser code, não {cell.cell_type}.")
+        if not source.lstrip().startswith(f"# {title}"):
+            errors.append(f"Célula {index + 1} deve iniciar com '# {title}'.")
+    return errors
+
+
 def validate_silver_notebook(path: str | Path) -> ValidationOutcome:
     """Replica o Notebook Contract de etl-oracle-fabric/SKILL.md."""
     errors: list[str] = _check_raw_cell_shape(path)
     warnings: list[str] = []
     nb = nbformat.read(str(path), as_version=4)
+    errors.extend(_check_cell_contract(nb, SILVER_CELL_TITLES))
 
     full_source = _all_source(nb)
 
@@ -84,6 +109,7 @@ def validate_gold_notebook(path: str | Path) -> ValidationOutcome:
     errors: list[str] = _check_raw_cell_shape(path)
     warnings: list[str] = []
     nb = nbformat.read(str(path), as_version=4)
+    errors.extend(_check_cell_contract(nb, GOLD_CELL_TITLES))
 
     full_source = _all_source(nb)
 

@@ -1,13 +1,7 @@
-"""dlctl.generators.gold_generator
-
-Gera notebooks PySpark Silver -> Gold seguindo os Gold Gates de
-etl-oracle-fabric-gold/SKILL.md: sem Pandas/NumPy, sem paths placeholder,
-SILVER_PATH nunca vazio, sem CREATE OR REPLACE VIEW dentro de spark.sql,
-TempViews batendo com as referências do SQL.
-"""
+"""Gera notebooks Silver -> Gold no contrato canônico Constellation."""
 from __future__ import annotations
 
-import uuid
+import json
 from pathlib import Path
 
 import nbformat as nbf
@@ -15,28 +9,18 @@ import nbformat as nbf
 from dlctl.core.mapping import MappingEntry
 
 
-def _cell_id() -> str:
-    return uuid.uuid4().hex[:8]
+CELL_TITLES = [
+    "G1_HEADER_METADATA", "G2_PARAMETERS", "G3_SPARK_SESSION",
+    "G4_SILVER_TEMPVIEWS", "G5_SPARK_SQL", "G6_SCHEMA_CONTRACT",
+    "G7_PK_QUARANTINE", "G8_DELTA_WRITE", "G9_OPTIMIZE", "G10_METRICS",
+]
 
 
-def _code_cell(lines: list[str]):
-    cell = nbf.v4.new_code_cell(source="\n".join(lines))
-    cell["id"] = _cell_id()
-    cell["source"] = [lines[i] + ("\n" if i < len(lines) - 1 else "") for i in range(len(lines))]
+def _code_cell(source: str, cell_id: str):
+    cell = nbf.v4.new_code_cell(source=source)
+    cell["id"] = cell_id
+    cell["source"] = source.rstrip().splitlines(keepends=True) + ["\n"]
     return cell
-
-
-def _md_cell(text: str):
-    cell = nbf.v4.new_markdown_cell(source=text)
-    cell["id"] = _cell_id()
-    cell["source"] = [text]
-    return cell
-
-
-def _read_text_or_placeholder(path: Path | None, placeholder: str) -> str:
-    if path and path.exists():
-        return path.read_text(encoding="utf-8")
-    return placeholder
 
 
 def generate_gold_notebook(
@@ -48,68 +32,137 @@ def generate_gold_notebook(
     fail_on_errors: bool = True,
     ancient_date_cutoff: str = "1900-01-01",
 ) -> nbf.NotebookNode:
-    if not silver_base_path or not silver_base_path.strip():
-        raise ValueError("silver_base_path não pode ser vazio (Gold Gate: SILVER_PATH vazio é bloqueante).")
-
+    if not silver_base_path.strip() or not gold_base_path.strip():
+        raise ValueError("silver_base_path e gold_base_path são obrigatórios.")
+    if write_mode != "overwrite":
+        raise ValueError("O piloto suporta somente write_mode='overwrite'.")
     sql_path = (project_root / entry.sql_file) if entry.sql_file else None
-    sql_literal = _read_text_or_placeholder(
-        sql_path, f"-- TODO SQL: consolidação Gold ausente para {entry.target_table} (status={entry.status})"
-    )
+    if not sql_path or not sql_path.is_file():
+        raise ValueError(f"SQL obrigatório não encontrado para {entry.target_table}: {sql_path}")
 
-    nb = nbf.v4.new_notebook()
+    sql_literal = sql_path.read_text(encoding="utf-8")
+    source_table = entry.source_table
+    target_table = entry.target_table
+    source_view = source_table.lower()
+    sql_string = json.dumps(sql_literal, ensure_ascii=False)
+
+    cells = [
+        _code_cell(
+            f"""# {CELL_TITLES[0]}
+# ETL: SILVER -> GOLD
+# Dominio: {entry.domain}
+# Fonte: {source_table}
+# Destino: {target_table}
+# Status de geração: {entry.status}
+# Gerado por: dlctl""",
+            "g1-header-metadata",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[1]}
+SILVER_TABLE = {source_table!r}
+GOLD_TABLE = {target_table!r}
+SILVER_PATH = f{(silver_base_path.rstrip('/') + '/{SILVER_TABLE}')!r}
+GOLD_PATH = f{(gold_base_path.rstrip('/') + '/{GOLD_TABLE}')!r}
+QUARANTINE_PATH = f{(gold_base_path.rstrip('/') + '/_quarantine/{GOLD_TABLE}')!r}
+PRIMARY_KEYS = []
+WRITE_MODE = {write_mode!r}
+FAIL_ON_ERRORS = {fail_on_errors!r}
+ANCIENT_DATE_CUTOFF = {ancient_date_cutoff!r}""",
+            "g2-parameters",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[2]}
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+import time
+
+spark = SparkSession.builder.appName(f"ETL_GOLD_{{GOLD_TABLE}}").getOrCreate()
+spark.sparkContext.setLogLevel("WARN")
+spark.conf.set("spark.sql.parquet.datetimeRebaseModeInWrite", "CORRECTED")
+spark.conf.set("spark.sql.parquet.int96RebaseModeInWrite", "CORRECTED")
+inicio_pipeline = time.time()""",
+            "g3-spark-session",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[3]}
+df_silver = spark.read.format("delta").load(SILVER_PATH)
+df_silver.createOrReplaceTempView({source_view!r})
+source_count = df_silver.count()""",
+            "g4-silver-tempviews",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[4]}
+SQL_GOLD = {sql_string}
+df_gold_raw = spark.sql(SQL_GOLD)""",
+            "g5-spark-sql",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[5]}
+# O mapeamento simplificado ainda não fornece contrato Gold tipado.
+SCHEMA_CONTRACT = {{}}
+df_gold_conformado = df_gold_raw""",
+            "g6-schema-contract",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[6]}
+if PRIMARY_KEYS:
+    null_condition = None
+    for key in PRIMARY_KEYS:
+        condition = F.col(key).isNull()
+        null_condition = condition if null_condition is None else null_condition | condition
+    df_quarentena = df_gold_conformado.filter(null_condition)
+    df_gold_final = df_gold_conformado.filter(~null_condition)
+    quarantine_count = df_quarentena.count()
+    if quarantine_count:
+        df_quarentena.write.format("delta").mode("append").save(QUARANTINE_PATH)
+else:
+    df_gold_final = df_gold_conformado
+    quarantine_count = 0""",
+            "g7-pk-quarantine",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[7]}
+(
+    df_gold_final.write
+    .format("delta")
+    .mode(WRITE_MODE)
+    .option("overwriteSchema", "true")
+    .save(GOLD_PATH)
+)""",
+            "g8-delta-write",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[8]}
+try:
+    spark.sql(f"OPTIMIZE delta.`{{GOLD_PATH}}`")
+except Exception as exc:
+    print(f"[WARN] OPTIMIZE não executado: {{type(exc).__name__}}")""",
+            "g9-optimize",
+        ),
+        _code_cell(
+            f"""# {CELL_TITLES[9]}
+target_count = df_gold_final.count()
+elapsed_seconds = round(time.time() - inicio_pipeline, 2)
+print(
+    "[METRICS] "
+    f"table={{GOLD_TABLE}} source_count={{source_count}} target_count={{target_count}} "
+    f"quarantine_count={{quarantine_count}} elapsed_seconds={{elapsed_seconds}}"
+)""",
+            "g10-metrics",
+        ),
+    ]
+
+    nb = nbf.v4.new_notebook(cells=cells)
     nb["nbformat"] = 4
     nb["nbformat_minor"] = 5
     nb["metadata"] = {
+        "kernelspec": {"display_name": "PySpark", "language": "python", "name": "synapse_pyspark"},
         "language_info": {"name": "python"},
         "generated_by": "dlctl.generators.gold_generator",
-        "source_table": entry.source_table,
-        "target_table": entry.target_table,
+        "source_table": source_table,
+        "target_table": target_table,
         "status_at_generation": entry.status,
     }
-
-    tempview_name = entry.source_table.lower()
-
-    nb["cells"] = [
-        _md_cell(f"# Gold: {entry.target_table}\nConsolidado a partir de `{entry.source_table}` (status: `{entry.status}`)."),
-        _code_cell([
-            "# 1) Parametros de path (devem ser paths reais resolvidos, nunca genericos)",
-            f"SILVER_TABLE = \"{entry.source_table}\"",
-            f"SILVER_PATH = f\"{silver_base_path}/{{SILVER_TABLE}}\"",
-            f"GOLD_TABLE = \"{entry.target_table}\"",
-            f"GOLD_PATH = f\"{gold_base_path}/{{GOLD_TABLE}}\"",
-            f"FAIL_ON_ERRORS = {fail_on_errors}",
-            f"ANCIENT_DATE_CUTOFF = \"{ancient_date_cutoff}\"",
-            "assert SILVER_PATH, 'SILVER_PATH não pode ser vazio'",
-        ]),
-        _code_cell([
-            "# 2) Carrega Silver (Delta) e cria TempView correspondente ao SQL abaixo",
-            "df_silver = spark.read.format(\"delta\").load(SILVER_PATH)",
-            f"df_silver.createOrReplaceTempView(\"{tempview_name}\")",
-        ]),
-        _code_cell([
-            "# 3) SQL de consolidação Gold (Power Query/M ou semantic model migrado para Spark SQL)",
-            "SQL_GOLD = \"\"\"",
-            sql_literal.rstrip(),
-            "\"\"\"",
-            "df_gold = spark.sql(SQL_GOLD)",
-        ]),
-        _code_cell([
-            "# 4) Validações de qualidade (data ancestral, nulos em chave, contagem)",
-            "from pyspark.sql import functions as F",
-            "issues = []",
-            "if 'DATA' in df_gold.columns:",
-            "    ancient = df_gold.filter(F.col('DATA') < F.lit(ANCIENT_DATE_CUTOFF)).count()",
-            "    if ancient > 0:",
-            "        issues.append(f'{ancient} linhas com DATA anterior a {ANCIENT_DATE_CUTOFF}')",
-            "if FAIL_ON_ERRORS and issues:",
-            "    raise ValueError('Falhas de qualidade Gold: ' + '; '.join(issues))",
-        ]),
-        _code_cell([
-            "# 5) Escreve Delta Gold (BI-ready)",
-            f"df_gold.write.format(\"delta\").mode(\"{write_mode}\").save(GOLD_PATH)",
-            "print(f'Gold escrito em {GOLD_PATH} ({df_gold.count()} linhas)')",
-        ]),
-    ]
     return nb
 
 

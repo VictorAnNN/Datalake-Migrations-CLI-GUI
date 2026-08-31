@@ -503,12 +503,13 @@ def create_simplified_migration(data: dict[str, pd.DataFrame], output_path: Path
         dataset_tables_simplified.to_excel(writer, sheet_name="Dataset Tables", index=False)
 
         dataflows_df = data["dataflows"].copy()
+        empty_dataflow_column = pd.Series(index=dataflows_df.index, dtype=str)
         dataflows_simplified = pd.DataFrame({
-            "Workspace": dataflows_df.get("workspace_name", ""),
-            "Workspace ID": dataflows_df.get("workspace_id", ""),
-            "Dataflow Gen1": dataflows_df.get("dataflow_name", ""),
-            "Dataflow ID": dataflows_df.get("dataflow_id", ""),
-            "Generation": dataflows_df.get("generation", ""),
+            "Workspace": dataflows_df.get("workspace_name", empty_dataflow_column),
+            "Workspace ID": dataflows_df.get("workspace_id", empty_dataflow_column),
+            "Dataflow Gen1": dataflows_df.get("dataflow_name", empty_dataflow_column),
+            "Dataflow ID": dataflows_df.get("dataflow_id", empty_dataflow_column),
+            "Generation": dataflows_df.get("generation", empty_dataflow_column),
         }).fillna("")
         dataflows_simplified.to_excel(writer, sheet_name="Dataflows Gen1", index=False)
 
@@ -578,17 +579,23 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         dataflows_df = data["dataflows"].copy()
+        empty_dataflow_column = pd.Series(index=dataflows_df.index, dtype=str)
         pd.DataFrame({
-            "Workspace": dataflows_df.get("workspace_name", ""), "Workspace ID": dataflows_df.get("workspace_id", ""),
-            "Dataflow": dataflows_df.get("dataflow_name", ""), "Dataflow ID": dataflows_df.get("dataflow_id", ""),
-            "Generation": dataflows_df.get("generation", ""),
+            "Workspace": dataflows_df.get("workspace_name", empty_dataflow_column),
+            "Workspace ID": dataflows_df.get("workspace_id", empty_dataflow_column),
+            "Dataflow": dataflows_df.get("dataflow_name", empty_dataflow_column),
+            "Dataflow ID": dataflows_df.get("dataflow_id", empty_dataflow_column),
+            "Generation": dataflows_df.get("generation", empty_dataflow_column),
         }).fillna("").to_excel(writer, sheet_name="Dataflows Gen1", index=False)
 
         datasets_df = data["datasets"].copy()
+        empty_dataset_column = pd.Series(index=datasets_df.index, dtype=str)
         pd.DataFrame({
-            "Workspace": datasets_df.get("workspace_name", ""), "Workspace ID": datasets_df.get("workspace_id", ""),
-            "Dataset": datasets_df.get("dataset_name", ""), "Dataset ID": datasets_df.get("dataset_id", ""),
-            "Table Count": datasets_df.get("table_count", ""),
+            "Workspace": datasets_df.get("workspace_name", empty_dataset_column),
+            "Workspace ID": datasets_df.get("workspace_id", empty_dataset_column),
+            "Dataset": datasets_df.get("dataset_name", empty_dataset_column),
+            "Dataset ID": datasets_df.get("dataset_id", empty_dataset_column),
+            "Table Count": datasets_df.get("table_count", empty_dataset_column),
         }).fillna("").to_excel(writer, sheet_name="Datasets", index=False)
 
         pq_sources = data["pq_sources"].copy()
@@ -600,6 +607,7 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
             )
         else:
             pq_enhanced = pq_sources.assign(workspace_id="", dataset_id="")
+        empty_pq_column = pd.Series(index=pq_enhanced.index, dtype=str)
 
         def _origin(row):
             path, url, server, db = row.get("path", ""), row.get("url", ""), row.get("server", ""), row.get("database", "")
@@ -612,12 +620,16 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
             return server or ""
 
         lineage_sources = pd.DataFrame({
-            "Workspace": pq_enhanced.get("workspace_name", ""), "Workspace ID": pq_enhanced.get("workspace_id", ""),
-            "Dataset": pq_enhanced.get("artifact_name", ""), "Dataset ID": pq_enhanced.get("dataset_id", ""),
-            "Table / Query": pq_enhanced.get("table_or_entity", ""), "Source Type": pq_enhanced.get("source_type", ""),
+            "Workspace": pq_enhanced.get("workspace_name", empty_pq_column),
+            "Workspace ID": pq_enhanced.get("workspace_id", empty_pq_column),
+            "Dataset": pq_enhanced.get("artifact_name", empty_pq_column),
+            "Dataset ID": pq_enhanced.get("dataset_id", empty_pq_column),
+            "Table / Query": pq_enhanced.get("table_or_entity", empty_pq_column),
+            "Source Type": pq_enhanced.get("source_type", empty_pq_column),
             "Origin": pq_enhanced.apply(_origin, axis=1) if not pq_enhanced.empty else [],
-            "Server / Host": pq_enhanced.get("server", ""), "Schema": pq_enhanced.get("schema", ""),
-            "Source Table": pq_enhanced.get("table", ""),
+            "Server / Host": pq_enhanced.get("server", empty_pq_column),
+            "Schema": pq_enhanced.get("schema", empty_pq_column),
+            "Source Table": pq_enhanced.get("table", empty_pq_column),
             "SQL Query": pq_enhanced.get("raw_expression", pd.Series(dtype=str)).apply(_extract_sql_simple),
             "Power Query Expression": pq_enhanced.get("raw_expression", pd.Series(dtype=str)).astype(str).str[:2000],
         }).fillna("")
@@ -644,11 +656,14 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
         else:
             tables_with_full_expr = tables_with_expr.assign(power_query_expression="")
             tables_with_source = tables_with_full_expr
+        empty_table_column = pd.Series(index=tables_with_source.index, dtype=str)
 
         query_analysis = pd.DataFrame({
-            "Workspace": tables_with_source.get("workspace_name", ""), "Workspace ID": tables_with_source.get("workspace_id", ""),
-            "Dataset": tables_with_source.get("dataset_name", ""), "Dataset ID": tables_with_source.get("dataset_id", ""),
-            "Table / Query": tables_with_source.get("table_name", ""),
+            "Workspace": tables_with_source.get("workspace_name", empty_table_column),
+            "Workspace ID": tables_with_source.get("workspace_id", empty_table_column),
+            "Dataset": tables_with_source.get("dataset_name", empty_table_column),
+            "Dataset ID": tables_with_source.get("dataset_id", empty_table_column),
+            "Table / Query": tables_with_source.get("table_name", empty_table_column),
             "Expression Length": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).apply(lambda x: len(str(x)) if x and not pd.isna(x) else 0),
             "Connector(s)": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).apply(_extract_connectors),
             "Source Object Count": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).apply(_count_source_objects),

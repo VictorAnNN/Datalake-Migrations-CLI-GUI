@@ -27,6 +27,7 @@ from dlctl.commands import (
     leases_cmds,
     lineage_cmds,
     manifest_cmds,
+    notebooks_cmds,
     pipeline_cmds,
     retro_cmds,
     variable_libraries_cmds,
@@ -58,6 +59,7 @@ app.add_typer(definitions_cmds.app, name="definitions")
 app.add_typer(jobs_cmds.app, name="jobs")
 app.add_typer(retro_cmds.app, name="retro")
 app.add_typer(lineage_cmds.app, name="lineage")
+app.add_typer(notebooks_cmds.app, name="notebooks")
 
 _FLAT_COMMANDS = {"version", "dashboard"}
 
