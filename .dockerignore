@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.git/
+.gitignore
+.env
+state/
+.token_cache/
+.streamlit/
+notebooks/silver/*.ipynb
+notebooks/gold/*.ipynb
+manifests/**/*.plan.json
+*.xlsx
+input/

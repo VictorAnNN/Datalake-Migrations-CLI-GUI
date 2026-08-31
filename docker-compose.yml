@@ -1,0 +1,31 @@
+services:
+  dlctl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dlctl:latest
+    container_name: dlctl
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    volumes:
+      # Dados/estado que precisam sobreviver entre execuções e ser editáveis do host.
+      - ./state:/app/state
+      - ./input:/app/input
+      - ./mappings:/app/mappings
+      - ./manifests:/app/manifests
+      - ./notebooks:/app/notebooks
+      - ./copyjob_definitions:/app/copyjob_definitions
+      - ./fabric_definitions:/app/fabric_definitions
+      - ./schema:/app/schema
+      - ./sql:/app/sql
+      - ./config:/app/config
+      # Sessão do Azure CLI persistida entre execuções (FABRIC_AUTH_MODE=azure_cli).
+      # Rode `docker compose exec dlctl az login` uma vez para autenticar.
+      - azure-cli-config:/root/.azure
+    command: ["dashboard", "--port", "8501"]
+    restart: unless-stopped
+
+volumes:
+  azure-cli-config:

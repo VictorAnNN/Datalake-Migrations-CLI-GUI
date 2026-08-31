@@ -309,6 +309,51 @@ O dashboard tem 8 páginas, acessíveis pela barra lateral esquerda.
 
 ---
 
+## 4.5. Rodando via Docker (Windows ou Linux)
+
+O projeto inclui um `Dockerfile` e um `docker-compose.yml` que funcionam
+igual em Windows e Linux (o Docker sempre executa o container em Linux por
+baixo dos panos, então não há diferença de comportamento entre hosts).
+
+### Primeira vez
+```bash
+cp .env.example .env      # Linux/macOS
+Copy-Item .env.example .env   # Windows (PowerShell)
+# edite o .env com suas credenciais/config
+
+docker compose build
+docker compose up -d
+```
+O dashboard fica disponível em `http://localhost:8501`.
+
+### Autenticar com `FABRIC_AUTH_MODE=azure_cli` dentro do container
+```bash
+docker compose exec dlctl az login
+```
+A sessão fica persistida no volume `azure-cli-config`, então não precisa
+logar de novo a cada `docker compose up`.
+
+### Rodar comandos do CLI (sem abrir o dashboard)
+```bash
+docker compose run --rm dlctl auth doctor
+docker compose run --rm dlctl inventory silver
+docker compose run --rm dlctl manifest validate --manifest manifests/lineage/algum_arquivo.yaml
+```
+
+### Pastas sincronizadas com o host
+`state/`, `input/`, `mappings/`, `manifests/`, `notebooks/`, `config/`,
+`copyjob_definitions/`, `fabric_definitions/`, `schema/` e `sql/` são
+montadas como volumes — o que o container gera/lê nessas pastas aparece
+direto no seu diretório do projeto (e vice-versa).
+
+### Parar / remover
+```bash
+docker compose down          # para os containers
+docker compose down -v       # também apaga a sessão do az login salva
+```
+
+---
+
 ## 5. Perguntas rápidas
 
 **"Rodei um comando e ele disse `manual_required`, é erro?"**
