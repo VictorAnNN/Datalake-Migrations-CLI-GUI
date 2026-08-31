@@ -50,6 +50,8 @@ Campos principais do `.env`:
 | `ORACLE_DB_DSN` / `ORACLE_DB_USER` / `ORACLE_DB_PASSWORD` | Conexão com o banco Oracle |
 | `ORACLE_BIP_BASE_URL` / `ORACLE_BIP_USER` / `ORACLE_BIP_PASSWORD` | Conexão com o Oracle BI Publisher |
 | `DLCTL_ALLOW_WRITE` | `true`/`false` — permite (ou não) que comandos de escrita funcionem |
+| `DLCTL_ALLOW_PRODUCTION` | `true`/`false` — libera o gate extra exigido em PRD (`--confirm-production`) |
+| `FABRIC_SYNC_MAX_WORKERS` | Paralelismo (1 a 8) de `dlctl lineage sync-notebooks`; comece com 4, reduza se a API retornar 429 |
 
 > ✅ **Modo padrão `azure_cli`**: instale o Azure CLI, rode `az login` (e
 > `az account set --subscription "..."` se tiver mais de uma assinatura) e

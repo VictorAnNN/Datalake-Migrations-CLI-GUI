@@ -30,7 +30,10 @@ st.caption(
     "`dlctl lineage generate --workspaces-input <pasta/zip>`."
 )
 
-profile_name = st.sidebar.text_input("Profile", value="ms_client_constellation", key="lineage_workspaces_profile")
+profile_name = st.sidebar.text_input(
+    "Profile", value="ms_client_constellation", key="lineage_workspaces_profile",
+    help="Profile de config/profiles.yaml usado para localizar as gerações de linhagem persistidas no state local.",
+)
 try:
     profile = load_profile(profile_name)
 except Exception as exc:
@@ -43,11 +46,26 @@ with state_db.get_session(profile) as session:
     ).all()
 
 if not batches:
-    st.warning("Nenhuma geração de linhagem encontrada ainda. Rode `dlctl lineage generate --workspaces-input <pasta/zip>` primeiro.")
+    st.warning(
+        "Nenhuma geração de linhagem encontrada ainda. **Esta página não aparece vazia por acaso: "
+        "os artefatos de Linhagem ainda não foram gerados (ou foram gerados sem informar a pasta/zip "
+        "de workspaces).** Para gerar:\n\n"
+        "1. Vá em **Ações** (menu lateral) → aba **'7. Linhagem (Azure CLI)'**;\n"
+        "2. (Se ainda não tiver notebooks locais) clique em **'🔄 Puxar/atualizar notebooks do "
+        "workspace (az login)'**;\n"
+        "3. No formulário **'📊 Gerar artefatos de Linhagem'**, preencha o campo **'Pasta ou .zip com "
+        "JSONs do Fabric Scanner API'** (obrigatório para este inventário de workspaces) e clique em "
+        "**'⚙️ Gerar artefatos de Linhagem'**.\n\n"
+        "Assim que o batch terminar com sucesso, volte/recarregue esta página. Equivalente via CLI: "
+        "`dlctl lineage generate --workspaces-input <pasta/zip>`."
+    )
     st.stop()
 
 batch_options = {f"{b.finished_at} — {b.batch_id} ({b.workspace_item_rows} item(ns))": b.batch_id for b in batches}
-selected_label = st.sidebar.selectbox("Geração (batch)", options=list(batch_options.keys()))
+selected_label = st.sidebar.selectbox(
+    "Geração (batch)", options=list(batch_options.keys()),
+    help="Escolha qual execução de `dlctl lineage generate --workspaces-input ...` visualizar.",
+)
 batch_id = batch_options[selected_label]
 
 rows = state_db.get_lineage_workspace_items(profile, batch_id)
@@ -69,11 +87,18 @@ col4.metric("Reports/Dashboards", int((df["item_type"] == "Report").sum()))
 
 st.markdown("---")
 col_a, col_b, col_c = st.columns([1, 1, 2])
-workspace_filter = col_a.multiselect("Workspace", sorted(df["workspace"].unique()))
-type_filter = col_b.multiselect("Tipo", sorted(df["item_type"].unique()))
+workspace_filter = col_a.multiselect(
+    "Workspace", sorted(df["workspace"].unique()),
+    help="Filtra o inventário pelo workspace Power BI/Fabric. Deixe vazio para ver todos.",
+)
+type_filter = col_b.multiselect(
+    "Tipo", sorted(df["item_type"].unique()),
+    help="Filtra pelo tipo de item. Ex.: Workspace, Dataset, Dataset Table, Dataflow, Report.",
+)
 search = col_c.text_input(
     "Buscar (workspace, dataset, dataflow, report, tabela...)",
     placeholder="Ex.: LAKEHOUSE-DEV, Dataset Recebimento, Dashboard...",
+    help="Busca por texto parcial em qualquer coluna do item (nome, workspace, detalhe, etc.).",
 )
 
 filtered = df.copy()
@@ -97,11 +122,15 @@ st.caption(f"{len(filtered)} de {len(df)} item(ns).")
 st.download_button(
     "⬇️ Baixar inventário (CSV)", filtered.to_csv(index=False).encode("utf-8"),
     file_name=f"workspace_inventory_{batch_id}.csv", mime="text/csv",
+    help="Baixa os itens filtrados exibidos acima como arquivo .csv.",
 )
 
 st.markdown("---")
 st.markdown("#### 🌳 Navegar por Workspace")
-selected_workspace = st.selectbox("Escolha um workspace para ver a árvore de itens", options=["(nenhum)"] + sorted(df["workspace"].unique()))
+selected_workspace = st.selectbox(
+    "Escolha um workspace para ver a árvore de itens", options=["(nenhum)"] + sorted(df["workspace"].unique()),
+    help="Mostra Datasets/Dataflows/Reports pertencentes ao workspace escolhido, agrupados em árvore.",
+)
 if selected_workspace != "(nenhum)":
     ws_rows = df[df["workspace"] == selected_workspace]
     for item_type in ["Dataset", "Dataflow", "Report"]:

@@ -47,7 +47,10 @@ st.caption(
     "Nenhuma chamada real a Fabric/Oracle é feita a partir desta página."
 )
 
-profile_name = st.sidebar.text_input("Profile", value="ms_client_constellation", key="diag_profile_name")
+profile_name = st.sidebar.text_input(
+    "Profile", value="ms_client_constellation", key="diag_profile_name",
+    help="Profile de config/profiles.yaml usado por todos os diagnósticos desta página. Ex.: ms_client_constellation",
+)
 try:
     profile = load_profile(profile_name)
 except Exception as exc:
@@ -76,8 +79,14 @@ with tab_backlog:
     df = pd.DataFrame([i.model_dump() for i in items])
     if not df.empty:
         col1, col2 = st.columns(2)
-        prio_pick = col1.multiselect("Prioridade", options=sorted(df["priority"].unique()), default=list(sorted(df["priority"].unique())))
-        status_pick = col2.multiselect("Status", options=sorted(df["status"].unique()), default=list(sorted(df["status"].unique())))
+        prio_pick = col1.multiselect(
+            "Prioridade", options=sorted(df["priority"].unique()), default=list(sorted(df["priority"].unique())),
+            help="Filtra pela prioridade original do backlog. Ex.: P0 (crítico), P1, P2.",
+        )
+        status_pick = col2.multiselect(
+            "Status", options=sorted(df["status"].unique()), default=list(sorted(df["status"].unique())),
+            help="Filtra pelo status de tratamento do item no dlctl. Ex.: covered, partial, open.",
+        )
         df_f = df[df["priority"].isin(prio_pick) & df["status"].isin(status_pick)]
         st.dataframe(
             df_f[["priority", "origin", "gap", "proposal", "status", "implemented_in_dlctl"]].sort_values("priority"),
@@ -94,12 +103,24 @@ with tab_copyjob:
         "Incid. 1, P0: identificação de 970 colunas Oracle NUMBER feita por script ad hoc. "
         "Aqui: upload/seleção de um copyjob-content.json local (e, opcionalmente, um export de schema Oracle)."
     )
-    definition_file = st.text_input("Caminho do copyjob-content.json", value="")
-    schema_export_file = st.text_input("Caminho do export de schema Oracle (opcional, JSON [{table,column,data_type}])", value="")
+    definition_file = st.text_input(
+        "Caminho do copyjob-content.json", value="",
+        placeholder="Ex.: copyjob_definitions/example_copyjob-content.json",
+        help="Caminho local (relativo ou absoluto) do arquivo copyjob-content.json a ser auditado.",
+    )
+    schema_export_file = st.text_input(
+        "Caminho do export de schema Oracle (opcional, JSON [{table,column,data_type}])", value="",
+        placeholder="Ex.: copyjob_definitions/example_oracle_schema_export.json",
+        help="Opcional: JSON com uma lista de {table, column, data_type} do Oracle, usado para "
+             "detectar colunas NUMBER sem precisão/escala. Deixe em branco para pular essa checagem.",
+    )
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Rodar mappings-inspect", type="secondary"):
+        if st.button(
+            "Rodar mappings-inspect", type="secondary",
+            help="Lista as tabelas/colunas mapeadas no copyjob-content.json informado acima. Somente leitura, offline.",
+        ):
             if not definition_file or not Path(definition_file).exists():
                 st.error("Arquivo de definição não encontrado.")
             else:
@@ -107,7 +128,11 @@ with tab_copyjob:
                 st.write(f"Tabelas mapeadas: {result['table_count']}")
                 st.json(result)
     with col2:
-        if st.button("Rodar oracle-number-audit", type="primary"):
+        if st.button(
+            "Rodar oracle-number-audit", type="primary",
+            help="Audita colunas Oracle NUMBER sem precisão/escala no copyjob (evita virarem 'Decimal gigante' "
+                 "sem querer). Somente leitura, offline.",
+        ):
             if not definition_file or not Path(definition_file).exists():
                 st.error("Arquivo de definição não encontrado.")
             else:
@@ -128,12 +153,34 @@ with tab_copyjob:
 with tab_leases:
     st.subheader("Leases — lock leve entre agentes (Incid. 1, P0: 'sem lock entre agentes')")
     with st.form("form_lease_acquire"):
-        owner = st.text_input("owner", value="dashboard-user")
-        workspace_l = st.text_input("workspace", value="")
-        item_ids_l = st.text_input("item_ids (CSV)", value="")
-        tables_l = st.text_input("tables (CSV)", value="")
-        ttl_l = st.number_input("TTL (segundos)", min_value=60, value=3600, step=60)
-        acquire_btn = st.form_submit_button("Adquirir lease", type="primary")
+        owner = st.text_input(
+            "owner", value="dashboard-user",
+            help="Identificador de quem está pedindo o lock (seu usuário ou nome do agente). Ex.: joao.silva",
+        )
+        workspace_l = st.text_input(
+            "workspace", value="",
+            placeholder="Ex.: LAKEHOUSE-DEV",
+            help="Nome do workspace Fabric a proteger (opcional se você já informar item_ids/tables).",
+        )
+        item_ids_l = st.text_input(
+            "item_ids (CSV)", value="",
+            placeholder="Ex.: 3fa1..., 9bd2...",
+            help="Lista de IDs de itens Fabric separados por vírgula que ficarão bloqueados por esta lease.",
+        )
+        tables_l = st.text_input(
+            "tables (CSV)", value="",
+            placeholder="Ex.: AP_INVOICES_ALL, PR_RECEIPT_ORDER",
+            help="Lista de nomes de tabelas separadas por vírgula que ficarão bloqueadas por esta lease.",
+        )
+        ttl_l = st.number_input(
+            "TTL (segundos)", min_value=60, value=3600, step=60,
+            help="Tempo de vida da lease em segundos antes de expirar automaticamente. Ex.: 3600 (1 hora).",
+        )
+        acquire_btn = st.form_submit_button(
+            "Adquirir lease", type="primary",
+            help="Reserva um cadeado temporário sobre o workspace/itens/tabelas informados acima, bloqueando "
+                 "outros owners de escrever neles até o TTL expirar ou a lease ser liberada.",
+        )
     if acquire_btn:
         result = acquire_lease(
             profile, workspace=workspace_l,
@@ -153,10 +200,19 @@ with tab_leases:
         if active_ids:
             col_r1, col_r2 = st.columns(2)
             with col_r1:
-                release_id = st.selectbox("Lease para liberar", options=active_ids)
+                release_id = st.selectbox(
+                    "Lease para liberar", options=active_ids,
+                    help="ID da lease ativa a ser liberada (veja a tabela acima).",
+                )
             with col_r2:
-                release_owner = st.text_input("owner (deve bater com o dono da lease)", value="dashboard-user")
-            if st.button("Liberar lease"):
+                release_owner = st.text_input(
+                    "owner (deve bater com o dono da lease)", value="dashboard-user",
+                    help="Precisa ser exatamente o mesmo 'owner' usado ao adquirir a lease, senão a liberação é recusada.",
+                )
+            if st.button(
+                "Liberar lease",
+                help="Libera a lease escolhida acima, desde que o 'owner' informado seja o mesmo que a adquiriu.",
+            ):
                 result = release_lease(profile, release_id, release_owner)
                 (st.success if result["ok"] else st.error)(result.get("message", "Liberada."))
                 st.rerun()
@@ -176,15 +232,30 @@ with tab_campaign:
     manifest_choice = None
     if campaign_files:
         rel_options = [str(p.relative_to(PROJECT_ROOT)) for p in campaign_files]
-        picked = st.selectbox("Manifesto de campanha", options=rel_options)
+        picked = st.selectbox(
+            "Manifesto de campanha", options=rel_options,
+            help="Arquivo .yaml em manifests/campaign/ com os alvos e dependências (DAG) da campanha. "
+                 "Ex.: gold_order_tracking_completion.campaign.yaml",
+        )
         manifest_choice = PROJECT_ROOT / picked
         st.code(manifest_choice.read_text(encoding="utf-8"), language="yaml")
     else:
         st.info("Nenhum manifesto de campanha encontrado em manifests/campaign/. Crie um arquivo YAML lá (veja README).")
 
-    confirm_write_c = st.checkbox("Confirmo escrita (--confirm-write)", key="campaign_confirm_write")
-    confirm_execute_c = st.checkbox("Confirmo execução (--confirm-execute)", key="campaign_confirm_execute")
-    if manifest_choice and st.button("🚀 Rodar campanha", type="primary"):
+    confirm_write_c = st.checkbox(
+        "Confirmo escrita (--confirm-write)", key="campaign_confirm_write",
+        help="Obrigatório para a fase 'publish' criar/atualizar itens no Fabric durante a campanha.",
+    )
+    confirm_execute_c = st.checkbox(
+        "Confirmo execução (--confirm-execute)", key="campaign_confirm_execute",
+        help="Obrigatório para a fase 'execute' disparar a execução real dos itens durante a campanha.",
+    )
+    if manifest_choice and st.button(
+        "🚀 Rodar campanha", type="primary",
+        help="Executa todas as fases (preflight->publish->execute->wait->logs->classify->delta->sql_endpoint->seal) "
+             "para cada alvo do manifesto, na ordem do DAG, isolando falhas por dependência. Requer os checkboxes "
+             "de confirmação marcados conforme as fases que forem tocar escrita/execução.",
+    ):
         steps_log = []
 
         def on_step(target, phase, status, detail):
@@ -214,8 +285,17 @@ with tab_campaign:
 with tab_definitions:
     st.subheader("Definitions Part Inspect — hash triad (Incid. 1, P2)")
     st.caption("Resolve a ambiguidade: aggregateDefinitionSha256 vs. encodedPayloadSha256 vs. decodedContentSha256.")
-    def_payload_file = st.text_input("Caminho do JSON de definição (formato getDefinition)", value="")
-    if st.button("Rodar part-inspect"):
+    def_payload_file = st.text_input(
+        "Caminho do JSON de definição (formato getDefinition)", value="",
+        placeholder="Ex.: fabric_definitions/pp_silver_order_tracking_2h.definition.json",
+        help="Caminho local do payload de definição (mesmo formato retornado por getDefinition do Fabric) "
+             "a ser inspecionado.",
+    )
+    if st.button(
+        "Rodar part-inspect",
+        help="Calcula os 3 hashes (aggregate/encoded/decoded) do arquivo de definição informado acima. "
+             "Somente leitura, offline.",
+    ):
         if not def_payload_file or not Path(def_payload_file).exists():
             st.error("Arquivo não encontrado.")
         else:
@@ -229,9 +309,20 @@ with tab_definitions:
 with tab_logs:
     st.subheader("Classificador phase-aware de logs (Incid. 2, P0)")
     st.caption("Assinatura desconhecida é sempre NEVER_PASS por padrão — nunca deixa passar silenciosamente.")
-    log_text = st.text_area("Cole o conteúdo do log aqui", height=250)
-    extract_exit = st.checkbox("Extrair apenas saída funcional (--extract-notebook-exit)", value=True)
-    if st.button("Classificar log", type="primary"):
+    log_text = st.text_area(
+        "Cole o conteúdo do log aqui", height=250,
+        placeholder="Ex.: cole aqui a saída do driver-log de uma execução de notebook/pipeline",
+        help="Texto bruto do log a classificar. Cada linha é comparada contra assinaturas conhecidas de "
+             "sucesso/falha; o que não for reconhecido conta como NEVER_PASS.",
+    )
+    extract_exit = st.checkbox(
+        "Extrair apenas saída funcional (--extract-notebook-exit)", value=True,
+        help="Se marcado, isola só a saída funcional do notebook (mtExit/exit_value), sem o ruído de shutdown do Spark.",
+    )
+    if st.button(
+        "Classificar log", type="primary",
+        help="Analisa o texto colado acima linha a linha e retorna PASS/FAIL/NEVER_PASS. Somente leitura, offline.",
+    ):
         if not log_text.strip():
             st.warning("Cole algum log primeiro.")
         else:

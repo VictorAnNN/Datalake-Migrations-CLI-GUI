@@ -37,7 +37,10 @@ st.caption(
     "**Gráfico Isolado** para focar apenas naquela linhagem."
 )
 
-profile_name = st.sidebar.text_input("Profile", value="ms_client_constellation", key="lineage_graph_profile")
+profile_name = st.sidebar.text_input(
+    "Profile", value="ms_client_constellation", key="lineage_graph_profile",
+    help="Profile de config/profiles.yaml usado para localizar o Excel de Linhagem mais recente em manifests/lineage/.",
+)
 try:
     profile = load_profile(profile_name)
 except Exception as exc:
@@ -66,9 +69,17 @@ else:
 
 if excel_source is None:
     st.warning(
-        "Nenhum Excel de Linhagem encontrado em `manifests/lineage/`. Rode "
-        "`dlctl lineage generate` (veja a página Ações ou o terminal) para gerar um, "
-        "ou envie um arquivo `.xlsx` pela barra lateral."
+        "Nenhum Excel de Linhagem encontrado em `manifests/lineage/` (e nenhum arquivo enviado "
+        "pela barra lateral). **Esta página não aparece vazia por acaso: os artefatos de "
+        "Linhagem ainda não foram gerados.** Para gerar:\n\n"
+        "1. Vá em **Ações** (menu lateral) → aba **'7. Linhagem (Azure CLI)'**;\n"
+        "2. (Se ainda não tiver notebooks locais) clique em **'🔄 Puxar/atualizar notebooks do "
+        "workspace (az login)'** para baixar os notebooks para `input/lakehouse-dev/`;\n"
+        "3. Clique em **'⚙️ Gerar artefatos de Linhagem'** com a opção **'Exportar Excel de "
+        "conferência em manifests/lineage/'** marcada (é o padrão).\n\n"
+        "Assim que o batch terminar com sucesso, recarregue esta página (ou navegue até ela de novo) "
+        "e o Excel gerado será detectado automaticamente. Equivalente via CLI: "
+        "`dlctl lineage sync-notebooks` + `dlctl lineage generate`."
     )
     st.stop()
 
@@ -98,7 +109,11 @@ if graph.number_of_nodes() == 0:
 # ---------------------------------------------------------------------------
 domains = sorted({str(row.get("domain", "")).strip() for row in dependency_rows if str(row.get("domain", "")).strip()})
 if domains:
-    domain_filter = st.sidebar.multiselect("Filtrar por domínio", domains, default=[])
+    domain_filter = st.sidebar.multiselect(
+        "Filtrar por domínio", domains, default=[],
+        help="Restringe o grafo aos nós pertencentes ao(s) domínio(s) escolhido(s). Deixe vazio para ver todos. "
+             "Ex.: ORDER_TRACKING",
+    )
     if domain_filter:
         keep_nodes = {node for node, data in graph.nodes(data=True) if data.get("domain") in domain_filter}
         graph = graph.subgraph(keep_nodes).copy()
@@ -111,9 +126,15 @@ st.sidebar.header("🎯 Selecionar tabela/fonte")
 node_options = sorted({lineage_graph.node_option_label(graph, n) for n in graph.nodes})
 node_to_option = {lineage_graph.node_option_label(graph, n): n for n in graph.nodes}
 
-search_term = st.sidebar.text_input("Buscar por nome (tabela/schema/lakehouse)", placeholder="Ex.: PR_RECEIPT_ORDER")
+search_term = st.sidebar.text_input(
+    "Buscar por nome (tabela/schema/lakehouse)", placeholder="Ex.: PR_RECEIPT_ORDER",
+    help="Filtra a lista 'Tabela/fonte' abaixo por texto parcial (sem diferenciar maiúscula/minúscula).",
+)
 filtered_options = [opt for opt in node_options if not search_term or search_term.casefold() in opt.casefold()]
-selected_option = st.sidebar.selectbox("Tabela/fonte", options=["(nenhuma)"] + filtered_options)
+selected_option = st.sidebar.selectbox(
+    "Tabela/fonte", options=["(nenhuma)"] + filtered_options,
+    help="Nó do grafo (tabela, schema ou lakehouse) a partir do qual isolar upstream/downstream.",
+)
 
 isolate_toggle = st.sidebar.toggle(
     "🔎 Gráfico Isolado (focar apenas nesta linhagem)",
@@ -124,6 +145,8 @@ isolate_toggle = st.sidebar.toggle(
 direction = st.sidebar.radio(
     "Direção do isolamento", ["Linhagem completa", "Downstream", "Upstream"], index=0,
     disabled=not isolate_toggle,
+    help="'Downstream' = o que depende desta tabela/fonte; 'Upstream' = de onde ela vem; "
+         "'Linhagem completa' = os dois sentidos juntos.",
 )
 
 if isolate_toggle and selected_option != "(nenhuma)":
@@ -206,4 +229,5 @@ if not edges_df.empty:
     st.download_button(
         "⬇️ Baixar relações (CSV)", edges_df.to_csv(index=False).encode("utf-8"),
         file_name=f"mapa_isolado_{file_label}.csv", mime="text/csv",
+        help="Baixa as relações (arestas) exibidas na tabela acima como arquivo .csv.",
     )

@@ -31,7 +31,10 @@ st.caption(
     "extraída dos JSONs do Fabric Scanner API, com validação de existência de cada elo."
 )
 
-profile_name = st.sidebar.text_input("Profile", value="ms_client_constellation", key="lineage_sp_profile")
+profile_name = st.sidebar.text_input(
+    "Profile", value="ms_client_constellation", key="lineage_sp_profile",
+    help="Profile de config/profiles.yaml usado para localizar as gerações de linhagem persistidas no state local.",
+)
 try:
     profile = load_profile(profile_name)
 except Exception as exc:
@@ -44,11 +47,26 @@ with state_db.get_session(profile) as session:
     ).all()
 
 if not batches:
-    st.warning("Nenhuma geração de linhagem encontrada ainda. Rode `dlctl lineage generate --workspaces-input <pasta/zip>` primeiro.")
+    st.warning(
+        "Nenhuma geração de linhagem encontrada ainda. **Esta página não aparece vazia por acaso: "
+        "os artefatos de Linhagem ainda não foram gerados (ou foram gerados sem informar a pasta/zip "
+        "de workspaces).** Para gerar:\n\n"
+        "1. Vá em **Ações** (menu lateral) → aba **'7. Linhagem (Azure CLI)'**;\n"
+        "2. (Se ainda não tiver notebooks locais) clique em **'🔄 Puxar/atualizar notebooks do "
+        "workspace (az login)'**;\n"
+        "3. No formulário **'📊 Gerar artefatos de Linhagem'**, preencha o campo **'Pasta ou .zip com "
+        "JSONs do Fabric Scanner API'** (obrigatório para esta trilha SharePoint) e clique em "
+        "**'⚙️ Gerar artefatos de Linhagem'**.\n\n"
+        "Assim que o batch terminar com sucesso, volte/recarregue esta página. Equivalente via CLI: "
+        "`dlctl lineage generate --workspaces-input <pasta/zip>`."
+    )
     st.stop()
 
 batch_options = {f"{b.finished_at} — {b.batch_id} ({b.sharepoint_rows} linha(s) SharePoint)": b.batch_id for b in batches}
-selected_label = st.sidebar.selectbox("Geração (batch)", options=list(batch_options.keys()))
+selected_label = st.sidebar.selectbox(
+    "Geração (batch)", options=list(batch_options.keys()),
+    help="Escolha qual execução de `dlctl lineage generate --workspaces-input ...` visualizar.",
+)
 batch_id = batch_options[selected_label]
 
 rows = state_db.get_lineage_sharepoint(profile, batch_id)
@@ -70,9 +88,18 @@ col4.metric("Dashboards distintos", df.loc[df["report_name"] != "", "report_name
 
 st.markdown("---")
 col_a, col_b, col_c = st.columns(3)
-workspace_filter = col_a.multiselect("Workspace", sorted(df["workspace"].unique()))
-status_filter = col_b.multiselect("Existe?", sorted(df["exists_check"].unique()), default=[])
-search = col_c.text_input("Buscar (dashboard/dataset/tabela/URL)")
+workspace_filter = col_a.multiselect(
+    "Workspace", sorted(df["workspace"].unique()),
+    help="Filtra as trilhas pelo workspace Fabric de origem do relatório/dataset. Deixe vazio para ver todos.",
+)
+status_filter = col_b.multiselect(
+    "Existe?", sorted(df["exists_check"].unique()), default=[],
+    help="Filtra pelo resultado da validação de existência do elo. Ex.: 'existe' (🟢) ou 'nao_encontrado' (🔴).",
+)
+search = col_c.text_input(
+    "Buscar (dashboard/dataset/tabela/URL)", placeholder="Ex.: nome do relatório ou dataset",
+    help="Busca por texto parcial em qualquer coluna da trilha (dashboard, dataset, tabela ou URL SharePoint).",
+)
 
 filtered = df.copy()
 if workspace_filter:
@@ -102,7 +129,8 @@ display_df = display_df.rename(columns={
 st.dataframe(display_df, use_container_width=True, hide_index=True)
 st.caption(f"{len(filtered)} de {len(df)} trilha(s).")
 st.download_button("⬇️ Baixar trilhas SharePoint (CSV)", filtered.to_csv(index=False).encode("utf-8"),
-                    file_name=f"sharepoint_trail_{batch_id}.csv", mime="text/csv")
+                    file_name=f"sharepoint_trail_{batch_id}.csv", mime="text/csv",
+                    help="Baixa as trilhas filtradas exibidas acima como arquivo .csv.")
 
 st.markdown("---")
 st.markdown("#### 🗺️ Grafo da trilha (destaca o que não foi encontrado)")

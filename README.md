@@ -210,9 +210,15 @@ nano .env   # ou vim/code .env
 
 > Em qualquer máquina nova, os passos são sempre os mesmos: **clonar → criar
 > venv → ativar → `pip install -e ".[oracle,dashboard,dev]"` → configurar
-> `.env`**. Nenhuma dependência externa (Fabric CLI, Azure CLI, Oracle
-> Client) é necessária — `oracledb` roda em modo *thin* (sem Oracle
-> Instant Client) e a autenticação Fabric usa MSAL puro.
+> `.env`**. Nenhuma dependência externa de **Oracle Client** é necessária —
+> `oracledb` roda em modo *thin* (sem Oracle Instant Client). A autenticação
+> Fabric padrão (`FABRIC_AUTH_MODE=azure_cli`, já vem assim no
+> `.env.example`) reaproveita o **Azure CLI** (`az login`), então instale-o
+> (`winget install --exact --id Microsoft.AzureCLI` no Windows, ou o pacote
+> `azure-cli` no Linux/macOS) se for usar esse modo — é o modo recomendado e
+> usado pela maioria do time. Se preferir não instalar o Azure CLI, troque
+> para `FABRIC_AUTH_MODE=device_code` ou `client_credentials` (MSAL puro,
+> sem dependência externa).
 
 Se o pacote `oracledb`/`zeep` (extra `oracle`) falhar ao instalar em alguma
 máquina sem esses extras necessários, você ainda pode rodar tudo exceto os
@@ -233,11 +239,17 @@ python -m dlctl.cli version
 ```
 
 Campos principais do `.env`:
-- `FABRIC_TENANT_ID`, `FABRIC_CLIENT_ID` (App Registration no Entra ID com permissão à Fabric REST API).
-- `FABRIC_AUTH_MODE=device_code` para login interativo, ou `client_credentials` + `FABRIC_CLIENT_SECRET` para automação.
+- `FABRIC_AUTH_MODE=azure_cli` (**padrão/recomendado**, já vem assim no `.env.example`) — reaproveita a sessão aberta com `az login` (+ `az account set --subscription "..."`), sem precisar de App Registration/tenant/client secret. É a forma de conexão usada pela maioria do time e a mesma usada por `dlctl lineage sync-notebooks`.
+- `FABRIC_TENANT_ID`, `FABRIC_CLIENT_ID` — só necessários se trocar para `FABRIC_AUTH_MODE=device_code` (login interativo no navegador) ou `client_credentials` + `FABRIC_CLIENT_SECRET` (automação sem interação, requer App Registration cadastrado no Entra ID).
 - `FABRIC_WORKSPACE_NAME` / `FABRIC_WORKSPACE_ID`.
 - `ORACLE_DB_DSN/USER/PASSWORD` e/ou `ORACLE_BIP_BASE_URL/USER/PASSWORD`.
+- `FABRIC_SYNC_MAX_WORKERS` — paralelismo (1 a 8) da sincronização de notebooks (`dlctl lineage sync-notebooks`); comece com 4, reduza se a API retornar 429.
 - `DLCTL_ALLOW_WRITE=true` **somente** quando você realmente quiser permitir escritas (ainda assim cada comando exige `--confirm-write`/`--confirm-execute` explícito).
+
+> ✅ Com `FABRIC_AUTH_MODE=azure_cli`, basta instalar o Azure CLI e rodar `az
+> login` uma vez — não precisa preencher `FABRIC_TENANT_ID`/`FABRIC_CLIENT_ID`.
+> Os modos `device_code`/`client_credentials` continuam totalmente
+> suportados como alternativa (ex.: automação sem usuário interativo).
 
 > **Importante em multi-máquina**: `.env`, `config/profiles.yaml` e a pasta
 > `state/` (que contém o banco SQLite `dlctl.db`, o cache de token MSAL e as
@@ -246,6 +258,56 @@ Campos principais do `.env`:
 > próprio `.env` com suas credenciais. Se vários usuários precisarem ver o
 > **mesmo** histórico de execuções/mapeamentos, rode o dashboard em uma única
 > máquina compartilhada (servidor) e acesse-o remotamente — veja a seção 4.
+
+## 2.1. Instalação via Docker (Windows ou Linux)
+
+Alternativa ao passo a passo acima: o projeto inclui um `Dockerfile` e um
+`docker-compose.yml` que rodam de forma idêntica em host Windows ou Linux —
+o Docker sempre executa o container em Linux por baixo dos panos, então não
+há diferença de comportamento entre hosts. Útil para não precisar instalar
+Python/dependências localmente, ou para rodar o dashboard em um servidor
+compartilhado pelo time.
+
+```bash
+cp .env.example .env            # Linux/macOS
+Copy-Item .env.example .env     # Windows (PowerShell)
+# edite o .env com suas credenciais/config (FABRIC_AUTH_MODE=azure_cli já é o padrão)
+
+docker compose build
+docker compose up -d
+```
+
+O dashboard fica disponível em `http://localhost:8501`.
+
+Para autenticar com `FABRIC_AUTH_MODE=azure_cli` **dentro do container** (o
+modo mais usado pelo time):
+
+```bash
+docker compose exec dlctl az login
+```
+
+A sessão fica persistida no volume nomeado `azure-cli-config`, então não
+precisa logar de novo a cada `docker compose up`.
+
+Rodar qualquer comando do CLI sem abrir o dashboard:
+
+```bash
+docker compose run --rm dlctl auth doctor
+docker compose run --rm dlctl inventory silver
+docker compose run --rm dlctl manifest validate --manifest manifests/lineage/algum_arquivo.yaml
+```
+
+As pastas `state/`, `input/`, `mappings/`, `manifests/`, `notebooks/`,
+`config/`, `copyjob_definitions/`, `fabric_definitions/`, `schema/` e `sql/`
+são montadas como volumes — o que o container gera/lê nessas pastas aparece
+direto no diretório do projeto no host (e vice-versa).
+
+```bash
+docker compose down          # para os containers
+docker compose down -v       # também apaga a sessão do az login salva
+```
+
+Veja a seção **4.5** do [HELPER.md](HELPER.md) para mais detalhes de uso.
 
 ## 3. Uso do CLI
 
@@ -362,6 +424,9 @@ python -m streamlit run src/dlctl/dashboard/app.py
 ```
 
 Abre em `http://localhost:8501`.
+
+Ou via Docker (sem precisar instalar Python localmente): `docker compose up
+-d` — veja a seção **2.1** acima.
 
 ### Rodando em um servidor e acessando de outra máquina na rede
 

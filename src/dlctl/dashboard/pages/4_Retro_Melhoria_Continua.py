@@ -28,7 +28,10 @@ st.caption(
     "skill-featured-unused e permission-gap. Aprovação é sempre manual (Stage B)."
 )
 
-profile_name = st.sidebar.text_input("Profile", value="ms_client_constellation", key="retro_profile_name")
+profile_name = st.sidebar.text_input(
+    "Profile", value="ms_client_constellation", key="retro_profile_name",
+    help="Profile de config/profiles.yaml cuja telemetria (ActivityLog/PipelineStep/CommandInvocation) será analisada.",
+)
 try:
     profile = load_profile(profile_name)
 except Exception as exc:
@@ -37,9 +40,20 @@ except Exception as exc:
 
 col_a, col_b = st.columns([1, 3])
 with col_a:
-    window_days = st.number_input("Janela (dias)", min_value=1, value=90, step=1)
-    min_count = st.number_input("Contagem mínima do sinal", min_value=1, value=3, step=1)
-    if st.button("🔎 Rodar análise", type="primary"):
+    window_days = st.number_input(
+        "Janela (dias)", min_value=1, value=90, step=1,
+        help="Quantos dias para trás olhar no histórico ao procurar padrões. Ex.: 90 (últimos 3 meses).",
+    )
+    min_count = st.number_input(
+        "Contagem mínima do sinal", min_value=1, value=3, step=1,
+        help="Quantas ocorrências do mesmo padrão (ex.: mesma falha, mesmo retry) são necessárias para "
+             "virar uma proposta. Ex.: 3 (evita propostas baseadas em 1 evento isolado).",
+    )
+    if st.button(
+        "🔎 Rodar análise", type="primary",
+        help="Analisa a telemetria própria do dlctl na janela informada e persiste novas propostas de melhoria. "
+             "Equivalente a `dlctl retro analyze`. Nunca aplica nenhuma mudança sozinho.",
+    ):
         summary = analyze(profile, window_days=int(window_days), min_count=int(min_count))
         st.session_state["retro_summary"] = summary
         st.success(f"Análise concluída: {summary['proposal_count']} proposta(s) em {summary['event_count']} evento(s).")
@@ -59,9 +73,19 @@ if not proposals:
 df = pd.DataFrame(proposals)
 
 col1, col2, col3 = st.columns(3)
-category_pick = col1.multiselect("Categoria", options=sorted(df["category"].unique()), default=list(sorted(df["category"].unique())))
-risk_pick = col2.multiselect("Risco", options=sorted(df["risk"].unique()), default=list(sorted(df["risk"].unique())))
-status_pick = col3.multiselect("Status", options=sorted(df["status"].unique()), default=list(sorted(df["status"].unique())))
+category_pick = col1.multiselect(
+    "Categoria", options=sorted(df["category"].unique()), default=list(sorted(df["category"].unique())),
+    help="Filtra pelo tipo de sinal detectado. Ex.: repeated-failure, throttling, gate-friction, "
+         "prefer-resolver, skill-featured-unused, permission-gap.",
+)
+risk_pick = col2.multiselect(
+    "Risco", options=sorted(df["risk"].unique()), default=list(sorted(df["risk"].unique())),
+    help="Filtra pelo nível de risco estimado da proposta. Ex.: low, medium, high.",
+)
+status_pick = col3.multiselect(
+    "Status", options=sorted(df["status"].unique()), default=list(sorted(df["status"].unique())),
+    help="Filtra pelo status de revisão humana. Ex.: pending, approved, rejected.",
+)
 
 df_f = df[df["category"].isin(category_pick) & df["risk"].isin(risk_pick) & df["status"].isin(status_pick)]
 
@@ -74,7 +98,10 @@ st.dataframe(
 st.divider()
 st.subheader("Revisar e aprovar/rejeitar")
 if not df_f.empty:
-    selected_key = st.selectbox("Proposta", options=df_f["proposal_key"].tolist())
+    selected_key = st.selectbox(
+        "Proposta", options=df_f["proposal_key"].tolist(),
+        help="Chave única da proposta a revisar em detalhe abaixo (título, evidência, afetado).",
+    )
     row = df_f[df_f["proposal_key"] == selected_key].iloc[0]
 
     if row["gate_change"]:
@@ -93,12 +120,20 @@ if not df_f.empty:
 
     col_ap, col_rj = st.columns(2)
     with col_ap:
-        if st.button("✅ Aprovar", type="primary"):
+        if st.button(
+            "✅ Aprovar", type="primary",
+            help="Marca a proposta selecionada como aprovada (Stage B: só sinaliza concordância humana, "
+                 "não aplica nenhuma mudança automaticamente).",
+        ):
             approve_proposal(profile, selected_key)
             st.success("Marcada como aprovada.")
             st.rerun()
     with col_rj:
-        if st.button("❌ Rejeitar"):
+        if st.button(
+            "❌ Rejeitar",
+            help="Marca a proposta selecionada como rejeitada — ela deixa de aparecer como pendente, mas "
+                 "continua no histórico.",
+        ):
             reject_proposal(profile, selected_key)
             st.warning("Marcada como rejeitada.")
             st.rerun()
@@ -111,12 +146,19 @@ if not df_f.empty:
 
 st.divider()
 st.subheader("Relatório markdown")
-if st.button("📄 Gerar relatório completo"):
+if st.button(
+    "📄 Gerar relatório completo",
+    help="Monta o relatório markdown 'Improvement Proposals (retro)' com todas as propostas da última "
+         "análise, pronto para baixar logo abaixo.",
+):
     summary = st.session_state.get("retro_summary") or analyze(profile, window_days=int(window_days))
     report = render_markdown_report(profile, summary)
     st.session_state["retro_report"] = report
 
 if "retro_report" in st.session_state:
     st.code(st.session_state["retro_report"], language="markdown")
-    st.download_button("⬇️ Baixar relatório (.md)", data=st.session_state["retro_report"],
-                        file_name="improvement_proposals_retro.md", mime="text/markdown")
+    st.download_button(
+        "⬇️ Baixar relatório (.md)", data=st.session_state["retro_report"],
+        file_name="improvement_proposals_retro.md", mime="text/markdown",
+        help="Baixa o relatório gerado acima como arquivo .md para compartilhar ou anexar em um ticket.",
+    )
