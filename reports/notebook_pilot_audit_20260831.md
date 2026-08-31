@@ -5,8 +5,8 @@
 - Branch analisada: `dev`, commit `2adaf4501f37a0888f8653b8822204a0f2f9ebee`.
 - Branch local de correção: `codex/notebook-pilot-hardening-20260831`.
 - O código original não estava pronto para um piloto confiável: gerava 6 células, mas o contrato Constellation exige 10; o validador aceitava esse falso positivo; a publicação genérica não montava a definição oficial `ipynb`; e 2 testes de linhagem falhavam com coleções vazias.
-- Após as correções locais: imagem Docker construída, `94/94` testes aprovados, piloto Silver gerado e validado, Python das 10 células compilável e plano de criação selado por SHA-256.
-- Nenhum item foi criado no Fabric: `ms_client_constellation` permanece com `microsoft.allow_write=false`; o `apply-create` foi bloqueado antes de autenticação/chamada HTTP, com exit code 3.
+- Após as correções: imagem Docker construída, `94/94` testes aprovados, piloto Silver gerado e validado, Python das 10 células compilável e plano de criação selado por SHA-256.
+- Ensaio online concluído no `LAKEHOUSE-DEV`: o próprio `dlctl notebooks apply-create` criou um Notebook, a definição foi relida pela API, as 10 células C1-C10 foram preservadas e o item descartável foi removido com backup e verificação de ausência.
 
 ## Piloto preparado
 
@@ -35,21 +35,33 @@
 - O mapeamento simplificado não informa chaves primárias; o piloto gera `PRIMARY_KEYS=[]`, portanto não valida duplicidade/quarentena por PK.
 - O mapeamento Gold não contém contrato tipado equivalente ao `.tab`; a estrutura está correta, mas a conformidade semântica Gold ainda precisa desse metadado.
 - O fluxo genérico de manifests continua inadequado para atualizar definição de Notebook; o novo fluxo específico evita esse caminho, mas não o substitui globalmente.
-- Falta o ensaio online controlado: criar, obter definição por readback, opcionalmente executar com fontes válidas e excluir somente o `itemId` retornado.
+- O fluxo específico cria um Notebook novo, mas ainda não atualiza, executa, valida materialização nem automatiza seu próprio rollback. A remoção deste ensaio usou a ferramenta governada externa `fabric-fullctl`.
 
-## Próximo passo controlado
+## Ensaio online controlado
 
-Após autorização explícita para habilitar escrita no perfil DEV:
+- Data: `2026-08-31`.
+- Workspace: `LAKEHOUSE-DEV` (`8d8431e6-ef28-4356-8ca3-6cce6f99e5c4`).
+- Nome descartável: `codex_test_delete_me_dlctl_pr7_20260831`.
+- Plano: `state/plans/codex_test_delete_me_dlctl_pr7_20260831.plan.json`.
+- SHA-256 do plano: `d6cec2a84a8e98dc2dc497a810617266dd000055d5b3a1add7ee76a89b652665`.
+- SHA-256 local do notebook: `730d7b9fdc9a037192b509797a8d0ffeb3d0b37c1d1b41003f2901f29d32a8f1`.
+- Resultado da criação: `SUCCEEDED`.
+- Item criado: `194bf8c2-6f36-4ef6-94d5-011811011667`.
+- Operação Fabric: `b9b4849f-1415-4682-be32-ea1bc1aad747`.
+- Readback: o Fabric normalizou a entrada `ipynb` em `notebook-content.py` + `.platform`; foram encontrados exatamente 10 marcadores, de `C1_HEADER_METADATA` a `C10_METRICS`, na ordem canônica.
+- Execução: não realizada; este ensaio prova publicação/readback, não runtime ou materialização.
+- Rollback: definição respaldada e item excluído por ID; busca final pelo prefixo retornou zero candidatos.
+- Gate: `allow_write` foi habilitado somente durante as operações autorizadas e restaurado byte a byte ao baseline ao final.
 
-1. aplicar o plano selado;
-2. confirmar conclusão `201` ou LRO `Succeeded`;
-3. ler a definição publicada e comparar SHA-256/células;
-4. executar somente se os paths Bronze/Silver do piloto forem válidos;
-5. excluir exclusivamente o item criado pelo `itemId` retornado;
-6. anexar evidências e então abrir PR da branch local.
+## Próximos passos
 
-## Rollback local
+1. adicionar rollback tipado por `itemId` ao próprio `dlctl`;
+2. adicionar readback pós-criação e validação automática dos marcadores/células;
+3. testar execução somente com mapeamento, chaves e paths reais aprovados;
+4. expor o fluxo específico `plan-create/apply-create` na GUI.
 
-- Nenhum commit foi criado e nenhum push foi feito.
-- Para descartar todas as alterações, remover a branch local e retornar ao commit-base `2adaf4501f37a0888f8653b8822204a0f2f9ebee` após preservar qualquer trabalho desejado.
+## Rollback
+
+- PR: `https://github.com/rmvieira6/Datalake-Migrations-CLI-GUI/pull/7`.
+- Para descartar as alterações de código, fechar o PR e remover a branch `codex/notebook-pilot-hardening-20260831` do fork.
 - Artefatos do piloto estão ignorados pelo Git em `notebooks/` e `state/`.

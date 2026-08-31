@@ -1,0 +1,13 @@
+{
+  "status": "SUCCEEDED",
+  "item": {
+    "id": "194bf8c2-6f36-4ef6-94d5-011811011667",
+    "type": "Notebook",
+    "displayName": "codex_test_delete_me_dlctl_pr7_20260831",
+    "description": "Disposable PR #7 publication verification; do not execute",
+    "workspaceId": "8d8431e6-ef28-4356-8ca3-6cce6f99e5c4"
+  },
+  "operationId": "b9b4849f-1415-4682-be32-ea1bc1aad747",
+  "rollback": "Excluir manualmente apenas o itemId retornado; nenhum notebook 
+foi executado."
+}
