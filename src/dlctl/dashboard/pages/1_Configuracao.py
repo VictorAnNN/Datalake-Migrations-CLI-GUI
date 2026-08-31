@@ -45,9 +45,13 @@ with tab_fabric:
     with st.form("form_fabric"):
         tenant_id = st.text_input("FABRIC_TENANT_ID", value=env_values.get("FABRIC_TENANT_ID", ""))
         client_id = st.text_input("FABRIC_CLIENT_ID", value=env_values.get("FABRIC_CLIENT_ID", ""))
-        current_auth_mode = env_values.get("FABRIC_AUTH_MODE") or "device_code"
-        auth_mode = st.selectbox("FABRIC_AUTH_MODE", options=["device_code", "client_credentials"],
-                                  index=0 if current_auth_mode == "device_code" else 1)
+        current_auth_mode = env_values.get("FABRIC_AUTH_MODE") or "azure_cli"
+        auth_options = ["azure_cli", "device_code", "client_credentials"]
+        auth_mode = st.selectbox(
+            "FABRIC_AUTH_MODE", options=auth_options,
+            index=auth_options.index(current_auth_mode) if current_auth_mode in auth_options else 0,
+            help="azure_cli (recomendado): reaproveita a sessão do `az login`, sem precisar de App Registration.",
+        )
         client_secret_placeholder = "já configurado — deixe em branco para manter" if secrets_ok.get("FABRIC_CLIENT_SECRET") else "não configurado"
         client_secret = st.text_input(f"FABRIC_CLIENT_SECRET ({client_secret_placeholder})", value="", type="password")
         workspace_name = st.text_input("FABRIC_WORKSPACE_NAME", value=env_values.get("FABRIC_WORKSPACE_NAME", ""))

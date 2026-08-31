@@ -11,9 +11,13 @@ inventário → reconciliação de escopo → geração de notebook → validaç
 ```
 
 Tudo em um único CLI (`dlctl`), com conectores reais para **Oracle** (banco +
-BI Publisher) e **Microsoft Fabric REST API** (auth MSAL), gates de segurança
-centralizados, e um painel de controle Streamlit que mostra passos, sucessos,
-mapeamentos e evidências.
+BI Publisher) e **Microsoft Fabric REST API** (auth padrão via **Azure CLI**
+— `az login`, sem precisar de App Registration própria; MSAL device_code/
+client_credentials continuam disponíveis como alternativa), gates de
+segurança centralizados, e um painel de controle Streamlit que mostra
+passos, sucessos, mapeamentos e evidências — incluindo a feature de
+**Linhagem do Lakehouse** (grafo isolado por tabela/fonte, artefatos
+Linhagem Tabelas/Tabelas e trilha de dependências até o SharePoint).
 
 > **Importante sobre este projeto**: ele foi construído sem acesso ao tenant
 > Fabric real do cliente nem às ferramentas internas (`fabric-fullctl`,
@@ -29,13 +33,16 @@ mapeamentos e evidências.
 config/profiles.yaml        -> perfis (tenant, workspace, allow_write) por ambiente
 src/dlctl/
   config.py                 -> carregamento de profile + .env
-  auth/fabric_auth.py       -> MSAL (device_code | client_credentials)
+  auth/fabric_auth.py       -> azure_cli (padrão) | MSAL device_code | client_credentials
   connectors/
     fabric_api.py           -> cliente REST Fabric (workspaces/items/lakehouses/
                                 notebooks/pipelines/copyjobs/environments/git/
                                 variable-libraries/sqlEndpoints), com retry
                                 transiente, driver-log wait, diagnose-run e
                                 nenhuma escrita sem gate
+    fabric_notebook_sync.py -> sincroniza notebooks de um workspace (via auth
+                                azure_cli) para input/lakehouse-dev, alimentando
+                                a feature de Linhagem
     oracle_connector.py     -> Oracle DB (python-oracledb) + BI Publisher SOAP (zeep)
   core/
     gates.py                -> Central Write Gate + integração com leases
@@ -54,17 +61,27 @@ src/dlctl/
     retro.py                -> motor de "Improvement Proposals": analisa a telemetria
                                 própria (ActivityLog/PipelineStep/CampaignStep/
                                 CommandInvocation) e gera propostas categorizadas
+    lineage_graph.py        -> grafo de linhagem (networkx) + "Mapa Isolado"
+                                (upstream/downstream) reutilizado por CLI e dashboard
   generators/
     silver_generator.py     -> gera notebooks Bronze->Silver (Notebook Contract)
     gold_generator.py       -> gera notebooks Silver->Gold (Gold Gates)
     validators.py           -> valida os gates acima (bloqueia geração inválida)
-  commands/                 -> um módulo Typer por área (skills + backlog + retro)
+    lineage_generator.py    -> feature de Linhagem: parseia notebooks de
+                                lakehouse-dev + JSONs do Fabric Scanner API,
+                                gera Linhagem Tabelas/Tabelas (com expansão
+                                transitiva) e a trilha de dependências SharePoint
+  commands/                 -> um módulo Typer por área (skills + backlog + retro + lineage)
   dashboard/
     app.py                  -> painel principal (somente leitura do state)
     pages/1_Configuracao.py -> editar credenciais/conexões pelo front-end
     pages/2_Acoes.py        -> acionar todos os fluxos pelo front-end (gated)
     pages/3_Diagnosticos_Avancados.py -> backlog tracker + auditoria/leases/campaign/logs
     pages/4_Retro_Melhoria_Continua.py -> motor de retro + aprovação manual (Stage B)
+    pages/5_Linhagem_Grafo.py -> Mapa Isolado (upstream/downstream) por tabela/fonte
+    pages/6_Linhagem_Artefatos.py -> visualizador dos artefatos (Tabelas/Linhagem Tabelas)
+    pages/7_Linhagem_SharePoint.py -> trilha dashboard->dataset->tabela->SharePoint,
+                                       com validação de existência de cada elo
 mappings/                   -> CSVs de mapeamento Bronze->Silver / Silver->Gold (exemplo)
 manifests/                  -> manifests YAML (DataPipeline/Notebook/Environment/Campaign/...)
 fabric_definitions/         -> definitions JSON referenciadas pelos manifests
@@ -298,6 +315,24 @@ dlctl copyjobs bulk reconcile --definitions-dir copyjob_definitions/bulk
 # Git plan-commit com seleção de itens
 dlctl git plan-commit --workspace LAKEHOUSE-DEV --item-ids "id1,id2"
 
+# ---- Linhagem do Lakehouse (integração Skill-LineageFabric) ----
+
+# Sincroniza notebooks do workspace via Azure CLI (forma padrão de conexão desta feature)
+dlctl lineage sync-notebooks
+# Com paralelismo customizado (1-8 downloads simultâneos; padrão vem de FABRIC_SYNC_MAX_WORKERS no .env)
+dlctl lineage sync-notebooks --max-workers 8
+
+# Gera Linhagem Tabelas + Tabelas (+ trilha SharePoint, se --workspaces-input for informado)
+dlctl lineage generate --lakehouse-dev-input input/lakehouse-dev --workspaces-input input/Workspaces
+
+# Consulta os artefatos persistidos
+dlctl lineage show dependencies --domain ORDER_TRACKING
+dlctl lineage show catalog
+dlctl lineage show sharepoint
+
+# Mapa Isolado (upstream/downstream) de uma tabela/fonte, direto no terminal
+dlctl lineage isolate PR_RECEIPT_ORDER --direction "Linhagem completa"
+
 # Painel de controle
 dlctl dashboard
 ```
@@ -409,6 +444,12 @@ Reaproveita exatamente a mesma lógica core do CLI (nenhuma duplicação de regr
 6. **Pipeline Router**: formulário com os paths Bronze/Silver/Gold e os checkboxes de
    escrita/publicação/execução; um clique roda o workflow de 10 passos do router
    (`constellation-order-tracking-etl`) e mostra a linha do tempo em tempo real.
+7. **Linhagem (Azure CLI)**: botão que baixa (ou atualiza) os notebooks do workspace
+   configurado via Azure CLI (`az login`, sem App Registration) para `input/lakehouse-dev/`
+   em paralelo — equivalente a `dlctl lineage sync-notebooks`, com um campo para
+   ajustar o número de downloads simultâneos (1-8, padrão vem de `FABRIC_SYNC_MAX_WORKERS`
+   no `.env`) — seguido de um botão para gerar os artefatos de Linhagem
+   (`dlctl lineage generate`), populando as páginas Linhagem Grafo/Artefatos/SharePoint/Workspaces.
 
 O dashboard **nunca** aplica uma escrita/execução sem o gate equivalente marcado —
 os mesmos `authorize_write`/`authorize_execute` do CLI (`dlctl.core.gates.GateContext`)
@@ -445,6 +486,25 @@ Todas as funcionalidades levantadas em `fabric-fullctl-backlog.zip`, 100% locais
 4. Botões **✅ Aprovar** / **❌ Rejeitar** — Stage B: só marca status, nunca
    aplica nada sozinho.
 5. **Gerar relatório completo** + botão de download do markdown.
+
+### Páginas "Linhagem" — integração do Skill-LineageFabric
+
+Todas leem o que `dlctl lineage generate` persistiu em `state.py`
+(nenhuma dessas páginas chama a Fabric API diretamente):
+
+1. **🔗 Linhagem — Grafo Isolado** (`5_Linhagem_Grafo.py`): escolha uma
+   geração (batch), busque uma tabela/schema/lakehouse e isole o "Mapa
+   Isolado" — upstream, downstream ou linhagem completa — com o mesmo
+   critério do `docs/lineage-report.md` original. Exporta as relações em CSV.
+2. **📋 Linhagem — Artefatos** (`6_Linhagem_Artefatos.py`): visualizador
+   genérico e filtrável dos demais artefatos gerados (aba **Tabelas** —
+   catálogo por domínio/status — e a própria **Linhagem Tabelas**, com
+   destaque para as linhas transitivas), além do histórico de gerações.
+3. **🧷 Linhagem — Dependências SharePoint** (`7_Linhagem_SharePoint.py`):
+   trilha dashboard/relatório → dataset → tabela → fonte SharePoint extraída
+   dos JSONs do Fabric Scanner API, com validação de existência de cada elo
+   (🟢 existe / 🔴 não encontrado) e um grafo que destaca visualmente o que
+   está ausente (ex.: relatório apontando para um dataset fora do scan).
 
 ## 5. Gates de segurança (Central Write Gate)
 

@@ -7,6 +7,7 @@ confirmação equivalentes a --confirm-write/--confirm-execute).
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -19,6 +20,7 @@ import streamlit as st
 import yaml
 
 from dlctl.config import load_domains, load_profile
+from dlctl.connectors.fabric_notebook_sync import NotebookSyncError, sync_workspace_notebooks
 from dlctl.core import manifest as manifest_engine
 from dlctl.core.execution import ExecutionManifest, apply_execution, dry_run_execution, plan_execution
 from dlctl.core.gates import GateContext, SecurityError
@@ -26,6 +28,7 @@ from dlctl.core.mapping import build_inventory, load_mapping, reconcile_scope
 from dlctl.core.pipeline import run_order_tracking
 from dlctl.generators.gold_generator import generate_gold_notebook
 from dlctl.generators.gold_generator import write_notebook as write_gold_notebook
+from dlctl.generators.lineage_generator import LineageGeneratorError, generate_lineage_artifacts
 from dlctl.generators.silver_generator import generate_silver_notebook
 from dlctl.generators.silver_generator import write_notebook as write_silver_notebook
 from dlctl.generators.validators import validate_gold_notebook, validate_silver_notebook
@@ -58,8 +61,10 @@ domain = st.sidebar.selectbox("Domínio", options=list(domains.keys()) or ["ORDE
     tab_manifest,
     tab_execute,
     tab_pipeline,
+    tab_lineage,
 ) = st.tabs(
-    ["1. Inventário", "2. Gerar Silver", "3. Gerar Gold", "4. Manifest (Fabric)", "5. Execute (gated)", "6. Pipeline Router"]
+    ["1. Inventário", "2. Gerar Silver", "3. Gerar Gold", "4. Manifest (Fabric)", "5. Execute (gated)",
+     "6. Pipeline Router", "7. Linhagem (Azure CLI)"]
 )
 
 # ==================== 1. Inventário ====================
@@ -363,3 +368,91 @@ with tab_pipeline:
         status_fn = {"success": st.success, "blocked": st.warning, "failed": st.error}
         status_fn.get(result["status"], st.info)(f"Run {result['status']}: run_id={result['run_id']} — {result['summary']}")
         st.info("Veja a página principal (Visão Geral) para o histórico completo desta e de outras execuções.")
+
+# ==================== 7. Linhagem (Azure CLI) ====================
+with tab_lineage:
+    st.subheader("🛰️ Sincronizar notebooks do workspace (via Azure CLI)")
+    st.caption(
+        "Usa a mesma conexão padrão da feature de Linhagem: reaproveita a sessão do "
+        "`az login` (FABRIC_AUTH_MODE=azure_cli), sem precisar de App Registration. "
+        "Baixa (ou atualiza) todos os notebooks do workspace configurado (`FABRIC_WORKSPACE_ID`) "
+        "diretamente para `input/lakehouse-dev/`, em paralelo."
+    )
+    col_sync1, col_sync2, col_sync3 = st.columns(3)
+    with col_sync1:
+        sync_output_dir = st.text_input("Pasta de destino", value="input/lakehouse-dev")
+    with col_sync2:
+        default_workers = int(os.getenv("FABRIC_SYNC_MAX_WORKERS", "4"))
+        sync_max_workers = st.number_input(
+            "Downloads simultâneos (1-8)", min_value=1, max_value=8, value=max(1, min(default_workers, 8)),
+            help="Paraleliza o download dos notebooks via Azure CLI. Reduza se a API retornar erro 429 (throttling).",
+        )
+    with col_sync3:
+        st.markdown(f"**Workspace configurado:** `{profile.microsoft.default_workspace_id or '(não configurado)'}`")
+
+    if st.button("🔄 Puxar/atualizar notebooks do workspace (az login)", type="primary", key="btn_sync_notebooks"):
+        progress_area = st.container()
+        progress_bar = st.progress(0.0)
+
+        def on_sync_progress(index: int, total: int, name: str) -> None:
+            progress_bar.progress(min(index / total, 1.0))
+            with progress_area:
+                st.write(f"[{index}/{total}] {name}")
+
+        try:
+            with st.spinner(f"Autenticando via Azure CLI e baixando notebooks ({sync_max_workers} em paralelo)..."):
+                sync_result = sync_workspace_notebooks(
+                    profile, output_dir=sync_output_dir, on_progress=on_sync_progress,
+                    max_workers=int(sync_max_workers),
+                )
+        except NotebookSyncError as exc:
+            st.error(f"Falha ao sincronizar notebooks: {exc}")
+        else:
+            st.success(
+                f"✅ {sync_result['downloaded']}/{sync_result['total']} notebook(s) baixados para "
+                f"`{sync_result['output_dir']}` (paralelismo: {sync_result['max_workers']} worker(s))"
+            )
+            if sync_result["failures"]:
+                st.warning(f"{len(sync_result['failures'])} falha(s):")
+                for failure in sync_result["failures"]:
+                    st.write(f"- {failure}")
+
+    st.divider()
+    st.subheader("📊 Gerar artefatos de Linhagem")
+    st.caption(
+        "Parseia os notebooks baixados acima (+ opcionalmente os JSONs do Fabric Scanner API) "
+        "e gera Linhagem Tabelas / Tabelas / trilha SharePoint / inventário de workspaces — "
+        "os mesmos artefatos consumidos pelas páginas Linhagem Grafo/Artefatos/SharePoint/Workspaces."
+    )
+    with st.form("form_lineage_generate"):
+        lakehouse_dev_input = st.text_input("Pasta de notebooks (lakehouse-dev)", value="input/lakehouse-dev")
+        workspaces_input = st.text_input(
+            "Pasta ou .zip com JSONs do Fabric Scanner API (opcional)", value="",
+            help="Alimenta a trilha SharePoint e o inventário de workspaces. Deixe em branco para pular.",
+        )
+        export_excel_chk = st.checkbox("Exportar Excel de conferência em manifests/lineage/", value=True)
+        generate_button = st.form_submit_button("⚙️ Gerar artefatos de Linhagem", type="primary")
+
+    if generate_button:
+        try:
+            with st.spinner("Processando notebooks e JSONs..."):
+                gen_result = generate_lineage_artifacts(
+                    profile, lakehouse_dev_input=lakehouse_dev_input,
+                    workspaces_input=workspaces_input or None, export_excel=export_excel_chk,
+                )
+        except LineageGeneratorError as exc:
+            st.error(f"Falha ao gerar artefatos de linhagem: {exc}")
+        else:
+            st.success(f"✅ Batch `{gen_result['batch_id']}` gerado com sucesso.")
+            st.write(
+                f"- Linhagem Tabelas (com transitivas): **{gen_result['dependency_rows']}**\n"
+                f"- Tabelas (catálogo): **{gen_result['catalog_rows']}**\n"
+                f"- Trilha SharePoint: **{gen_result['sharepoint_rows']}**\n"
+                f"- Inventário de Workspaces PBI/Fabric: **{gen_result['workspace_item_rows']}**"
+            )
+            if gen_result["excel_path"]:
+                st.info(f"Excel de conferência: `{gen_result['excel_path']}`")
+            st.info(
+                "Veja as páginas **Linhagem Grafo**, **Linhagem Artefatos**, **Linhagem SharePoint** "
+                "e **Linhagem Workspaces** para explorar o resultado."
+            )

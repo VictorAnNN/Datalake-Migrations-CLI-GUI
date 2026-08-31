@@ -34,13 +34,13 @@ def profile_show(profile: str = typer.Option(None, "--profile")):
 def doctor(profile: str = typer.Option(None, "--profile")):
     """Verifica credenciais Fabric configuradas e tenta uma chamada de leitura simples."""
     p = get_profile(profile)
-    if not p.microsoft.tenant_id or not p.microsoft.client_id:
+    if p.microsoft.auth_mode != "azure_cli" and (not p.microsoft.tenant_id or not p.microsoft.client_id):
         console.print("[yellow]manual_required[/yellow]: FABRIC_TENANT_ID/FABRIC_CLIENT_ID ausentes no .env.")
         raise typer.Exit(code=1)
     try:
         client = build_client_from_profile(p)
         workspaces = client.list_workspaces()
-        console.print(f"[green]OK[/green]: autenticado, {len(workspaces)} workspace(s) visível(eis).")
+        console.print(f"[green]OK[/green]: autenticado ({p.microsoft.auth_mode}), {len(workspaces)} workspace(s) visível(eis).")
     except FabricApiError as exc:
         console.print(f"[red]Falha de autenticação/API:[/red] {exc}")
         raise typer.Exit(code=1)

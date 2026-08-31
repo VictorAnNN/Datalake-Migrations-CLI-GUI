@@ -24,9 +24,10 @@ def tmp_profile(tmp_path, monkeypatch):
     profile.paths.state_root = tmp_path / "state"
     profile.paths.evidence_root = tmp_path / "state" / "evidence"
     profile.paths.mappings_root = PROJECT_ROOT / "mappings"
+    profile.paths.manifests_root = tmp_path / "manifests"
     profile.paths.notebooks_silver_root = tmp_path / "notebooks" / "silver"
     profile.paths.notebooks_gold_root = tmp_path / "notebooks" / "gold"
-    for p in [profile.paths.state_root, profile.paths.evidence_root,
+    for p in [profile.paths.state_root, profile.paths.evidence_root, profile.paths.manifests_root,
               profile.paths.notebooks_silver_root, profile.paths.notebooks_gold_root]:
         p.mkdir(parents=True, exist_ok=True)
     yield profile

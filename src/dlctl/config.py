@@ -27,7 +27,7 @@ class MicrosoftConfig(BaseModel):
     tenant_id: Optional[str] = None
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
-    auth_mode: str = "device_code"
+    auth_mode: str = "azure_cli"
     default_workspace_name: Optional[str] = None
     default_workspace_id: Optional[str] = None
     scopes: list[str] = Field(default_factory=list)
@@ -116,7 +116,7 @@ def load_profile(profile_name: Optional[str] = None) -> Profile:
         tenant_id=_env(ms_raw.get("tenant_id_env")),
         client_id=_env(ms_raw.get("client_id_env")),
         client_secret=_env(ms_raw.get("client_secret_env")),
-        auth_mode=_env(ms_raw.get("auth_mode_env")) or "device_code",
+        auth_mode=_env(ms_raw.get("auth_mode_env")) or "azure_cli",
         default_workspace_name=_env(ms_raw.get("default_workspace_name_env")),
         default_workspace_id=_env(ms_raw.get("default_workspace_id_env")),
         scopes=ms_raw.get("scopes", []),

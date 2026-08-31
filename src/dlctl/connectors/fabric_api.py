@@ -205,6 +205,38 @@ class FabricClient:
     def get_definition(self, item_id: str) -> dict:
         return self.post(f"/workspaces/{self.workspace_id}/items/{item_id}/getDefinition")
 
+    def get_definition_lro(self, item_id: str, item_type: str = "notebooks", max_polls: int = 20) -> dict:
+        """Igual a `get_definition`, mas trata o caso assíncrono (202 Accepted +
+        polling em `Location`) usado por itens grandes (ex.: notebooks). Usado
+        pela sincronização de linhagem (dlctl.connectors.fabric_notebook_sync)."""
+        resp = self._request(
+            "POST", f"/workspaces/{self.workspace_id}/{item_type}/{item_id}/getDefinition", is_write=False,
+        )
+        if resp.status_code != 202:
+            return _safe_json(resp).get("definition", _safe_json(resp))
+
+        operation_url = resp.headers.get("Location")
+        if not operation_url:
+            raise FabricApiError("Fabric iniciou a exportação, mas não retornou a operação para consulta (Location ausente).")
+
+        for _ in range(max_polls):
+            retry_after = int(resp.headers.get("Retry-After", "5"))
+            time.sleep(min(max(retry_after, 1), 30))
+            operation = self._session.request("GET", operation_url, headers=self._headers(), timeout=60)
+            if not operation.ok:
+                raise FabricApiError(f"Falha ao consultar exportação: {operation.text[:500]}")
+            body = _safe_json(operation)
+            if body.get("status") == "Succeeded":
+                result_url = f"{operation_url.rstrip('/')}/result"
+                exported = self._session.request("GET", result_url, headers=self._headers(), timeout=60)
+                if not exported.ok:
+                    raise FabricApiError(f"Falha ao baixar definição: {exported.text[:500]}")
+                return _safe_json(exported).get("definition", _safe_json(exported))
+            if body.get("status") in {"Failed", "Cancelled"}:
+                raise FabricApiError(f"Exportação terminou com status {body.get('status')}.")
+            resp = operation
+        raise FabricApiError("A exportação da definição excedeu o tempo de espera.")
+
     # ---------------- lakehouses ----------------
 
     def schema_inventory(self, lakehouse_id: str) -> dict:

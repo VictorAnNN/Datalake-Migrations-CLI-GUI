@@ -42,15 +42,21 @@ Campos principais do `.env`:
 
 | Campo | Para que serve |
 |---|---|
-| `FABRIC_TENANT_ID` | ID do tenant no Microsoft Entra ID |
-| `FABRIC_CLIENT_ID` | ID do App Registration (aplicação) cadastrado no Entra ID |
+| `FABRIC_AUTH_MODE` | `azure_cli` (**padrão/recomendado**: reaproveita `az login`, sem App Registration) \| `client_credentials` (sem interação, precisa de App Registration) \| `device_code` (você loga no navegador) |
+| `FABRIC_TENANT_ID` | ID do tenant no Microsoft Entra ID (só necessário para `client_credentials`/`device_code`) |
+| `FABRIC_CLIENT_ID` | ID do App Registration (aplicação) cadastrado no Entra ID (idem) |
 | `FABRIC_CLIENT_SECRET` | Segredo do App Registration (só necessário se `FABRIC_AUTH_MODE=client_credentials`) |
-| `FABRIC_AUTH_MODE` | `client_credentials` (recomendado, sem interação) ou `device_code` (você loga no navegador) |
 | `FABRIC_WORKSPACE_NAME` / `FABRIC_WORKSPACE_ID` | Workspace Fabric alvo |
 | `ORACLE_DB_DSN` / `ORACLE_DB_USER` / `ORACLE_DB_PASSWORD` | Conexão com o banco Oracle |
 | `ORACLE_BIP_BASE_URL` / `ORACLE_BIP_USER` / `ORACLE_BIP_PASSWORD` | Conexão com o Oracle BI Publisher |
 | `DLCTL_ALLOW_WRITE` | `true`/`false` — permite (ou não) que comandos de escrita funcionem |
 
+> ✅ **Modo padrão `azure_cli`**: instale o Azure CLI, rode `az login` (e
+> `az account set --subscription "..."` se tiver mais de uma assinatura) e
+> pronto — não precisa preencher `FABRIC_TENANT_ID`/`FABRIC_CLIENT_ID`. É a
+> mesma forma de conexão usada pela sincronização de notebooks da feature de
+> Linhagem (`dlctl lineage sync-notebooks`).
+>
 > ⚠️ Preencher o `.env` sozinho não é suficiente para autenticar de verdade
 > no Fabric com `client_credentials`: o **administrador do tenant** também
 > precisa (1) habilitar "Service principals can use Fabric APIs" no admin
@@ -89,7 +95,7 @@ retorna `manual_required`) — nunca finge que deu certo.
 | Pasta | Para que serve |
 |---|---|
 | `mappings/` | Planilhas (CSV) de mapeamento Bronze→Silver e Silver→Gold |
-| `manifests/` | Arquivos YAML descrevendo o que publicar no Fabric (pipelines, notebooks, campanhas) |
+| `manifests/` | Arquivos YAML descrevendo o que publicar no Fabric (pipelines, notebooks, campanhas); `manifests/lineage/` guarda os Excels de conferência gerados por `dlctl lineage generate` |
 | `sql/`, `schema/` | SQL adaptado e contratos de schema usados na geração de notebooks |
 | `notebooks/silver/`, `notebooks/gold/` | Notebooks `.ipynb` gerados |
 | `copyjob_definitions/` | Definições de Copy Job (individuais e em lote/bulk) |
@@ -235,11 +241,19 @@ Fabric, para você saber com certeza se algo mudou ou não.
 | `retro reject --key CHAVE` | Marca como rejeitada |
 | `retro report [--out ARQUIVO.md] [--window-days 90]` | Gera um relatório markdown com todas as sugestões |
 
+### 3.16. `dlctl lineage` — Linhagem do Lakehouse (integração Skill-LineageFabric)
+| Comando | O que faz |
+|---|---|
+| `lineage sync-notebooks [--output-dir input/lakehouse-dev] [--max-workers N]` 🌐 | Baixa os notebooks do workspace via Azure CLI (`az login`), em paralelo (1-8 downloads simultâneos; padrão: `FABRIC_SYNC_MAX_WORKERS` do `.env`) |
+| `lineage generate --lakehouse-dev-input DIR [--workspaces-input DIR_OU_ZIP] [--no-excel]` | Parseia notebooks (+ JSONs do Fabric Scanner, se informado) e gera Linhagem Tabelas/Tabelas/trilha SharePoint |
+| `lineage show dependencies\|catalog\|sharepoint [--batch-id ID] [--domain X]` | Lista as linhas persistidas de um artefato (padrão: última geração) |
+| `lineage isolate TERMO [--direction "Downstream"\|"Upstream"\|"Linhagem completa"]` | Mostra o Mapa Isolado (upstream/downstream) de uma tabela/fonte em texto |
+
 ---
 
 ## 4. Tudo que existe no Dashboard (`dlctl dashboard`)
 
-O dashboard tem 5 páginas, acessíveis pela barra lateral esquerda.
+O dashboard tem 8 páginas, acessíveis pela barra lateral esquerda.
 
 ### 4.1. Página principal (Visão Geral) — só leitura
 - **KPIs**: quantas execuções tiveram sucesso, foram bloqueadas ou falharam.
@@ -251,7 +265,7 @@ O dashboard tem 5 páginas, acessíveis pela barra lateral esquerda.
 - **Aba Ownership/Rollback**: quais recursos foram criados e registrados para possível rollback.
 
 ### 4.2. Página "Configuração" — editar credenciais e ambiente
-- **Aba Microsoft Fabric**: campos para `TENANT_ID`, `CLIENT_ID`, modo de autenticação, `CLIENT_SECRET` (nunca reexibido depois de salvo), workspace.
+- **Aba Microsoft Fabric**: escolha do modo de autenticação (`azure_cli` recomendado, `device_code` ou `client_credentials`) e campos para `TENANT_ID`/`CLIENT_ID`/`CLIENT_SECRET` (nunca reexibido depois de salvo) quando aplicável, + workspace.
 - **Aba Oracle Fusion**: campos para conexão do banco e do BI Publisher.
 - **Aba Ambiente & Escrita**: escolher DEV/HML/PRD e ligar/desligar `allow_write`/`allow_production` (isso só habilita a *possibilidade*; cada ação ainda pede confirmação).
 - **Aba Domínios**: criar/editar/remover domínios de negócio (ex.: ORDER_TRACKING, FINANCEIRO) usados pelo resto do sistema.
@@ -264,6 +278,7 @@ O dashboard tem 5 páginas, acessíveis pela barra lateral esquerda.
 - **4. Manifest (Fabric)**: escolhe ou cria um manifesto, roda Validate→Plan→Dry-run, e só permite Apply com os checkboxes de confirmação marcados.
 - **5. Execute (gated)**: monta um "pedido de execução" (item + parâmetros), roda Plan→Dry-run, e só dispara com o checkbox de confirmação marcado.
 - **6. Pipeline Router**: formulário único para rodar o fluxo completo de ponta a ponta, com checkboxes para escrita/publicação/execução.
+- **7. Linhagem (Azure CLI)**: botão **🔄 Puxar/atualizar notebooks do workspace (az login)** — mesma sincronização de `dlctl lineage sync-notebooks`, baixando os notebooks para `input/lakehouse-dev/` via Azure CLI, com campo para ajustar o paralelismo (1-8 downloads simultâneos, padrão vem de `FABRIC_SYNC_MAX_WORKERS` no `.env`); logo abaixo, botão **⚙️ Gerar artefatos de Linhagem** — mesma lógica de `dlctl lineage generate`.
 
 ### 4.4. Página "Diagnósticos Avançados" — ferramentas extras
 - **📋 Backlog Tracker**: tabela com lacunas conhecidas de CLIs deste tipo (P0/P1/P2) e o que já foi resolvido aqui.
@@ -278,6 +293,19 @@ O dashboard tem 5 páginas, acessíveis pela barra lateral esquerda.
 - Tabela filtrável de sugestões, com aviso especial **⚠ GATE-CHANGE** quando a sugestão é sobre um gate de segurança (nunca é sugestão para enfraquecê-lo).
 - Botões **Aprovar**/**Rejeitar** por sugestão.
 - Botão para gerar e baixar o relatório completo em markdown.
+
+### 4.6. Páginas "Linhagem" — grafo isolado, artefatos e dependências SharePoint
+- **🔗 Linhagem — Grafo Isolado**: escolha uma tabela/fonte e a direção
+  (upstream/downstream/completa); o grafo mostra só o que está relacionado
+  àquele item — igual ao relatório "Mapa Isolado" do projeto original, mas
+  navegável pela tela.
+- **📋 Linhagem — Artefatos**: tabelas filtráveis do catálogo **Tabelas** e da
+  **Linhagem Tabelas** (com destaque para as relações transitivas), + histórico
+  de gerações (`dlctl lineage generate`).
+- **🧷 Linhagem — Dependências SharePoint**: lista (e desenha) a trilha
+  dashboard/relatório → dataset → tabela → SharePoint, marcando em vermelho o
+  que não foi encontrado (ex.: relatório apontando para um dataset fora do
+  scan, ou referência SharePoint não resolvida).
 
 ---
 

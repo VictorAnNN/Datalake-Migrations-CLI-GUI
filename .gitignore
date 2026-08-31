@@ -10,3 +10,5 @@ notebooks/gold/*.ipynb
 manifests/**/*.plan.json
 .token_cache/
 .streamlit/
+input/
+*.xlsx

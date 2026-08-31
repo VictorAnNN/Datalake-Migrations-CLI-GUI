@@ -193,6 +193,223 @@ class ItemCache(SQLModel, table=True):
     cached_at: str = Field(default_factory=now_iso)
 
 
+# ==================== Feature de Linhagem (integração Skill-LineageFabric) ====================
+
+class LineageBatch(SQLModel, table=True):
+    """Uma execução de `dlctl lineage generate`: agrupa todas as linhas geradas
+    naquela rodada (LineageDependency/LineageTableCatalog/LineageSharePointDependency)
+    e alimenta o dashboard ("última geração em ...")."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    batch_id: str = Field(index=True, unique=True)
+    workspaces_input: str = ""
+    lakehouse_dev_input: str = ""
+    status: str = "running"  # running | success | failed
+    started_at: str = Field(default_factory=now_iso)
+    finished_at: Optional[str] = None
+    dependency_rows: int = 0
+    catalog_rows: int = 0
+    sharepoint_rows: int = 0
+    workspace_item_rows: int = 0
+    summary: str = ""
+
+
+class LineageDependency(SQLModel, table=True):
+    """Espelha a aba `Linhagem Tabelas` (18 colunas) do fabric-migrate-plan:
+    uma aresta origem->destino da linhagem entre camadas (Bronze/Silver/Gold/
+    Source), incluindo as relações transitivas expandidas por
+    `dlctl.generators.lineage_generator.expand_transitive_lineage`."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    batch_id: str = Field(index=True)
+    dependency_type: str = ""       # TIPO_DEPENDENCIA
+    source_layer: str = ""          # CAMADA_ORIGEM
+    source_lakehouse: str = ""      # LAKEHOUSE_ORIGEM
+    source_schema: str = ""         # SCHEMA_ORIGEM
+    source_table: str = Field(default="", index=True)   # TABELA_ORIGEM
+    source_status: str = ""         # STATUS_ORIGEM
+    source_published_dev: str = ""  # ORIGEM_PUBLICADA_DEV
+    source_materialized_dev: str = ""  # ORIGEM_MATERIALIZADA_DEV
+    target_layer: str = ""          # CAMADA_DESTINO
+    target_lakehouse: str = ""      # LAKEHOUSE_DESTINO
+    target_schema: str = ""         # SCHEMA_DESTINO
+    target_table: str = Field(default="", index=True)   # TABELA_DESTINO
+    target_status: str = ""         # STATUS_DESTINO
+    target_published_dev: str = ""  # DESTINO_PUBLICADO_DEV
+    target_materialized_dev: str = ""  # DESTINO_MATERIALIZADO_DEV
+    target_executed_dev: str = ""   # EXECUCAO_DESTINO_DEV
+    note: str = ""                  # OBSERVACAO
+    workspace: str = ""
+    domain: str = ""
+    is_transitive: bool = False
+    created_at: str = Field(default_factory=now_iso)
+
+
+class LineageTableCatalog(SQLModel, table=True):
+    """Espelha a aba `Tabelas` (30 colunas) do fabric-migrate-plan: catálogo de
+    tabelas por domínio, com conexão/origem/destino e status por ambiente."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    batch_id: str = Field(index=True)
+    domain: str = Field(default="", index=True)          # Domínio
+    connection_gateway: str = ""    # Conexão Gateway
+    source: str = ""                # Fonte
+    source_type: str = ""           # Tipo
+    system: str = ""                # Sistema
+    schema_dev: str = ""            # Schema Dev
+    schema_source: str = ""         # Schema Origem
+    source_table: str = ""          # Tabela Origem
+    initial_mapping: str = ""       # Mapeamento Inicial?
+    key_columns: str = ""           # Colunas Chave
+    incremental_column: str = ""    # Coluna Incremental
+    read_method: str = ""           # Método de Leitura
+    write_method: str = ""          # Método de Gravação
+    refresh_frequency: str = ""     # Frequência de Atualização
+    extraction_tool: str = ""       # Ferramenta de Extração
+    target_lakehouse: str = ""      # Lakehouse Destino
+    target_layer: str = ""          # Camada Destino
+    target_table: str = Field(default="", index=True)  # Tabela Destino
+    masking: str = ""               # Mascaramento
+    rls: str = ""                   # RLS
+    status_dev_build: str = ""      # Status DEV Construção
+    status_dev_pipeline: str = ""   # Status DEV Pipeline
+    status_dev_governance: str = ""  # Status DEV Governança
+    status_dev_approval: str = ""   # Status DEV (Aprovação)
+    status_hml: str = ""            # Status HML
+    status_hml_approval: str = ""   # Status HML (Aprovação)
+    status_prd: str = ""            # Status PRD
+    status_prd_approval: str = ""   # Status PRD (Aprovação)
+    note: str = ""                  # Observações
+    unblock_owner: str = ""         # Responsável Desbloqueio
+    created_at: str = Field(default_factory=now_iso)
+
+
+class LineageSharePointDependency(SQLModel, table=True):
+    """Trilha de dependência até fontes SharePoint: dashboard/relatório ->
+    dataset -> tabela do dataset -> fonte SharePoint, com validação de
+    existência (o item aparece no inventário/cache de itens Fabric?)."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    batch_id: str = Field(index=True)
+    workspace: str = ""
+    report_name: str = ""        # Dashboard/relatório consumidor final (se identificado)
+    dataset_name: str = Field(default="", index=True)
+    dataset_id: str = ""
+    dataset_table: str = ""
+    sharepoint_reference: str = ""  # URL/caminho extraído da expressão Power Query
+    chain_depth: int = 0           # 0 = fonte direta do dataset, >0 = via dataflow/tabela intermediária
+    exists_check: str = "desconhecido"  # existe | nao_encontrado | desconhecido
+    validation_note: str = ""
+    created_at: str = Field(default_factory=now_iso)
+
+
+class LineageWorkspaceItem(SQLModel, table=True):
+    """Inventário achatado e pesquisável dos JSONs do Fabric Scanner API:
+    um registro por Workspace/Dataset/Dataset Table/Dataflow/Report, para
+    responder perguntas do tipo "em qual workspace está o dataset X?" sem
+    precisar abrir os JSONs manualmente (dlctl lineage show workspaces)."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    batch_id: str = Field(index=True)
+    workspace: str = Field(default="", index=True)
+    workspace_id: str = ""
+    item_type: str = Field(default="", index=True)  # Workspace | Dataset | Dataset Table | Dataflow | Report
+    item_name: str = Field(default="", index=True)
+    item_id: str = ""
+    parent_name: str = ""  # ex.: dataset dono de uma tabela/relatório
+    detail: str = ""       # metadados livres (table_count, generation, storage_mode, ...)
+    source_file: str = ""
+    created_at: str = Field(default_factory=now_iso)
+
+
+def start_lineage_batch(profile: Profile, workspaces_input: str = "", lakehouse_dev_input: str = "") -> str:
+    batch_id = new_id("lineage")
+    with get_session(profile) as session:
+        session.add(LineageBatch(
+            batch_id=batch_id, workspaces_input=workspaces_input, lakehouse_dev_input=lakehouse_dev_input,
+        ))
+        session.commit()
+    log_activity(profile, f"lineage generate iniciado (batch={batch_id})", source="lineage.generate")
+    return batch_id
+
+
+def finish_lineage_batch(profile: Profile, batch_id: str, status: str, summary: str = "",
+                          dependency_rows: int = 0, catalog_rows: int = 0, sharepoint_rows: int = 0,
+                          workspace_item_rows: int = 0) -> None:
+    with get_session(profile) as session:
+        batch = session.exec(select(LineageBatch).where(LineageBatch.batch_id == batch_id)).first()
+        if batch:
+            batch.status = status
+            batch.finished_at = now_iso()
+            batch.summary = summary
+            batch.dependency_rows = dependency_rows
+            batch.catalog_rows = catalog_rows
+            batch.sharepoint_rows = sharepoint_rows
+            batch.workspace_item_rows = workspace_item_rows
+            session.add(batch)
+            session.commit()
+    log_activity(
+        profile,
+        f"lineage generate finalizado (batch={batch_id}, status={status}): {summary}",
+        level="WARN" if status != "success" else "INFO",
+        source="lineage.generate",
+    )
+
+
+def save_lineage_dependencies(profile: Profile, batch_id: str, rows: list[dict]) -> int:
+    with get_session(profile) as session:
+        for row in rows:
+            session.add(LineageDependency(batch_id=batch_id, **row))
+        session.commit()
+    return len(rows)
+
+
+def save_lineage_catalog(profile: Profile, batch_id: str, rows: list[dict]) -> int:
+    with get_session(profile) as session:
+        for row in rows:
+            session.add(LineageTableCatalog(batch_id=batch_id, **row))
+        session.commit()
+    return len(rows)
+
+
+def save_lineage_sharepoint(profile: Profile, batch_id: str, rows: list[dict]) -> int:
+    with get_session(profile) as session:
+        for row in rows:
+            session.add(LineageSharePointDependency(batch_id=batch_id, **row))
+        session.commit()
+    return len(rows)
+
+
+def save_lineage_workspace_items(profile: Profile, batch_id: str, rows: list[dict]) -> int:
+    with get_session(profile) as session:
+        for row in rows:
+            session.add(LineageWorkspaceItem(batch_id=batch_id, **row))
+        session.commit()
+    return len(rows)
+
+
+def latest_lineage_batch(profile: Profile) -> Optional["LineageBatch"]:
+    with get_session(profile) as session:
+        return session.exec(
+            select(LineageBatch).where(LineageBatch.status == "success").order_by(LineageBatch.finished_at.desc())
+        ).first()
+
+
+def get_lineage_dependencies(profile: Profile, batch_id: str) -> list["LineageDependency"]:
+    with get_session(profile) as session:
+        return session.exec(select(LineageDependency).where(LineageDependency.batch_id == batch_id)).all()
+
+
+def get_lineage_catalog(profile: Profile, batch_id: str) -> list["LineageTableCatalog"]:
+    with get_session(profile) as session:
+        return session.exec(select(LineageTableCatalog).where(LineageTableCatalog.batch_id == batch_id)).all()
+
+
+def get_lineage_sharepoint(profile: Profile, batch_id: str) -> list["LineageSharePointDependency"]:
+    with get_session(profile) as session:
+        return session.exec(select(LineageSharePointDependency).where(LineageSharePointDependency.batch_id == batch_id)).all()
+
+
+def get_lineage_workspace_items(profile: Profile, batch_id: str) -> list["LineageWorkspaceItem"]:
+    with get_session(profile) as session:
+        return session.exec(select(LineageWorkspaceItem).where(LineageWorkspaceItem.batch_id == batch_id)).all()
+
+
 _engine_cache: dict[str, object] = {}
 
 
