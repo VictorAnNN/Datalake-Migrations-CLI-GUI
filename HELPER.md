@@ -247,7 +247,7 @@ Fabric, para você saber com certeza se algo mudou ou não.
 | Comando | O que faz |
 |---|---|
 | `lineage sync-notebooks [--output-dir input/lakehouse-dev] [--max-workers N]` 🌐 | Baixa os notebooks do workspace via Azure CLI (`az login`), em paralelo (1-8 downloads simultâneos; padrão: `FABRIC_SYNC_MAX_WORKERS` do `.env`) |
-| `lineage generate --lakehouse-dev-input DIR [--workspaces-input DIR_OU_ZIP] [--no-excel]` | Parseia notebooks (+ JSONs do Fabric Scanner, se informado) e gera Linhagem Tabelas/Tabelas/trilha SharePoint |
+| `lineage generate --lakehouse-dev-input DIR [--workspaces-input DIR_OU_ZIP] [--no-excel]` | Parseia notebooks (+ JSONs do Fabric Scanner, se informado) e gera Linhagem Tabelas/Tabelas/trilha SharePoint. Se `--workspaces-input` for informado, também gera os 3 artefatos extras do projeto original Skill-LineageFabric: extrato bruto completo (`fabric_lineage_*.xlsx`, 7 abas), Simplified Migration (`fabric_lineage_simplified_migration_*.xlsx`, 4 abas) e PowerQuery Detailed (`fabric_lineage_powerquery_detailed_*.xlsx`, 5 abas) |
 | `lineage show dependencies\|catalog\|sharepoint [--batch-id ID] [--domain X]` | Lista as linhas persistidas de um artefato (padrão: última geração) |
 | `lineage isolate TERMO [--direction "Downstream"\|"Upstream"\|"Linhagem completa"]` | Mostra o Mapa Isolado (upstream/downstream) de uma tabela/fonte em texto |
 

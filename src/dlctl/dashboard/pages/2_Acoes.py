@@ -594,10 +594,20 @@ with tab_lineage:
             "Pasta de notebooks (lakehouse-dev)", value="input/lakehouse-dev",
             help="Pasta com os notebooks .ipynb baixados (normalmente a mesma 'Pasta de destino' da sincronização acima).",
         )
+        _default_workspaces_dir = PROJECT_ROOT / "input" / "Workspaces"
+        _default_workspaces_zip = PROJECT_ROOT / "input" / "Workspaces.zip"
+        if _default_workspaces_dir.is_dir():
+            _default_workspaces_input = "input/Workspaces"
+        elif _default_workspaces_zip.is_file():
+            _default_workspaces_input = "input/Workspaces.zip"
+        else:
+            _default_workspaces_input = ""
         workspaces_input = st.text_input(
-            "Pasta ou .zip com JSONs do Fabric Scanner API (opcional)", value="",
+            "Pasta ou .zip com JSONs do Fabric Scanner API (opcional)", value=_default_workspaces_input,
             placeholder="Ex.: input/Workspaces ou input/Workspaces.zip",
-            help="Alimenta a trilha SharePoint e o inventário de workspaces. Deixe em branco para pular.",
+            help="Alimenta a trilha SharePoint, o inventário de workspaces e os artefatos extras "
+                 "(fabric_lineage/simplified migration/powerquery detailed). Pré-preenchido automaticamente "
+                 "quando `input/Workspaces/` (pasta) ou `input/Workspaces.zip` existe; deixe em branco para pular.",
         )
         export_excel_chk = st.checkbox(
             "Exportar Excel de conferência em manifests/lineage/", value=True,
@@ -620,6 +630,13 @@ with tab_lineage:
             st.error(f"Falha ao gerar artefatos de linhagem: {exc}")
         else:
             st.success(f"✅ Batch `{gen_result['batch_id']}` gerado com sucesso.")
+            if gen_result.get("workspaces_input_not_found"):
+                st.warning(
+                    f"⚠️ O caminho `{workspaces_input}` informado em 'Pasta ou .zip com JSONs do Fabric "
+                    "Scanner API' não foi encontrado (relativo ao diretório atual nem à raiz do projeto). "
+                    "Trilha SharePoint, inventário de workspaces e os 3 artefatos extras (fabric_lineage/"
+                    "simplified migration/powerquery detailed) foram pulados. Confira o caminho e tente novamente."
+                )
             st.write(
                 f"- Linhagem Tabelas (com transitivas): **{gen_result['dependency_rows']}**\n"
                 f"- Tabelas (catálogo): **{gen_result['catalog_rows']}**\n"
@@ -627,7 +644,13 @@ with tab_lineage:
                 f"- Inventário de Workspaces PBI/Fabric: **{gen_result['workspace_item_rows']}**"
             )
             if gen_result["excel_path"]:
-                st.info(f"Excel de conferência: `{gen_result['excel_path']}`")
+                st.info(f"Excel de conferência (Tabelas + Linhagem Tabelas): `{gen_result['excel_path']}`")
+            if gen_result.get("fabric_lineage_full_path"):
+                st.info(f"Extrato bruto completo (7 abas): `{gen_result['fabric_lineage_full_path']}`")
+            if gen_result.get("simplified_migration_path"):
+                st.info(f"Simplified Migration (4 abas): `{gen_result['simplified_migration_path']}`")
+            if gen_result.get("powerquery_detailed_path"):
+                st.info(f"PowerQuery Detailed (5 abas): `{gen_result['powerquery_detailed_path']}`")
             st.info(
                 "Veja as páginas **Linhagem Grafo**, **Linhagem Artefatos**, **Linhagem SharePoint** "
                 "e **Linhagem Workspaces** para explorar o resultado."

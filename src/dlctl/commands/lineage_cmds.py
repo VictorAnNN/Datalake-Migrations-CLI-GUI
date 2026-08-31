@@ -70,6 +70,13 @@ def generate(
         raise typer.Exit(code=1)
 
     console.print(f"[green]OK[/green]: batch [bold]{result['batch_id']}[/bold]")
+    if result.get("workspaces_input_not_found"):
+        console.print(
+            f"[bold yellow]AVISO[/bold yellow]: --workspaces-input '{workspaces_input}' não foi encontrado "
+            "(nem relativo ao diretório atual, nem à raiz do projeto) — trilha SharePoint, inventário de "
+            "workspaces e os artefatos extras (fabric_lineage/simplified migration/powerquery detailed) "
+            "foram pulados."
+        )
     print_table(
         "Resumo da geração",
         ["artefato", "linhas"],
@@ -81,7 +88,13 @@ def generate(
         ],
     )
     if result["excel_path"]:
-        console.print(f"Excel de conferência: {result['excel_path']}")
+        console.print(f"Excel de conferência (Tabelas + Linhagem Tabelas): {result['excel_path']}")
+    if result.get("fabric_lineage_full_path"):
+        console.print(f"Extrato bruto completo (7 abas): {result['fabric_lineage_full_path']}")
+    if result.get("simplified_migration_path"):
+        console.print(f"Simplified Migration (4 abas): {result['simplified_migration_path']}")
+    if result.get("powerquery_detailed_path"):
+        console.print(f"PowerQuery Detailed (5 abas): {result['powerquery_detailed_path']}")
 
 
 def _resolve_batch_id(p, batch_id: Optional[str]) -> str:

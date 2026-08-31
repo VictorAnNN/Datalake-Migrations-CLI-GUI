@@ -12,3 +12,5 @@ manifests/**/*.plan.json
 .streamlit/
 input/
 *.xlsx
+*.zip
+*.rar

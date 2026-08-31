@@ -27,6 +27,7 @@ from typing import Optional
 import pandas as pd
 
 from dlctl.config import Profile
+from dlctl.config import PROJECT_ROOT
 from dlctl.core import state as state_db
 
 # ---------------------------------------------------------------------------
@@ -866,6 +867,20 @@ def find_latest_lineage_excel(profile: Profile) -> Optional[Path]:
     return max(candidates, key=lambda p: p.stat().st_mtime)
 
 
+def _resolve_input_path(path_str: str) -> str:
+    """Resolve um caminho relativo informado pelo usuário (CLI ou dashboard)
+    contra o diretório atual primeiro e, se não existir, contra a raiz do
+    projeto -- evita que `input/Workspaces` "desapareça" silenciosamente só
+    porque o processo do Streamlit/CLI foi iniciado de outra pasta."""
+    if not path_str:
+        return path_str
+    p = Path(path_str)
+    if p.is_absolute() or p.exists():
+        return path_str
+    candidate = PROJECT_ROOT / path_str
+    return str(candidate) if candidate.exists() else path_str
+
+
 def generate_lineage_artifacts(
     profile: Profile,
     lakehouse_dev_input: str = "input/lakehouse-dev",
@@ -876,6 +891,8 @@ def generate_lineage_artifacts(
     (opcionalmente) JSONs do Fabric Scanner, persiste tudo em `state.py` sob
     um novo `LineageBatch` e (opcionalmente) exporta um Excel de
     conferência em `manifests/lineage/`."""
+    lakehouse_dev_input = _resolve_input_path(lakehouse_dev_input)
+    workspaces_input = _resolve_input_path(workspaces_input) if workspaces_input else workspaces_input
     batch_id = state_db.start_lineage_batch(
         profile, workspaces_input=workspaces_input or "", lakehouse_dev_input=lakehouse_dev_input,
     )
@@ -888,6 +905,7 @@ def generate_lineage_artifacts(
 
         sharepoint_rows: list[dict] = []
         workspace_inventory_rows: list[dict] = []
+        workspaces_input_not_found = bool(workspaces_input) and not Path(workspaces_input).exists()
         if workspaces_input and Path(workspaces_input).exists():
             sharepoint_rows = build_sharepoint_dependency_trail(workspaces_input)
             workspace_inventory_rows = build_workspace_inventory(workspaces_input)
@@ -898,11 +916,22 @@ def generate_lineage_artifacts(
         wi_count = state_db.save_lineage_workspace_items(profile, batch_id, workspace_inventory_rows)
 
         excel_path = None
+        fabric_lineage_full_path = None
+        simplified_migration_path = None
+        powerquery_detailed_path = None
         if export_excel:
             output_dir = profile.paths.manifests_root / "lineage"
             excel_path = export_lineage_excel(
                 expanded, processed["tabelas"], output_dir / f"lineage_tables_{batch_id}.xlsx",
             )
+            if workspaces_input and Path(workspaces_input).exists():
+                # Demais artefatos do projeto de referência Skill-LineageFabric
+                # (extrato bruto completo + simplified migration + powerquery detailed).
+                from dlctl.generators.fabric_lineage_export import generate_all_fabric_lineage_formats
+                extra_paths = generate_all_fabric_lineage_formats(workspaces_input, output_dir, batch_id)
+                fabric_lineage_full_path = extra_paths["fabric_lineage_full_path"]
+                simplified_migration_path = extra_paths["simplified_migration_path"]
+                powerquery_detailed_path = extra_paths["powerquery_detailed_path"]
 
         summary = (
             f"{dep_count} dependência(s), {cat_count} tabela(s) de catálogo, "
@@ -917,6 +946,10 @@ def generate_lineage_artifacts(
             "batch_id": batch_id, "dependency_rows": dep_count, "catalog_rows": cat_count,
             "sharepoint_rows": sp_count, "workspace_item_rows": wi_count,
             "excel_path": str(excel_path) if excel_path else None,
+            "fabric_lineage_full_path": fabric_lineage_full_path,
+            "simplified_migration_path": simplified_migration_path,
+            "powerquery_detailed_path": powerquery_detailed_path,
+            "workspaces_input_not_found": workspaces_input_not_found,
         }
     except Exception as exc:
         state_db.finish_lineage_batch(profile, batch_id, status="failed", summary=str(exc))
