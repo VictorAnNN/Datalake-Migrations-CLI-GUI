@@ -3,9 +3,12 @@
 "Supervisor": diagnóstico geral do andamento do projeto de migração
 (Bronze -> Silver -> Gold -> Dashboards/BI -> Views/processos intermediários).
 
-"Esperado" (quanto deveria existir no projeto como um todo) é calculado
-olhando para TODAS as informações disponíveis em `input/`, não só um arquivo
-isolado:
+"Esperado" (quanto DEVERIA existir no projeto como um todo): a fonte
+principal é `input/sharedpoint/Projeto Lakehouse - Tabelas e Pipelines.xlsx`
+(aba "Tabelas") + tabelas descobertas via SQL (`dlctl.core.global_scope`) --
+é o escopo TOTAL definido pelo cliente, independente do que já foi feito em
+`input/lakehouse-dev`. Sem esse Excel disponível, cai para uma estimativa
+calculada a partir de tudo disponível em `input/` (menos precisa):
 - `mappings/*.csv` (registro oficial de Bronze->Silver->Gold do projeto);
 - a linhagem extraída de **todos** os notebooks em `input/lakehouse-dev`
   (inclusive os que ainda estão em pastas `_not_mapped`/`_control`, que já
@@ -43,6 +46,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from dlctl.config import PROJECT_ROOT, Profile
+from dlctl.core.global_scope import compute_global_scope
 from dlctl.core.mapping import load_mapping
 from dlctl.generators.lineage_generator import (
     _resolve_input_path,
@@ -277,6 +281,7 @@ def scan_project(
     only_referenced_workspaces: bool = False,
     filter_by_domain_prefix: bool = False,
     lakehouse_hml_input: Optional[str] = None,
+    sharedpoint_input: Optional[str] = "input/sharedpoint",
 ) -> dict:
     """Varre os artefatos reais do projeto e monta o diagnóstico geral
     (Bronze/Silver/Gold/Dashboards/Views). "Esperado" é a união de tudo que
@@ -304,6 +309,17 @@ def scan_project(
     workspaces_input = _resolve_input_path(workspaces_input) if workspaces_input else None
     workspaces_found = bool(workspaces_input) and Path(workspaces_input).exists()
 
+    # ---- Escopo TOTAL do projeto (o que DEVERIA existir), fonte principal: input/sharedpoint ----
+    sharedpoint_input = _resolve_input_path(sharedpoint_input) if sharedpoint_input else None
+    global_scope = compute_global_scope(sharedpoint_input) if sharedpoint_input else {"excel_found": False}
+
+    def _camada_total(nome: str) -> Optional[int]:
+        if not global_scope.get("excel_found"):
+            return None
+        for c in global_scope["camadas"]:
+            if c["camada"].strip().lower() == nome.lower():
+                return c["total"]
+        return None
 
     # ---- Notebooks reais em input/lakehouse-dev, categorizados por pasta (o que já foi CRIADO) ----
     notebook_rows: list[dict] = []
@@ -402,11 +418,15 @@ def scan_project(
         gold_needed = _gold_needed_for_dashboards(dashboard_tables)
 
 
-    # Gold "esperado": tabelas que os dashboards do cliente realmente precisam
-    # (Dataset Tables dos relatórios em input/Workspaces) — muito mais preciso
-    # do que só olhar mappings/linhagem. Sem Workspaces disponível, cai para a
-    # união mapping+linhagem (menos preciso, mas melhor que nada).
-    if gold_needed:
+    # Gold "esperado": prioridade é input/sharedpoint (escopo total real do
+    # cliente); sem isso, cai para os dashboards de input/Workspaces (Dataset
+    # Tables dos relatórios); sem nenhum dos dois, cai para mapping+linhagem.
+    sharedpoint_gold = _camada_total("Gold")
+    if sharedpoint_gold is not None:
+        gold_esperado = sharedpoint_gold
+        gold_existente_count = category_counts_geral["gold"]
+        gold_fonte = f"input/sharedpoint (Excel 'Tabelas' + tabelas descobertas via SQL) — {global_scope['excel_path']}"
+    elif gold_needed:
         gold_esperado = len(gold_needed)
         gold_existente_count = len(gold_needed & gold_existente_names)
         gold_fonte = (
@@ -419,38 +439,87 @@ def scan_project(
         gold_fonte = (
             "União: mappings/silver_to_gold.csv + linhagem de todos os notebooks (input/lakehouse-dev"
             + (" + input/lakehouse-hml)" if hml_found else ")")
-            + " — input/Workspaces não encontrado/sem dados para calcular a partir dos dashboards"
+            + " — input/sharedpoint e input/Workspaces não encontrados/sem dados"
         )
+
+    sharedpoint_bronze = _camada_total("Bronze")
+    bronze_esperado = sharedpoint_bronze if sharedpoint_bronze is not None else len(bronze_universe)
+    bronze_fonte = (
+        f"input/sharedpoint (Excel 'Tabelas' + tabelas descobertas via SQL)"
+        if sharedpoint_bronze is not None else
+        "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks + Oracle refs (input/Workspaces) "
+        "— input/sharedpoint não encontrado"
+    ) + (" | existente = união DEV+HML" if hml_found else "")
+
+    sharedpoint_silver = _camada_total("Silver")
+    silver_esperado = sharedpoint_silver if sharedpoint_silver is not None else len(silver_universe)
+    silver_fonte = (
+        "input/sharedpoint (Excel 'Tabelas' + tabelas descobertas via SQL)"
+        if sharedpoint_silver is not None else
+        "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks (input/lakehouse-dev) "
+        "— input/sharedpoint não encontrado"
+    ) + (" | existente = união DEV+HML" if hml_found else "")
+
+    # Dashboards/BI "esperado": prioridade é o total declarado pelo próprio
+    # cliente em input/sharedpoint (aba de entregáveis, ex.: "428 dashboards
+    # conectados à nova origem") — não é uma contagem, é a meta oficial do
+    # projeto. Sem isso, cai para a contagem de relatórios em input/Workspaces.
+    dashboard_target = global_scope.get("dashboard_target")
+    if dashboard_target:
+        dashboards_esperado_final = dashboard_target["total"]
+        dashboards_fonte = (
+            f"input/sharedpoint, aba '{dashboard_target['fonte_sheet']}': \"{dashboard_target['fonte_texto']}\"; "
+            "\"pronto\" = dataset já bate com uma tabela Gold criada" if workspaces_found else
+            f"input/sharedpoint, aba '{dashboard_target['fonte_sheet']}': \"{dashboard_target['fonte_texto']}\" "
+            "(input/Workspaces não encontrado, existente fica em 0)"
+        )
+    else:
+        dashboards_esperado_final = dashboards_esperado
+        dashboards_fonte = (
+            ("Total de relatórios em input/Workspaces" + {
+                "domain_prefix": " (só workspaces com prefixo de domínio conhecido)",
+                "referenced_table": " (só workspaces referenciados em lakehouse-dev)",
+            }.get(workspace_filter_mode, ""))
+            + "; \"pronto\" = dataset já bate com uma tabela Gold criada"
+        ) if workspaces_found else "input/Workspaces e input/sharedpoint não encontrados"
 
     targets = read_project_targets()
 
     categories = [
-        {"categoria": "Bronze", "existente": category_counts_geral["bronze"], "esperado": len(bronze_universe),
-         "percentual": _pct(category_counts_geral["bronze"], len(bronze_universe)),
-         "fonte_meta": "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks + Oracle refs (input/Workspaces)"
-                       + (" | existente = união DEV+HML" if hml_found else "")},
-        {"categoria": "Silver", "existente": category_counts_geral["silver"], "esperado": len(silver_universe),
-         "percentual": _pct(category_counts_geral["silver"], len(silver_universe)),
-         "fonte_meta": "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks (input/lakehouse-dev)"
-                       + (" | existente = união DEV+HML" if hml_found else "")},
+        {"categoria": "Bronze", "existente": category_counts_geral["bronze"], "esperado": bronze_esperado,
+         "percentual": _pct(category_counts_geral["bronze"], bronze_esperado),
+         "fonte_meta": bronze_fonte},
+        {"categoria": "Silver", "existente": category_counts_geral["silver"], "esperado": silver_esperado,
+         "percentual": _pct(category_counts_geral["silver"], silver_esperado),
+         "fonte_meta": silver_fonte},
         {"categoria": "Gold", "existente": gold_existente_count, "esperado": gold_esperado,
          "percentual": _pct(gold_existente_count, gold_esperado),
          "fonte_meta": gold_fonte},
-        {"categoria": "Dashboards/BI", "existente": dashboards_existente, "esperado": dashboards_esperado,
-         "percentual": _pct(dashboards_existente, dashboards_esperado),
-         "fonte_meta": (
-             ("Total de relatórios em input/Workspaces" + {
-                 "domain_prefix": " (só workspaces com prefixo de domínio conhecido)",
-                 "referenced_table": " (só workspaces referenciados em lakehouse-dev)",
-             }.get(workspace_filter_mode, ""))
-             + "; \"pronto\" = dataset já bate com uma tabela Gold criada"
-         ) if workspaces_found else "input/Workspaces não encontrado"},
+        {"categoria": "Dashboards/BI", "existente": dashboards_existente, "esperado": dashboards_esperado_final,
+         "percentual": _pct(dashboards_existente, dashboards_esperado_final),
+         "fonte_meta": dashboards_fonte},
         {"categoria": "Views/Processos intermediários",
          "existente": category_counts_geral["controle"] + category_counts_geral["qualidade_dados"],
          "esperado": targets["intermediate"],
          "percentual": _pct(category_counts_geral["controle"] + category_counts_geral["qualidade_dados"], targets["intermediate"]),
          "fonte_meta": "config/project_targets.yaml (meta manual)" if targets["intermediate"] else "meta não configurada"},
     ]
+
+    # Qualquer camada extra que o cliente tenha criado em input/sharedpoint
+    # além de Bronze/Silver/Gold (descoberta dinamicamente pelo cabeçalho do
+    # Excel) entra como categoria própria — sem contagem "existente" própria
+    # em input/lakehouse-dev (ainda não rastreada), só o total esperado.
+    if global_scope.get("excel_found"):
+        _known_camadas = {"bronze", "silver", "gold"}
+        for c in global_scope["camadas"]:
+            if c["camada"].strip().lower() in _known_camadas:
+                continue
+            categories.append({
+                "categoria": f"Outros processos ({c['camada']})", "existente": 0, "esperado": c["total"],
+                "percentual": _pct(0, c["total"]),
+                "fonte_meta": f"input/sharedpoint (Excel 'Tabelas', coluna Camada {c['camada']}) "
+                              "— sem contagem de existente própria ainda em input/lakehouse-dev",
+            })
 
     measured = [c for c in categories if c["esperado"]]
     overall_percent = (
@@ -477,6 +546,8 @@ def scan_project(
         "lakehouse_hml_input": lakehouse_hml_input if hml_found else None,
         "env_categories": env_categories,
         "env_totals": env_totals,
+        "global_scope": global_scope,
+        "sharedpoint_input": sharedpoint_input if global_scope.get("excel_found") else None,
     }
 
 
