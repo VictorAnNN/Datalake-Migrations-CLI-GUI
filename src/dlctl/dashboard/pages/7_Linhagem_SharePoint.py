@@ -101,11 +101,41 @@ search = col_c.text_input(
     help="Busca por texto parcial em qualquer coluna da trilha (dashboard, dataset, tabela ou URL SharePoint).",
 )
 
+col_d, col_e, col_f = st.columns(3)
+report_options = sorted(v for v in df["report_name"].unique() if v)
+report_filter = col_d.multiselect(
+    "Dashboard/Relatório", report_options,
+    help="Filtra pelas trilhas que partem de um relatório/dashboard específico. Deixe vazio para ver todos "
+         "(inclui trilhas sem relatório associado).",
+)
+dataset_filter = col_e.multiselect(
+    "Dataset", sorted(v for v in df["dataset_name"].unique() if v),
+    help="Filtra pelas trilhas de um dataset específico. Deixe vazio para ver todos.",
+)
+depth_options = sorted(df["chain_depth"].dropna().unique().tolist())
+depth_filter = col_f.multiselect(
+    "Profundidade da cadeia", depth_options,
+    help="Filtra pelo número de elos da cadeia (dashboard→dataset→tabela→SharePoint). Deixe vazio para ver todas.",
+)
+
+only_missing = st.checkbox(
+    "🔴 Mostrar somente cadeias com problema (algum elo não encontrado)", value=False,
+    help="Atalho para `Existe?` = nao_encontrado, útil para focar rapidamente no que precisa de atenção.",
+)
+
 filtered = df.copy()
 if workspace_filter:
     filtered = filtered[filtered["workspace"].isin(workspace_filter)]
 if status_filter:
     filtered = filtered[filtered["exists_check"].isin(status_filter)]
+if report_filter:
+    filtered = filtered[filtered["report_name"].isin(report_filter)]
+if dataset_filter:
+    filtered = filtered[filtered["dataset_name"].isin(dataset_filter)]
+if depth_filter:
+    filtered = filtered[filtered["chain_depth"].isin(depth_filter)]
+if only_missing:
+    filtered = filtered[filtered["exists_check"] == "nao_encontrado"]
 if search:
     term = search.casefold()
     mask = filtered.apply(lambda r: term in " ".join(str(v) for v in r.values).casefold(), axis=1)
@@ -124,6 +154,7 @@ display_df["exists_check"] = display_df["exists_check"].apply(_status_badge)
 display_df = display_df.rename(columns={
     "workspace": "Workspace", "report_name": "Dashboard/Relatório", "dataset_name": "Dataset",
     "dataset_table": "Tabela do Dataset", "sharepoint_reference": "Referência SharePoint",
+    "sharepoint_full_path": "SharePoint Completa",
     "chain_depth": "Profundidade da cadeia", "exists_check": "Existe?", "validation_note": "Nota de validação",
 })
 st.dataframe(display_df, use_container_width=True, hide_index=True)
@@ -162,35 +193,68 @@ else:
     kind_labels = {"report": "Dashboard/Relatório", "dataset": "Dataset", "table": "Tabela", "sharepoint": "SharePoint"}
     missing_color = "#E53935"
 
+    # ------------------------------------------------------------------
+    # Isolar uma dependência específica (opcional): destaca só a cadeia
+    # ligada ao nó escolhido, sem precisar mexer nos filtros da tabela.
+    # ------------------------------------------------------------------
+    node_options = {
+        f"{kind_labels[data['kind']]}: {data['label']}": node
+        for node, data in graph.nodes(data=True)
+    }
+    col_iso1, col_iso2 = st.columns([2, 1])
+    isolate_pick = col_iso1.selectbox(
+        "🎯 Isolar dependência específica (opcional)", options=["(nenhum — ver grafo completo)"] + sorted(node_options.keys()),
+        help="Escolha um relatório, dataset, tabela ou fonte SharePoint para ver só a cadeia conectada a ele, "
+             "sem precisar filtrar a tabela acima.",
+    )
+    isolate_direction = col_iso2.radio(
+        "Direção", ["Cadeia completa", "Somente à frente (downstream)", "Somente atrás (upstream)"],
+        disabled=(isolate_pick == "(nenhum — ver grafo completo)"),
+        help="'À frente' segue na direção dashboard→...→SharePoint; 'Atrás' segue no sentido inverso.",
+    )
+
+    if isolate_pick != "(nenhum — ver grafo completo)":
+        node_id = node_options[isolate_pick]
+        if isolate_direction == "Somente à frente (downstream)":
+            keep_nodes = nx.descendants(graph, node_id) | {node_id}
+        elif isolate_direction == "Somente atrás (upstream)":
+            keep_nodes = nx.ancestors(graph, node_id) | {node_id}
+        else:
+            keep_nodes = nx.descendants(graph, node_id) | nx.ancestors(graph, node_id) | {node_id}
+        display_graph = graph.subgraph(keep_nodes).copy()
+        st.success(f"🎯 Isolando **{isolate_pick}** ({isolate_direction}) — {display_graph.number_of_nodes()} nó(s).")
+    else:
+        display_graph = graph
+
     layer_of_kind = {"report": 0, "dataset": 1, "table": 2, "sharepoint": 3}
     pos = {}
     buckets: dict[int, list[str]] = {}
-    for node, data in graph.nodes(data=True):
+    for node, data in display_graph.nodes(data=True):
         buckets.setdefault(layer_of_kind[data["kind"]], []).append(node)
     for layer_idx, nodes in buckets.items():
         for i, node in enumerate(sorted(nodes)):
             pos[node] = (layer_idx * 3.0, (i - (len(nodes) - 1) / 2) * 2.0)
 
     edge_x, edge_y = [], []
-    for u, v in graph.edges():
+    for u, v in display_graph.edges():
         edge_x += [pos[u][0], pos[v][0], None]
         edge_y += [pos[u][1], pos[v][1], None]
 
     traces = [go.Scatter(x=edge_x, y=edge_y, mode="lines", line=dict(width=1.2, color="#AAAAAA"), hoverinfo="none", showlegend=False)]
     for kind, color in kind_colors.items():
-        ok_nodes = [n for n, d in graph.nodes(data=True) if d["kind"] == kind and not d.get("missing")]
-        missing_nodes = [n for n, d in graph.nodes(data=True) if d["kind"] == kind and d.get("missing")]
+        ok_nodes = [n for n, d in display_graph.nodes(data=True) if d["kind"] == kind and not d.get("missing")]
+        missing_nodes = [n for n, d in display_graph.nodes(data=True) if d["kind"] == kind and d.get("missing")]
         if ok_nodes:
             traces.append(go.Scatter(
                 x=[pos[n][0] for n in ok_nodes], y=[pos[n][1] for n in ok_nodes], mode="markers+text",
                 name=kind_labels[kind], marker=dict(size=16, color=color, line=dict(color="white", width=1)),
-                text=[graph.nodes[n]["label"][:24] for n in ok_nodes], textposition="top center", textfont=dict(size=9),
+                text=[display_graph.nodes[n]["label"][:24] for n in ok_nodes], textposition="top center", textfont=dict(size=9),
             ))
         if missing_nodes:
             traces.append(go.Scatter(
                 x=[pos[n][0] for n in missing_nodes], y=[pos[n][1] for n in missing_nodes], mode="markers+text",
                 name=f"{kind_labels[kind]} (não encontrado)", marker=dict(size=16, color=missing_color, symbol="x", line=dict(color="white", width=1)),
-                text=[graph.nodes[n]["label"][:24] for n in missing_nodes], textposition="top center", textfont=dict(size=9),
+                text=[display_graph.nodes[n]["label"][:24] for n in missing_nodes], textposition="top center", textfont=dict(size=9),
             ))
 
     fig = go.Figure(data=traces)

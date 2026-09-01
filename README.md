@@ -63,6 +63,9 @@ src/dlctl/
                                 CommandInvocation) e gera propostas categorizadas
     lineage_graph.py        -> grafo de linhagem (networkx) + "Mapa Isolado"
                                 (upstream/downstream) reutilizado por CLI e dashboard
+    project_scan.py         -> Supervisor: varre input/lakehouse-dev + input/Workspaces,
+                                cruza com mappings/*.csv + config/project_targets.yaml e
+                                calcula % Bronze/Silver/Gold/Dashboards/Views do projeto
   generators/
     silver_generator.py     -> gera notebooks Bronze->Silver (Notebook Contract)
     gold_generator.py       -> gera notebooks Silver->Gold (Gold Gates)
@@ -82,8 +85,11 @@ src/dlctl/
     pages/6_Linhagem_Artefatos.py -> visualizador dos artefatos (Tabelas/Linhagem Tabelas)
     pages/7_Linhagem_SharePoint.py -> trilha dashboard->dataset->tabela->SharePoint,
                                        com validação de existência de cada elo
+    pages/9_Supervisor.py    -> diagnóstico geral do projeto (Bronze/Silver/Gold/
+                                Dashboards/Views) + botão "Salvar esta visão"
 mappings/                   -> CSVs de mapeamento Bronze->Silver / Silver->Gold (exemplo)
-manifests/                  -> manifests YAML (DataPipeline/Notebook/Environment/Campaign/...)
+manifests/                  -> manifests YAML (DataPipeline/Notebook/Environment/Campaign/...);
+                                manifests/dashboard/ guarda os relatórios do Supervisor
 fabric_definitions/         -> definitions JSON referenciadas pelos manifests
 copyjob_definitions/        -> exemplos de copyjob-content.json + schema export Oracle
 sql/, schema/               -> SQL legado adaptado e contratos de schema (.tab)

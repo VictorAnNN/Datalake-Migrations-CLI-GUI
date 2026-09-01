@@ -692,6 +692,37 @@ def build_workspace_inventory(workspaces_input: str) -> list[dict]:
 _SHAREPOINT_PATTERN = re.compile(r'SharePoint\.\w+\s*\(\s*"([^"]+)"', re.IGNORECASE)
 _SHAREPOINT_DATASOURCE_TYPES = {"sharepointlist", "sharepoint", "sharepointonlinelist"}
 
+# Passos comuns de navegação/filtro após a conexão SharePoint.Contents/Files/Tables(site_url, ...):
+# a URL do site é sempre o 1º argumento (capturado por _SHAREPOINT_PATTERN); a pasta/biblioteca/
+# arquivo específico só aparece em passos seguintes da expressão M (Table.SelectRows por
+# [Folder Path]/[Name], ou navegação {[Name="..."]}[Content]).
+_FOLDER_PATH_PATTERN = re.compile(r'\[Folder Path\]\s*(?:=|,\s*)\s*"([^"]+)"', re.IGNORECASE)
+_NAME_FILTER_PATTERN = re.compile(r'\[Name\]\s*=\s*"([^"]+)"', re.IGNORECASE)
+_NAME_NAV_PATTERN = re.compile(r'\{\s*\[Name\s*=\s*"([^"]+)"\s*\]\s*\}', re.IGNORECASE)
+
+
+def _extract_sharepoint_full_path(expr: str, base_url: str) -> str:
+    """Tenta resolver a pasta/arquivo real navegado a partir da URL do site
+    (best-effort: parseia padrões comuns de Table.SelectRows/[Folder Path]/
+    [Name] e navegação {[Name="..."]}[Content] nos passos seguintes da
+    expressão M). Se nada for encontrado, retorna a própria URL do site
+    (mesma coisa que `sharepoint_reference`) — nunca fica vazio se houver base_url."""
+    if not expr:
+        return base_url
+    expr_clean = expr.replace("#(lf)", "\n")
+
+    folder_match = _FOLDER_PATH_PATTERN.search(expr_clean)
+    name_matches = _NAME_NAV_PATTERN.findall(expr_clean) + _NAME_FILTER_PATTERN.findall(expr_clean)
+
+    if folder_match:
+        full_path = folder_match.group(1).rstrip("/")
+        if name_matches and not full_path.endswith(name_matches[-1]):
+            full_path = f"{full_path}/{name_matches[-1]}"
+        return full_path
+    if name_matches:
+        return base_url.rstrip("/") + "/" + "/".join(name_matches)
+    return base_url
+
 
 def build_sharepoint_dependency_trail(workspaces_input: str) -> list[dict]:
     """Varre os JSONs do Fabric Scanner API e monta a trilha:
@@ -745,7 +776,9 @@ def build_sharepoint_dependency_trail(workspaces_input: str) -> list[dict]:
                         rows.append({
                             "workspace": ws_name, "report_name": "", "dataset_name": ds_name,
                             "dataset_id": ds_id, "dataset_table": tbl_name,
-                            "sharepoint_reference": url, "chain_depth": 0,
+                            "sharepoint_reference": url,
+                            "sharepoint_full_path": _extract_sharepoint_full_path(expr, url) if url else "",
+                            "chain_depth": 0,
                             "exists_check": "existe" if url else "nao_encontrado",
                             "validation_note": "Detectado via expressão Power Query (SharePoint.*).",
                         })
@@ -764,7 +797,9 @@ def build_sharepoint_dependency_trail(workspaces_input: str) -> list[dict]:
                             rows.append({
                                 "workspace": ws_name, "report_name": "", "dataset_name": ds_name,
                                 "dataset_id": ds_id, "dataset_table": tbl.get("name", ""),
-                                "sharepoint_reference": inst.get("url", ""), "chain_depth": 0,
+                                "sharepoint_reference": inst.get("url", ""),
+                                "sharepoint_full_path": inst.get("url", ""),  # sem expressão M disponível p/ aprofundar
+                                "chain_depth": 0,
                                 "exists_check": "existe" if inst.get("url") else "nao_encontrado",
                                 "validation_note": "Detectado via datasourceInstances (tipo SharePoint).",
                             })
@@ -787,6 +822,7 @@ def build_sharepoint_dependency_trail(workspaces_input: str) -> list[dict]:
                     rows.append({
                         "workspace": ws_name, "report_name": report_name, "dataset_name": "",
                         "dataset_id": dataset_id, "dataset_table": "", "sharepoint_reference": "",
+                        "sharepoint_full_path": "",
                         "chain_depth": 1, "exists_check": "nao_encontrado",
                         "validation_note": "Relatório referencia um dataset que não aparece no scan atual "
                                             "(possível dataset removido, movido ou fora do escopo exportado).",

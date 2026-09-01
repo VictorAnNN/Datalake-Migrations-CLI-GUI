@@ -293,10 +293,48 @@ class LineageSharePointDependency(SQLModel, table=True):
     dataset_id: str = ""
     dataset_table: str = ""
     sharepoint_reference: str = ""  # URL/caminho extraído da expressão Power Query
+    sharepoint_full_path: str = ""  # Tentativa de resolver pasta/arquivo dos passos seguintes da expressão (best-effort)
     chain_depth: int = 0           # 0 = fonte direta do dataset, >0 = via dataflow/tabela intermediária
     exists_check: str = "desconhecido"  # existe | nao_encontrado | desconhecido
     validation_note: str = ""
     created_at: str = Field(default_factory=now_iso)
+
+
+# ==================== Supervisor (diagnóstico geral do projeto) ====================
+
+class ProjectSupervisorSnapshot(SQLModel, table=True):
+    """Uma execução salva de `dlctl supervisor scan --save` (ou botão
+    'Salvar esta visão' no dashboard): guarda o percentual geral do projeto
+    e o resumo por categoria (Bronze/Silver/Gold/Dashboards/Views), para o
+    dashboard mostrar o histórico de diagnósticos ao longo do tempo."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    batch_id: str = Field(index=True, unique=True)
+    overall_percent: float = 0.0
+    summary_json: str = ""  # json.dumps(list[dict]) — uma linha por categoria (existente/esperado/percentual)
+    excel_path: str = ""
+    csv_path: str = ""
+    note: str = ""
+    created_at: str = Field(default_factory=now_iso)
+
+
+def save_supervisor_snapshot(
+    profile: Profile, batch_id: str, overall_percent: float, summary: list[dict],
+    excel_path: str = "", csv_path: str = "", note: str = "",
+) -> None:
+    with get_session(profile) as session:
+        session.add(ProjectSupervisorSnapshot(
+            batch_id=batch_id, overall_percent=overall_percent, summary_json=json.dumps(summary, ensure_ascii=False),
+            excel_path=excel_path, csv_path=csv_path, note=note,
+        ))
+        session.commit()
+    log_activity(profile, f"Visão do Supervisor salva (batch={batch_id}, {overall_percent:.1f}% do projeto)", source="supervisor.scan")
+
+
+def list_supervisor_snapshots(profile: Profile) -> list["ProjectSupervisorSnapshot"]:
+    with get_session(profile) as session:
+        return session.exec(
+            select(ProjectSupervisorSnapshot).order_by(ProjectSupervisorSnapshot.created_at.desc())
+        ).all()
 
 
 class LineageWorkspaceItem(SQLModel, table=True):
@@ -412,6 +450,25 @@ def get_lineage_workspace_items(profile: Profile, batch_id: str) -> list["Lineag
 
 _engine_cache: dict[str, object] = {}
 
+# Colunas adicionadas depois da criação inicial de uma tabela: `create_all` só
+# cria tabelas novas, não altera as existentes — sem isto, bancos `dlctl.db`
+# já existentes quebrariam com "no such column" ao usar campos novos.
+_NEW_COLUMNS: dict[str, list[tuple[str, str]]] = {
+    "lineagesharepointdependency": [("sharepoint_full_path", "VARCHAR DEFAULT ''")],
+}
+
+
+def _apply_light_migrations(engine) -> None:
+    with engine.connect() as conn:
+        for table_name, columns in _NEW_COLUMNS.items():
+            existing = {row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table_name})").fetchall()}
+            if not existing:
+                continue  # tabela ainda não existe (banco novo) — create_all já cria com as colunas atuais
+            for col_name, col_type in columns:
+                if col_name not in existing:
+                    conn.exec_driver_sql(f"ALTER TABLE {table_name} ADD COLUMN {col_name} {col_type}")
+        conn.commit()
+
 
 def get_engine(profile: Profile):
     db_path: Path = profile.paths.state_root / "dlctl.db"
@@ -419,6 +476,7 @@ def get_engine(profile: Profile):
     if key not in _engine_cache:
         engine = create_engine(f"sqlite:///{db_path}")
         SQLModel.metadata.create_all(engine)
+        _apply_light_migrations(engine)
         _engine_cache[key] = engine
     return _engine_cache[key]
 

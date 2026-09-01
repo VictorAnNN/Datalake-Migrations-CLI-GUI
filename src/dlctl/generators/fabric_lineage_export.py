@@ -319,6 +319,17 @@ def process_workspaces_raw(workspaces_input: str) -> dict[str, pd.DataFrame]:
     }
 
 
+def _col(df: pd.DataFrame, name: str, default="") -> pd.Series:
+    """`df[name]` com fallback seguro: `DataFrame.get(name, default)` retorna o
+    `default` como escalar quando o DataFrame está totalmente vazio (0 colunas),
+    o que quebra `pd.DataFrame({...})` com "must pass an index" se misturado com
+    colunas Series de outro DataFrame não vazio. Isto sempre devolve uma Series
+    do mesmo tamanho de `df` (podendo ser 0 linhas)."""
+    if name in df.columns:
+        return df[name]
+    return pd.Series([default] * len(df), index=df.index, dtype=object)
+
+
 # ===========================================================================
 # 3. Formatação visual comum
 # ===========================================================================
@@ -465,20 +476,20 @@ def create_simplified_migration(data: dict[str, pd.DataFrame], output_path: Path
                 "as_is_path", "to_be_path", "power_query_expression",
             ])
         lineage_simplified = pd.DataFrame({
-            "Workspace": lineage_df.get("workspace_name", ""),
-            "Workspace ID": lineage_df.get("workspace_id", ""),
-            "Dataset": lineage_df.get("dataset_name", ""),
-            "Dataset ID": lineage_df.get("dataset_id", ""),
-            "Dataset Table": lineage_df.get("dataset_table", ""),
+            "Workspace": _col(lineage_df, "workspace_name"),
+            "Workspace ID": _col(lineage_df, "workspace_id"),
+            "Dataset": _col(lineage_df, "dataset_name"),
+            "Dataset ID": _col(lineage_df, "dataset_id"),
+            "Dataset Table": _col(lineage_df, "dataset_table"),
             "Immediate Source Type": lineage_df.apply(_immediate_source_type, axis=1) if not lineage_df.empty else [],
             "Immediate Source": lineage_df.apply(_immediate_source, axis=1) if not lineage_df.empty else [],
-            "Source Server": lineage_df.get("server", ""),
-            "Source Schema": lineage_df.get("schema", ""),
-            "Source Table": lineage_df.get("table", ""),
+            "Source Server": _col(lineage_df, "server"),
+            "Source Schema": _col(lineage_df, "schema"),
+            "Source Table": _col(lineage_df, "table"),
             "Source Detail": lineage_df.apply(_source_detail, axis=1) if not lineage_df.empty else [],
-            "AS-IS Path": lineage_df.get("as_is_path", pd.Series(dtype=str)).apply(_simplify_as_is),
-            "TO-BE Path": lineage_df.get("to_be_path", pd.Series(dtype=str)).apply(_simplify_to_be),
-            "Power Query Expression (truncated)": lineage_df.get("power_query_expression", pd.Series(dtype=str)).astype(str).str[:2000],
+            "AS-IS Path": _col(lineage_df, "as_is_path").apply(_simplify_as_is),
+            "TO-BE Path": _col(lineage_df, "to_be_path").apply(_simplify_to_be),
+            "Power Query Expression (truncated)": _col(lineage_df, "power_query_expression").astype(str).str[:2000],
         }).fillna("")
         lineage_simplified.to_excel(writer, sheet_name="Lineage Simplified", index=False)
 
@@ -492,23 +503,23 @@ def create_simplified_migration(data: dict[str, pd.DataFrame], output_path: Path
         else:
             enhanced = dataset_tables_df.assign(workspace_id="", dataset_id="")
         dataset_tables_simplified = pd.DataFrame({
-            "Workspace": enhanced.get("workspace_name", ""),
-            "Workspace ID": enhanced.get("workspace_id", ""),
-            "Dataset": enhanced.get("dataset_name", ""),
-            "Dataset ID": enhanced.get("dataset_id", ""),
-            "Dataset Table": enhanced.get("table_name", ""),
-            "Storage Mode": enhanced.get("storage_mode", ""),
-            "Has Source Expression": enhanced.get("has_expression", pd.Series(dtype=bool)).apply(lambda x: "Yes" if x else "No") if not enhanced.empty else [],
+            "Workspace": _col(enhanced, "workspace_name"),
+            "Workspace ID": _col(enhanced, "workspace_id"),
+            "Dataset": _col(enhanced, "dataset_name"),
+            "Dataset ID": _col(enhanced, "dataset_id"),
+            "Dataset Table": _col(enhanced, "table_name"),
+            "Storage Mode": _col(enhanced, "storage_mode"),
+            "Has Source Expression": _col(enhanced, "has_expression", False).apply(lambda x: "Yes" if x else "No"),
         }).fillna("")
         dataset_tables_simplified.to_excel(writer, sheet_name="Dataset Tables", index=False)
 
         dataflows_df = data["dataflows"].copy()
         dataflows_simplified = pd.DataFrame({
-            "Workspace": dataflows_df.get("workspace_name", ""),
-            "Workspace ID": dataflows_df.get("workspace_id", ""),
-            "Dataflow Gen1": dataflows_df.get("dataflow_name", ""),
-            "Dataflow ID": dataflows_df.get("dataflow_id", ""),
-            "Generation": dataflows_df.get("generation", ""),
+            "Workspace": _col(dataflows_df, "workspace_name"),
+            "Workspace ID": _col(dataflows_df, "workspace_id"),
+            "Dataflow Gen1": _col(dataflows_df, "dataflow_name"),
+            "Dataflow ID": _col(dataflows_df, "dataflow_id"),
+            "Generation": _col(dataflows_df, "generation"),
         }).fillna("")
         dataflows_simplified.to_excel(writer, sheet_name="Dataflows Gen1", index=False)
 
@@ -579,16 +590,16 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         dataflows_df = data["dataflows"].copy()
         pd.DataFrame({
-            "Workspace": dataflows_df.get("workspace_name", ""), "Workspace ID": dataflows_df.get("workspace_id", ""),
-            "Dataflow": dataflows_df.get("dataflow_name", ""), "Dataflow ID": dataflows_df.get("dataflow_id", ""),
-            "Generation": dataflows_df.get("generation", ""),
+            "Workspace": _col(dataflows_df, "workspace_name"), "Workspace ID": _col(dataflows_df, "workspace_id"),
+            "Dataflow": _col(dataflows_df, "dataflow_name"), "Dataflow ID": _col(dataflows_df, "dataflow_id"),
+            "Generation": _col(dataflows_df, "generation"),
         }).fillna("").to_excel(writer, sheet_name="Dataflows Gen1", index=False)
 
         datasets_df = data["datasets"].copy()
         pd.DataFrame({
-            "Workspace": datasets_df.get("workspace_name", ""), "Workspace ID": datasets_df.get("workspace_id", ""),
-            "Dataset": datasets_df.get("dataset_name", ""), "Dataset ID": datasets_df.get("dataset_id", ""),
-            "Table Count": datasets_df.get("table_count", ""),
+            "Workspace": _col(datasets_df, "workspace_name"), "Workspace ID": _col(datasets_df, "workspace_id"),
+            "Dataset": _col(datasets_df, "dataset_name"), "Dataset ID": _col(datasets_df, "dataset_id"),
+            "Table Count": _col(datasets_df, "table_count"),
         }).fillna("").to_excel(writer, sheet_name="Datasets", index=False)
 
         pq_sources = data["pq_sources"].copy()
@@ -612,14 +623,14 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
             return server or ""
 
         lineage_sources = pd.DataFrame({
-            "Workspace": pq_enhanced.get("workspace_name", ""), "Workspace ID": pq_enhanced.get("workspace_id", ""),
-            "Dataset": pq_enhanced.get("artifact_name", ""), "Dataset ID": pq_enhanced.get("dataset_id", ""),
-            "Table / Query": pq_enhanced.get("table_or_entity", ""), "Source Type": pq_enhanced.get("source_type", ""),
+            "Workspace": _col(pq_enhanced, "workspace_name"), "Workspace ID": _col(pq_enhanced, "workspace_id"),
+            "Dataset": _col(pq_enhanced, "artifact_name"), "Dataset ID": _col(pq_enhanced, "dataset_id"),
+            "Table / Query": _col(pq_enhanced, "table_or_entity"), "Source Type": _col(pq_enhanced, "source_type"),
             "Origin": pq_enhanced.apply(_origin, axis=1) if not pq_enhanced.empty else [],
-            "Server / Host": pq_enhanced.get("server", ""), "Schema": pq_enhanced.get("schema", ""),
-            "Source Table": pq_enhanced.get("table", ""),
-            "SQL Query": pq_enhanced.get("raw_expression", pd.Series(dtype=str)).apply(_extract_sql_simple),
-            "Power Query Expression": pq_enhanced.get("raw_expression", pd.Series(dtype=str)).astype(str).str[:2000],
+            "Server / Host": _col(pq_enhanced, "server"), "Schema": _col(pq_enhanced, "schema"),
+            "Source Table": _col(pq_enhanced, "table"),
+            "SQL Query": _col(pq_enhanced, "raw_expression").apply(_extract_sql_simple),
+            "Power Query Expression": _col(pq_enhanced, "raw_expression").astype(str).str[:2000],
         }).fillna("")
         lineage_sources.to_excel(writer, sheet_name="Lineage Sources", index=False)
 
@@ -646,13 +657,13 @@ def create_powerquery_detailed(data: dict[str, pd.DataFrame], output_path: Path)
             tables_with_source = tables_with_full_expr
 
         query_analysis = pd.DataFrame({
-            "Workspace": tables_with_source.get("workspace_name", ""), "Workspace ID": tables_with_source.get("workspace_id", ""),
-            "Dataset": tables_with_source.get("dataset_name", ""), "Dataset ID": tables_with_source.get("dataset_id", ""),
-            "Table / Query": tables_with_source.get("table_name", ""),
-            "Expression Length": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).apply(lambda x: len(str(x)) if x and not pd.isna(x) else 0),
-            "Connector(s)": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).apply(_extract_connectors),
-            "Source Object Count": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).apply(_count_source_objects),
-            "Power Query Expression": tables_with_source.get("power_query_expression", pd.Series(dtype=str)).astype(str).str[:2000],
+            "Workspace": _col(tables_with_source, "workspace_name"), "Workspace ID": _col(tables_with_source, "workspace_id"),
+            "Dataset": _col(tables_with_source, "dataset_name"), "Dataset ID": _col(tables_with_source, "dataset_id"),
+            "Table / Query": _col(tables_with_source, "table_name"),
+            "Expression Length": _col(tables_with_source, "power_query_expression").apply(lambda x: len(str(x)) if x and not pd.isna(x) else 0),
+            "Connector(s)": _col(tables_with_source, "power_query_expression").apply(_extract_connectors),
+            "Source Object Count": _col(tables_with_source, "power_query_expression").apply(_count_source_objects),
+            "Power Query Expression": _col(tables_with_source, "power_query_expression").astype(str).str[:2000],
         }).fillna("")
         query_analysis.to_excel(writer, sheet_name="Query Analysis", index=False)
 

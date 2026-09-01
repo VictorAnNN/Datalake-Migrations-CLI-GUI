@@ -251,11 +251,18 @@ Fabric, para você saber com certeza se algo mudou ou não.
 | `lineage show dependencies\|catalog\|sharepoint [--batch-id ID] [--domain X]` | Lista as linhas persistidas de um artefato (padrão: última geração) |
 | `lineage isolate TERMO [--direction "Downstream"\|"Upstream"\|"Linhagem completa"]` | Mostra o Mapa Isolado (upstream/downstream) de uma tabela/fonte em texto |
 
+### 3.17. `dlctl supervisor` — diagnóstico geral do projeto (Bronze/Silver/Gold/Dashboards/Views)
+| Comando | O que faz |
+|---|---|
+| `supervisor scan [--lakehouse-dev-input DIR] [--workspaces-input DIR_OU_ZIP] [--save]` | Calcula, para Bronze/Silver/Dashboards, quanto **deveria existir no total** (união de `mappings/*.csv` + linhagem extraída de *todos* os notebooks de `input/lakehouse-dev` + tabelas Oracle referenciadas em `input/Workspaces` + total de relatórios do Power BI); para **Gold**, olha para todos os dashboards que o cliente precisa e calcula quais tabelas Gold eles realmente exigem (Dataset Tables dos relatórios em `input/Workspaces`) contra quantas dessas tabelas já existem de verdade em `input/lakehouse-dev`. Views/Processos intermediários usa uma meta manual. Com `--save`, exporta o relatório para `manifests/dashboard/` e grava no histórico |
+| `supervisor history` | Lista as visões já salvas (`scan --save`), com percentual geral e caminho do Excel de cada uma |
+| `supervisor set-targets [--intermediate N]` | Define a meta de Views/processos intermediários em `config/project_targets.yaml` (Bronze/Silver/Gold/Dashboards já são calculados automaticamente a partir de `input/`, sem precisar de meta manual) |
+
 ---
 
 ## 4. Tudo que existe no Dashboard (`dlctl dashboard`)
 
-O dashboard tem 8 páginas, acessíveis pela barra lateral esquerda.
+O dashboard tem 9 páginas, acessíveis pela barra lateral esquerda.
 
 ### 4.1. Página principal (Visão Geral) — só leitura
 - **KPIs**: quantas execuções tiveram sucesso, foram bloqueadas ou falharam.
@@ -308,6 +315,31 @@ O dashboard tem 8 páginas, acessíveis pela barra lateral esquerda.
   dashboard/relatório → dataset → tabela → SharePoint, marcando em vermelho o
   que não foi encontrado (ex.: relatório apontando para um dataset fora do
   scan, ou referência SharePoint não resolvida).
+
+### 4.7. Página "Supervisor" — diagnóstico geral do projeto
+- Botão **🔎 Rodar diagnóstico**: varre `input/lakehouse-dev` e `input/Workspaces`
+  e calcula, por categoria (Bronze, Silver, Gold, Dashboards/BI, Views/Processos
+  intermediários), quanto **existe de verdade** (notebooks reais em
+  `input/lakehouse-dev`) contra quanto **deveria existir no total** — para
+  Bronze/Silver isso é a união de `mappings/*.csv` com a linhagem
+  extraída de *todos* os notebooks (mesmo os ainda não classificados) e, para
+  Bronze, também as tabelas Oracle referenciadas nos datasets legados de
+  `input/Workspaces`. Para **Gold**, a meta é calculada olhando para todos os
+  dashboards do cliente em `input/Workspaces`: as tabelas do dataset de cada
+  relatório são o que o Gold **precisa** entregar, e o "existente" é quantas
+  dessas tabelas necessárias já têm um notebook Gold real em
+  `input/lakehouse-dev`. Para Dashboards/BI é o total de relatórios
+  encontrados em `input/Workspaces`, marcando como "pronto" quem já tem
+  alguma tabela do seu dataset batendo com uma tabela Gold já criada. Views/
+  Processos intermediários usa a meta configurada na seção "Meta" da própria
+  página — sem meta, a categoria fica de fora do % geral em vez de fingir 100%.
+- Barra de progresso + métricas por categoria + tabela detalhada + lista dos
+  notebooks encontrados (filtrável por categoria).
+- Seção **🎯 Meta**: define/edita a meta de Views/processos intermediários
+  (grava em `config/project_targets.yaml`).
+- Botão **💾 Salvar esta visão**: exporta o diagnóstico atual para
+  `manifests/dashboard/` (Excel com abas Resumo/Notebooks/Dashboards + CSV) e
+  registra no histórico exibido no final da página.
 
 ---
 
