@@ -122,15 +122,20 @@ def sync_workspace_notebooks(
     output_dir: Optional[str] = None,
     on_progress: Optional[ProgressCallback] = None,
     max_workers: Optional[int] = None,
+    workspace_id: Optional[str] = None,
 ) -> dict[str, object]:
     """Baixa os notebooks do workspace configurado no profile para
     `input/lakehouse-dev` (ou `output_dir`), no formato consumido pelo
     `dlctl.generators.lineage_generator` (um `notebook-content.py` por pasta).
 
+    `workspace_id` sobrepõe o workspace padrão do profile (`FABRIC_WORKSPACE_ID`)
+    — usado para sincronizar outros ambientes do mesmo tenant, como HML
+    (`FABRIC_WORKSPACE_ID_HML`), sem precisar trocar o profile inteiro.
+
     `max_workers` (1 a 8) controla o paralelismo dos downloads via
     ThreadPoolExecutor. Se omitido, usa `FABRIC_SYNC_MAX_WORKERS` do `.env`
     (padrão 4)."""
-    workspace_id = profile.microsoft.default_workspace_id
+    workspace_id = workspace_id or profile.microsoft.default_workspace_id
     if not workspace_id:
         raise NotebookSyncError(
             "FABRIC_WORKSPACE_ID não configurado no profile/.env. "

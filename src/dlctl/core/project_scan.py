@@ -101,11 +101,41 @@ def read_project_targets() -> dict:
 
 
 def write_project_targets(intermediate: Optional[int]) -> None:
+    data = yaml.safe_load(TARGETS_PATH.read_text(encoding="utf-8")) if TARGETS_PATH.exists() else {}
+    data = data or {}
+    data["targets"] = {"intermediate": intermediate}
     TARGETS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    TARGETS_PATH.write_text(
-        yaml.safe_dump({"targets": {"intermediate": intermediate}}, sort_keys=False),
-        encoding="utf-8",
-    )
+    TARGETS_PATH.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+
+# Prefixos padrão de nome de workspace que identificam os domínios hoje
+# migrados em input/lakehouse-dev (CONTROLADORIA/FINANCEIRO -> FINAN-,
+# OPERACAO/QSMS/SUPRIMENTOS -> OPER- (inclui OPER-QSMS-*/OPER-SUPPLY-*),
+# MASTER_DATA -> MASTER-DATA, Suprimentos/Order Tracking -> ORDER-TRACKING).
+# Descoberto comparando a contagem de Reports desses workspaces (421) com o
+# número informado pela gestão do projeto (428) — bem mais preciso do que
+# contar TODOS os workspaces do tenant (569 Reports).
+DEFAULT_WORKSPACE_DOMAIN_PREFIXES = ["OPER-", "FINAN-", "MASTER-DATA", "ORDER-TRACKING"]
+
+
+def read_workspace_domain_prefixes() -> list[str]:
+    """Prefixos de nome de workspace usados pelo filtro 'por domínio' do
+    Supervisor. Editável em config/project_targets.yaml (chave
+    `workspace_domain_prefixes`); sem configuração, usa o padrão acima."""
+    if not TARGETS_PATH.exists():
+        return list(DEFAULT_WORKSPACE_DOMAIN_PREFIXES)
+    data = yaml.safe_load(TARGETS_PATH.read_text(encoding="utf-8")) or {}
+    prefixes = data.get("workspace_domain_prefixes")
+    return list(prefixes) if prefixes else list(DEFAULT_WORKSPACE_DOMAIN_PREFIXES)
+
+
+def write_workspace_domain_prefixes(prefixes: list[str]) -> None:
+    data = yaml.safe_load(TARGETS_PATH.read_text(encoding="utf-8")) if TARGETS_PATH.exists() else {}
+    data = data or {}
+    data["workspace_domain_prefixes"] = prefixes
+    TARGETS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    TARGETS_PATH.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
 
 
 def _pct(existente: int, esperado: Optional[int]) -> Optional[float]:
@@ -131,12 +161,12 @@ def _oracle_tables_from_workspaces(workspaces_input: str) -> set[str]:
     return {_norm(t) for t in oracle_df["oracle_table"] if t}
 
 
-def _gold_table_names_realmente_criadas(lakehouse_dev_input: str) -> set[str]:
+def _gold_table_names_realmente_criadas(lakehouse_input: str) -> set[str]:
     """Nomes das tabelas Gold que têm, de verdade, um notebook criado na
-    pasta `_gold` de input/lakehouse-dev (parseia cada notebook Gold real
-    para extrair o nome da tabela de destino)."""
+    pasta `_gold` de um lakehouse (`input/lakehouse-dev` ou `input/lakehouse-hml`)
+    (parseia cada notebook Gold real para extrair o nome da tabela de destino)."""
     names: set[str] = set()
-    for nb_path in find_notebooks(lakehouse_dev_input):
+    for nb_path in find_notebooks(lakehouse_input):
         if _categorize_notebook_path(nb_path) != "gold":
             continue
         try:
@@ -147,6 +177,27 @@ def _gold_table_names_realmente_criadas(lakehouse_dev_input: str) -> set[str]:
         if parsed.get("gold_table"):
             names.add(_norm(parsed["gold_table"]))
     return names
+
+
+def _category_identity_map(lakehouse_input: str) -> dict[str, set[str]]:
+    """Mapeia cada categoria (bronze/silver/gold/controle/...) para o conjunto
+    de notebooks encontrados em um lakehouse, identificados pela pasta (sem a
+    extensão .py/.sql) — usado para casar o MESMO notebook entre
+    `input/lakehouse-dev` e `input/lakehouse-hml` (promovido ou não)."""
+    identities: dict[str, set[str]] = {c: set() for c, _ in _CATEGORY_PATTERNS}
+    identities["outro"] = set()
+    root = Path(lakehouse_input) if lakehouse_input else None
+    if not root or not root.exists():
+        return identities
+    for nb_path in find_notebooks(lakehouse_input):
+        category = _categorize_notebook_path(nb_path)
+        try:
+            identity = str(nb_path.parent.relative_to(root)).replace("\\", "/")
+        except ValueError:
+            identity = str(nb_path.parent)
+        identities[category].add(identity)
+    return identities
+
 
 
 def _dashboard_table_names(workspace_rows: list[dict]) -> dict[str, set[str]]:
@@ -185,6 +236,21 @@ def _filter_workspace_rows(workspace_rows: list[dict], workspaces_to_keep: set[s
     return [r for r in workspace_rows if r["workspace"] in workspaces_to_keep]
 
 
+def _workspaces_by_domain_prefix(workspace_rows: list[dict], prefixes: list[str]) -> set[str]:
+    """Nomes dos workspaces cujo nome começa com algum dos prefixos
+    configurados (ex.: OPER-, FINAN-, MASTER-DATA, ORDER-TRACKING) — os
+    domínios de negócio hoje migrados em input/lakehouse-dev. Mais
+    determinístico do que casar por nome de tabela: não depende do dataset
+    já ter alguma tabela conhecida, só do nome do workspace."""
+    prefixes_upper = tuple(p.strip().upper() for p in prefixes if p and p.strip())
+    if not prefixes_upper:
+        return set()
+    return {
+        r["workspace"] for r in workspace_rows
+        if r["item_type"] == "Workspace" and _norm(r["workspace"]).startswith(prefixes_upper)
+    }
+
+
 def _gold_needed_for_dashboards(dashboard_tables: dict[str, set[str]]) -> set[str]:
     """União de todas as tabelas necessárias (por qualquer dashboard) — o
     universo de tabelas Gold que o cliente precisa para os dashboards dele."""
@@ -209,34 +275,88 @@ def scan_project(
     lakehouse_dev_input: str = "input/lakehouse-dev",
     workspaces_input: Optional[str] = "input/Workspaces",
     only_referenced_workspaces: bool = False,
+    filter_by_domain_prefix: bool = False,
+    lakehouse_hml_input: Optional[str] = None,
 ) -> dict:
     """Varre os artefatos reais do projeto e monta o diagnóstico geral
     (Bronze/Silver/Gold/Dashboards/Views). "Esperado" é a união de tudo que
     foi encontrado em `input/` (mappings + linhagem de notebooks + Oracle
-    refs de Workspaces); "existente" é sempre a contagem real de notebooks
-    já criados em `input/lakehouse-dev`.
+    refs de Workspaces); "existente" é a contagem real de notebooks já
+    criados — em `input/lakehouse-dev` e, se `lakehouse_hml_input` for
+    informado, também em `input/lakehouse-hml` (união das duas, sem contar
+    duas vezes o mesmo notebook já promovido para HML).
 
-    Se `only_referenced_workspaces=True`, descarta do cálculo de Dashboards/BI
-    e Gold os workspaces de `input/Workspaces` que não têm nenhuma Dataset
-    Table batendo com uma tabela conhecida em `input/lakehouse-dev` (Bronze/
-    Silver/Gold) — nem todo workspace do tenant faz parte deste projeto de
-    migração, só os que de fato referenciam algo já mapeado/gerado aqui."""
+    Dois filtros opcionais e mutuamente exclusivos descartam, do cálculo de
+    Dashboards/BI e Gold, os workspaces de `input/Workspaces` que não fazem
+    parte deste projeto (`filter_by_domain_prefix` tem prioridade se ambos
+    forem passados):
+    - `filter_by_domain_prefix=True`: mantém só workspaces cujo nome começa
+      com um dos prefixos de `read_workspace_domain_prefixes()` (ex.: OPER-,
+      FINAN-, MASTER-DATA, ORDER-TRACKING) — determinístico, baseado nos
+      domínios de negócio já migrados em `input/lakehouse-dev`;
+    - `only_referenced_workspaces=True`: mantém só workspaces que têm alguma
+      Dataset Table batendo com uma tabela conhecida em `input/lakehouse-dev`
+      (Bronze/Silver/Gold) — mais permissivo, útil quando os prefixos de
+      nome não são conhecidos/configurados."""
     lakehouse_dev_input = _resolve_input_path(lakehouse_dev_input)
+    lakehouse_hml_input = _resolve_input_path(lakehouse_hml_input) if lakehouse_hml_input else None
+    hml_found = bool(lakehouse_hml_input) and Path(lakehouse_hml_input).exists()
     workspaces_input = _resolve_input_path(workspaces_input) if workspaces_input else None
     workspaces_found = bool(workspaces_input) and Path(workspaces_input).exists()
+
 
     # ---- Notebooks reais em input/lakehouse-dev, categorizados por pasta (o que já foi CRIADO) ----
     notebook_rows: list[dict] = []
     category_counts: dict[str, int] = {c: 0 for c, _ in _CATEGORY_PATTERNS}
     category_counts["outro"] = 0
+    dev_identities: dict[str, set[str]] = {c: set() for c, _ in _CATEGORY_PATTERNS}
+    dev_identities["outro"] = set()
+    dev_root = Path(lakehouse_dev_input)
     for nb_path in find_notebooks(lakehouse_dev_input):
         category = _categorize_notebook_path(nb_path)
         category_counts[category] += 1
+        try:
+            identity = str(nb_path.parent.relative_to(dev_root)).replace("\\", "/")
+        except ValueError:
+            identity = str(nb_path.parent)
+        dev_identities[category].add(identity)
         try:
             rel = str(nb_path.relative_to(PROJECT_ROOT))
         except ValueError:
             rel = str(nb_path)
         notebook_rows.append({"categoria": CATEGORY_LABELS.get(category, category), "caminho": rel})
+
+    # ---- Notebooks reais em input/lakehouse-hml (mesma árvore de pastas, para casar por identidade) ----
+    hml_identities = _category_identity_map(lakehouse_hml_input) if hml_found else {c: set() for c in category_counts}
+
+    # "Geral" = união dev+hml por categoria (mesmo notebook promovido não conta 2x); sem HML, é igual ao dev.
+    category_counts_geral: dict[str, int] = {
+        cat: len(dev_identities.get(cat, set()) | hml_identities.get(cat, set())) for cat in category_counts
+    }
+
+    env_categories = [
+        {
+            "categoria": CATEGORY_LABELS.get(cat, cat),
+            "existente_dev": len(dev_identities.get(cat, set())),
+            "existente_hml": len(hml_identities.get(cat, set())),
+            "existente_geral": category_counts_geral[cat],
+            "promovidos_hml": len(dev_identities.get(cat, set()) & hml_identities.get(cat, set())),
+            "somente_dev": len(dev_identities.get(cat, set()) - hml_identities.get(cat, set())),
+            "pct_hml": (
+                round(len(hml_identities.get(cat, set())) / category_counts_geral[cat] * 100, 1)
+                if category_counts_geral[cat] else None
+            ),
+        }
+        for cat in category_counts if cat != "outro"
+    ]
+    total_dev = sum(len(s) for s in dev_identities.values())
+    total_hml = sum(len(s) for s in hml_identities.values())
+    total_geral = sum(category_counts_geral.values())
+    env_totals = {
+        "existente_dev": total_dev, "existente_hml": total_hml, "existente_geral": total_geral,
+        "promovidos_hml": sum(e["promovidos_hml"] for e in env_categories),
+        "pct_hml": round(total_hml / total_geral * 100, 1) if total_geral else None,
+    }
 
     # ---- "Esperado": união de mappings/*.csv + linhagem de TODOS os notebooks + Oracle refs ----
     bronze_to_silver = load_mapping(profile, layer="bronze_to_silver")
@@ -260,12 +380,20 @@ def scan_project(
     gold_existente_names: set[str] = set()
     workspaces_total = 0
     workspaces_referenciados: set[str] = set()
+    workspace_filter_mode: Optional[str] = None
     if workspaces_found:
         workspace_rows = build_workspace_inventory(workspaces_input)
         workspaces_total = len({r["workspace"] for r in workspace_rows if r["item_type"] == "Workspace"})
         bronze_universe |= _oracle_tables_from_workspaces(workspaces_input)
         gold_existente_names = _gold_table_names_realmente_criadas(lakehouse_dev_input)
-        if only_referenced_workspaces:
+        if hml_found:
+            gold_existente_names |= _gold_table_names_realmente_criadas(lakehouse_hml_input)
+        if filter_by_domain_prefix:
+            workspace_filter_mode = "domain_prefix"
+            workspaces_referenciados = _workspaces_by_domain_prefix(workspace_rows, read_workspace_domain_prefixes())
+            workspace_rows = _filter_workspace_rows(workspace_rows, workspaces_referenciados)
+        elif only_referenced_workspaces:
+            workspace_filter_mode = "referenced_table"
             table_universe = bronze_universe | silver_universe | gold_universe | gold_existente_names
             workspaces_referenciados = _workspaces_referenciados(workspace_rows, table_universe)
             workspace_rows = _filter_workspace_rows(workspace_rows, workspaces_referenciados)
@@ -283,38 +411,44 @@ def scan_project(
         gold_existente_count = len(gold_needed & gold_existente_names)
         gold_fonte = (
             "Tabelas Gold que os dashboards de input/Workspaces precisam (Dataset Tables dos relatórios) "
-            "vs. tabelas Gold realmente criadas em input/lakehouse-dev"
+            "vs. tabelas Gold realmente criadas em input/lakehouse-dev" + (" + input/lakehouse-hml" if hml_found else "")
         )
     else:
         gold_esperado = len(gold_universe)
-        gold_existente_count = category_counts["gold"]
+        gold_existente_count = category_counts_geral["gold"]
         gold_fonte = (
-            "União: mappings/silver_to_gold.csv + linhagem de todos os notebooks (input/lakehouse-dev) "
-            "— input/Workspaces não encontrado/sem dados para calcular a partir dos dashboards"
+            "União: mappings/silver_to_gold.csv + linhagem de todos os notebooks (input/lakehouse-dev"
+            + (" + input/lakehouse-hml)" if hml_found else ")")
+            + " — input/Workspaces não encontrado/sem dados para calcular a partir dos dashboards"
         )
 
     targets = read_project_targets()
 
     categories = [
-        {"categoria": "Bronze", "existente": category_counts["bronze"], "esperado": len(bronze_universe),
-         "percentual": _pct(category_counts["bronze"], len(bronze_universe)),
-         "fonte_meta": "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks + Oracle refs (input/Workspaces)"},
-        {"categoria": "Silver", "existente": category_counts["silver"], "esperado": len(silver_universe),
-         "percentual": _pct(category_counts["silver"], len(silver_universe)),
-         "fonte_meta": "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks (input/lakehouse-dev)"},
+        {"categoria": "Bronze", "existente": category_counts_geral["bronze"], "esperado": len(bronze_universe),
+         "percentual": _pct(category_counts_geral["bronze"], len(bronze_universe)),
+         "fonte_meta": "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks + Oracle refs (input/Workspaces)"
+                       + (" | existente = união DEV+HML" if hml_found else "")},
+        {"categoria": "Silver", "existente": category_counts_geral["silver"], "esperado": len(silver_universe),
+         "percentual": _pct(category_counts_geral["silver"], len(silver_universe)),
+         "fonte_meta": "União: mappings/bronze_to_silver.csv + linhagem de todos os notebooks (input/lakehouse-dev)"
+                       + (" | existente = união DEV+HML" if hml_found else "")},
         {"categoria": "Gold", "existente": gold_existente_count, "esperado": gold_esperado,
          "percentual": _pct(gold_existente_count, gold_esperado),
          "fonte_meta": gold_fonte},
         {"categoria": "Dashboards/BI", "existente": dashboards_existente, "esperado": dashboards_esperado,
          "percentual": _pct(dashboards_existente, dashboards_esperado),
          "fonte_meta": (
-             ("Total de relatórios em input/Workspaces" + (" (só workspaces referenciados em lakehouse-dev)" if only_referenced_workspaces else ""))
+             ("Total de relatórios em input/Workspaces" + {
+                 "domain_prefix": " (só workspaces com prefixo de domínio conhecido)",
+                 "referenced_table": " (só workspaces referenciados em lakehouse-dev)",
+             }.get(workspace_filter_mode, ""))
              + "; \"pronto\" = dataset já bate com uma tabela Gold criada"
          ) if workspaces_found else "input/Workspaces não encontrado"},
         {"categoria": "Views/Processos intermediários",
-         "existente": category_counts["controle"] + category_counts["qualidade_dados"],
+         "existente": category_counts_geral["controle"] + category_counts_geral["qualidade_dados"],
          "esperado": targets["intermediate"],
-         "percentual": _pct(category_counts["controle"] + category_counts["qualidade_dados"], targets["intermediate"]),
+         "percentual": _pct(category_counts_geral["controle"] + category_counts_geral["qualidade_dados"], targets["intermediate"]),
          "fonte_meta": "config/project_targets.yaml (meta manual)" if targets["intermediate"] else "meta não configurada"},
     ]
 
@@ -330,13 +464,19 @@ def scan_project(
         "overall_percent": overall_percent,
         "excluded_from_overall": [c["categoria"] for c in categories if not c["esperado"]],
         "notebook_rows": notebook_rows,
-        "notebook_category_counts": {CATEGORY_LABELS.get(k, k): v for k, v in category_counts.items() if v},
+        "notebook_category_counts": {CATEGORY_LABELS.get(k, k): v for k, v in category_counts_geral.items() if v},
         "workspace_rows": workspace_rows,
         "lakehouse_dev_input": lakehouse_dev_input,
         "workspaces_input": workspaces_input if workspaces_found else None,
         "only_referenced_workspaces": only_referenced_workspaces,
+        "filter_by_domain_prefix": filter_by_domain_prefix,
+        "workspace_filter_mode": workspace_filter_mode,
         "workspaces_total": workspaces_total,
-        "workspaces_referenciados": sorted(workspaces_referenciados) if only_referenced_workspaces else None,
+        "workspaces_referenciados": sorted(workspaces_referenciados) if workspace_filter_mode else None,
+        "hml_enabled": hml_found,
+        "lakehouse_hml_input": lakehouse_hml_input if hml_found else None,
+        "env_categories": env_categories,
+        "env_totals": env_totals,
     }
 
 

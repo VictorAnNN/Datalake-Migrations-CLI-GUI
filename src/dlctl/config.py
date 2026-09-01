@@ -30,6 +30,7 @@ class MicrosoftConfig(BaseModel):
     auth_mode: str = "azure_cli"
     default_workspace_name: Optional[str] = None
     default_workspace_id: Optional[str] = None
+    hml_workspace_id: Optional[str] = None
     scopes: list[str] = Field(default_factory=list)
 
 
@@ -119,6 +120,7 @@ def load_profile(profile_name: Optional[str] = None) -> Profile:
         auth_mode=_env(ms_raw.get("auth_mode_env")) or "azure_cli",
         default_workspace_name=_env(ms_raw.get("default_workspace_name_env")),
         default_workspace_id=_env(ms_raw.get("default_workspace_id_env")),
+        hml_workspace_id=_env(ms_raw.get("hml_workspace_id_env")) or os.environ.get("FABRIC_WORKSPACE_ID_HML") or None,
         scopes=ms_raw.get("scopes", []),
     )
     oracle = OracleConfig(

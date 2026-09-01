@@ -11,7 +11,13 @@ import typer
 
 from dlctl.commands.common import console, get_profile, print_table
 from dlctl.core import state as state_db
-from dlctl.core.project_scan import export_supervisor_report, scan_project, write_project_targets
+from dlctl.core.project_scan import (
+    export_supervisor_report,
+    read_workspace_domain_prefixes,
+    scan_project,
+    write_project_targets,
+    write_workspace_domain_prefixes,
+)
 
 app = typer.Typer(help="Supervisor: diagnóstico geral do andamento do projeto (Bronze/Silver/Gold/Dashboards/Views).")
 
@@ -20,8 +26,10 @@ app = typer.Typer(help="Supervisor: diagnóstico geral do andamento do projeto (
 def scan(
     profile: str = typer.Option(None, "--profile"),
     lakehouse_dev_input: str = typer.Option("input/lakehouse-dev", "--lakehouse-dev-input"),
+    lakehouse_hml_input: str = typer.Option(None, "--lakehouse-hml-input", help="Pasta com os notebooks sincronizados de HML (ex.: input/lakehouse-hml). Quando informada, 'existente' passa a considerar a união DEV+HML e mostra o % já promovido para HML."),
     workspaces_input: str = typer.Option("input/Workspaces", "--workspaces-input", help="Pasta/zip com os JSONs do Fabric Scanner API (opcional, alimenta a contagem de Dashboards/BI)."),
     only_referenced_workspaces: bool = typer.Option(False, "--only-referenced-workspaces", help="Considera só workspaces de input/Workspaces que têm alguma Dataset Table batendo com uma tabela conhecida em input/lakehouse-dev (Bronze/Silver/Gold) — descarta workspaces do tenant sem relação com este projeto."),
+    filter_by_domain_prefix: bool = typer.Option(False, "--filter-by-domain-prefix", help="Considera só workspaces cujo nome começa com um dos prefixos configurados em `dlctl supervisor set-workspace-prefixes` (ex.: OPER-, FINAN-, MASTER-DATA, ORDER-TRACKING) — tem prioridade sobre --only-referenced-workspaces."),
     save: bool = typer.Option(False, "--save", help="Exporta o relatório (Excel + CSV) em manifests/dashboard/ e salva um snapshot no histórico."),
 ):
     """Roda o diagnóstico geral do projeto e imprime o percentual por
@@ -29,7 +37,8 @@ def scan(
     p = get_profile(profile)
     result = scan_project(
         p, lakehouse_dev_input=lakehouse_dev_input, workspaces_input=workspaces_input,
-        only_referenced_workspaces=only_referenced_workspaces,
+        only_referenced_workspaces=only_referenced_workspaces, filter_by_domain_prefix=filter_by_domain_prefix,
+        lakehouse_hml_input=lakehouse_hml_input,
     )
 
     print_table(
@@ -42,10 +51,18 @@ def scan(
         ],
     )
     console.print(f"\n[bold]% geral do projeto:[/bold] {result['overall_percent']}%")
-    if result["workspaces_referenciados"] is not None:
+    if result["hml_enabled"]:
+        et = result["env_totals"]
+        pct_hml = et["pct_hml"] if et["pct_hml"] is not None else 0
         console.print(
-            f"[cyan]Workspaces referenciados:[/cyan] {len(result['workspaces_referenciados'])} de "
-            f"{result['workspaces_total']} em input/Workspaces (--only-referenced-workspaces ativo)"
+            f"[cyan]DEV vs HML:[/cyan] {et['existente_dev']} notebook(s) em DEV, {et['existente_hml']} em HML "
+            f"({pct_hml}% do existente já promovido para HML)"
+        )
+    if result["workspaces_referenciados"] is not None:
+        modo = "--filter-by-domain-prefix" if result["workspace_filter_mode"] == "domain_prefix" else "--only-referenced-workspaces"
+        console.print(
+            f"[cyan]Workspaces considerados:[/cyan] {len(result['workspaces_referenciados'])} de "
+            f"{result['workspaces_total']} em input/Workspaces ({modo} ativo)"
         )
     if result["excluded_from_overall"]:
         console.print(
@@ -89,3 +106,20 @@ def set_targets(
     calculados a partir de input/ e não precisam de meta manual)."""
     write_project_targets(intermediate)
     console.print(f"[green]OK[/green]: meta salva em config/project_targets.yaml (intermediate={intermediate})")
+
+
+@app.command("set-workspace-prefixes")
+def set_workspace_prefixes(
+    prefixes: Optional[str] = typer.Option(None, "--prefixes", help="Lista separada por vírgula dos prefixos de nome de workspace que definem os domínios deste projeto (ex.: 'OPER-,FINAN-,MASTER-DATA,ORDER-TRACKING'). Sem esta opção, só mostra os prefixos atuais."),
+):
+    """Configura (ou mostra) os prefixos de nome de workspace usados por
+    `dlctl supervisor scan --filter-by-domain-prefix` para identificar quais
+    workspaces de input/Workspaces pertencem aos domínios de negócio já
+    migrados em input/lakehouse-dev."""
+    if prefixes is None:
+        current = read_workspace_domain_prefixes()
+        console.print(f"Prefixos atuais: {', '.join(current)}")
+        return
+    prefix_list = [p.strip() for p in prefixes.split(",") if p.strip()]
+    write_workspace_domain_prefixes(prefix_list)
+    console.print(f"[green]OK[/green]: prefixos salvos em config/project_targets.yaml: {', '.join(prefix_list)}")

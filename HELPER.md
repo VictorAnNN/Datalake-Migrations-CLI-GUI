@@ -72,6 +72,40 @@ dlctl auth oracle-doctor   # testa Oracle
 ```
 Ou pelo dashboard: página **Configuração → aba "Testar Conexões"**.
 
+### 1.3b. Cada pessoa/máquina precisa do seu próprio `az login`
+
+Com `FABRIC_AUTH_MODE=azure_cli` (padrão), quem autentica é a sessão do
+**Azure CLI**, não o `dlctl` — e essa sessão pertence a quem/onde rodou o
+`az login`, não a cada usuário do dashboard. Antes de rodar qualquer ação que
+fale com o Fabric (sincronizar notebooks, `dlctl auth doctor`, etc.), garanta
+que existe uma sessão válida no ambiente onde o `dlctl` está rodando:
+
+- **Instalação local (cada pessoa roda o `dlctl` na própria máquina)**: cada
+  pessoa instala o Azure CLI e roda `az login` (+ `az account set
+  --subscription "..."` se tiver mais de uma assinatura) **na sua própria
+  máquina**, uma vez. A sessão fica salva no perfil do Azure CLI do usuário
+  (`~/.azure` ou `%USERPROFILE%\.azure`) e vale para todas as execuções
+  futuras, até expirar.
+- **Dashboard compartilhado via Docker/servidor (seção 2.1 do README, um
+  container usado por várias pessoas)**: a sessão do Azure CLI é **uma só**
+  para todo o container (persistida no volume `azure-cli-config`) — não é por
+  usuário do navegador. Quem administra o servidor roda, uma vez:
+  ```bash
+  docker compose exec dlctl az login --use-device-code
+  ```
+  usando uma conta com acesso ao workspace Fabric. A partir daí, **qualquer
+  pessoa** que use aquele dashboard compartilhado herda essa mesma
+  identidade/permissões do Fabric — não existe login individual por usuário
+  do navegador nesse modo. Se seu time precisa que cada pessoa use suas
+  próprias permissões do Fabric, cada uma precisa da sua própria instalação
+  (local ou container próprio), não uma instância compartilhada.
+- **Sessão expirou ou trocou de máquina/container**: qualquer chamada ao
+  Fabric falha com `FabricAuthError: Não foi possível obter o token do Azure
+  CLI: ERROR: Please run 'az login' to setup account.` — a correção é sempre
+  rodar `az login` de novo (localmente) ou `docker compose exec dlctl az
+  login --use-device-code` (Docker). Não é um bug do `dlctl`, é a sessão do
+  Azure CLI mesmo que precisa ser renovada.
+
 ### 1.4. Abrir o dashboard
 ```bash
 dlctl dashboard

@@ -583,6 +583,58 @@ with tab_lineage:
                     st.write(f"- {failure}")
 
     st.divider()
+    st.subheader("🧪 Sincronizar notebooks do workspace de Homologação (HML)")
+    st.caption(
+        "Mesma sincronização acima, mas para o workspace de Homologação (`FABRIC_WORKSPACE_ID_HML`), "
+        "baixando para `input/lakehouse-hml/`. Alimenta o comparativo DEV vs. HML na página Supervisor."
+    )
+    col_hml1, col_hml2, col_hml3 = st.columns(3)
+    with col_hml1:
+        sync_hml_output_dir = st.text_input(
+            "Pasta de destino (HML)", value="input/lakehouse-hml",
+            help="Pasta local onde os notebooks baixados do workspace HML serão salvos.",
+        )
+    with col_hml2:
+        sync_hml_max_workers = st.number_input(
+            "Downloads simultâneos (1-8) (HML)", min_value=1, max_value=8, value=max(1, min(default_workers, 8)),
+            help="Paraleliza o download dos notebooks via Azure CLI. Reduza se a API retornar erro 429 (throttling).",
+        )
+    with col_hml3:
+        st.markdown(f"**Workspace HML configurado:** `{profile.microsoft.hml_workspace_id or '(não configurado — defina FABRIC_WORKSPACE_ID_HML no .env)'}`")
+
+    if st.button(
+        "🔄 Puxar/atualizar notebooks do workspace HML (az login)", type="primary", key="btn_sync_notebooks_hml",
+        disabled=not profile.microsoft.hml_workspace_id,
+        help="Autentica via Azure CLI (`az login`) e baixa/atualiza todos os notebooks do workspace HML "
+             "para a pasta indicada acima. Equivalente a `dlctl lineage sync-notebooks-hml`.",
+    ):
+        progress_area_hml = st.container()
+        progress_bar_hml = st.progress(0.0)
+
+        def on_sync_progress_hml(index: int, total: int, name: str) -> None:
+            progress_bar_hml.progress(min(index / total, 1.0))
+            with progress_area_hml:
+                st.write(f"[{index}/{total}] {name}")
+
+        try:
+            with st.spinner(f"Autenticando via Azure CLI e baixando notebooks HML ({sync_hml_max_workers} em paralelo)..."):
+                sync_hml_result = sync_workspace_notebooks(
+                    profile, output_dir=sync_hml_output_dir, on_progress=on_sync_progress_hml,
+                    max_workers=int(sync_hml_max_workers), workspace_id=profile.microsoft.hml_workspace_id,
+                )
+        except NotebookSyncError as exc:
+            st.error(f"Falha ao sincronizar notebooks HML: {exc}")
+        else:
+            st.success(
+                f"✅ {sync_hml_result['downloaded']}/{sync_hml_result['total']} notebook(s) baixados para "
+                f"`{sync_hml_result['output_dir']}` (paralelismo: {sync_hml_result['max_workers']} worker(s))"
+            )
+            if sync_hml_result["failures"]:
+                st.warning(f"{len(sync_hml_result['failures'])} falha(s):")
+                for failure in sync_hml_result["failures"]:
+                    st.write(f"- {failure}")
+
+    st.divider()
     st.subheader("📊 Gerar artefatos de Linhagem")
     st.caption(
         "Parseia os notebooks baixados acima (+ opcionalmente os JSONs do Fabric Scanner API) "

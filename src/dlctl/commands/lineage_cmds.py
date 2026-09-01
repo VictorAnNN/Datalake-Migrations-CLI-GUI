@@ -24,6 +24,7 @@ def sync_notebooks(
     output_dir: str = typer.Option(None, "--output-dir", help="Padrão: input/lakehouse-dev (ou FABRIC_SYNC_OUTPUT_DIR)."),
     max_workers: int = typer.Option(None, "--max-workers", min=1, max=8,
                                      help="Downloads simultâneos (1-8). Padrão: FABRIC_SYNC_MAX_WORKERS do .env (ou 4)."),
+    workspace_id: str = typer.Option(None, "--workspace-id", help="Sobrepõe o workspace padrão do profile (FABRIC_WORKSPACE_ID). Ex.: para sincronizar outro ambiente sem trocar de profile."),
 ):
     """Baixa os notebooks do workspace configurado via Azure CLI (`az login`),
     forma padrão de conexão desta feature com o Fabric."""
@@ -33,7 +34,9 @@ def sync_notebooks(
         console.print(f"[{index}/{total}] {name}")
 
     try:
-        result = sync_workspace_notebooks(p, output_dir=output_dir, on_progress=_progress, max_workers=max_workers)
+        result = sync_workspace_notebooks(
+            p, output_dir=output_dir, on_progress=_progress, max_workers=max_workers, workspace_id=workspace_id,
+        )
     except NotebookSyncError as exc:
         console.print(f"[bold red]Falha ao sincronizar notebooks:[/bold red] {exc}")
         raise typer.Exit(code=1)
@@ -46,6 +49,48 @@ def sync_notebooks(
         console.print(f"[yellow]{len(result['failures'])} falha(s):[/yellow]")
         for failure in result["failures"]:
             console.print(f"  - {failure}")
+
+
+@app.command("sync-notebooks-hml")
+def sync_notebooks_hml(
+    profile: str = typer.Option(None, "--profile"),
+    output_dir: str = typer.Option("input/lakehouse-hml", "--output-dir", help="Padrão: input/lakehouse-hml."),
+    max_workers: int = typer.Option(None, "--max-workers", min=1, max=8,
+                                     help="Downloads simultâneos (1-8). Padrão: FABRIC_SYNC_MAX_WORKERS do .env (ou 4)."),
+):
+    """Baixa os notebooks do workspace de Homologação (`FABRIC_WORKSPACE_ID_HML`)
+    via Azure CLI (`az login`) para `input/lakehouse-hml` — mesma lógica de
+    `sync-notebooks`, mas para o ambiente HML, usada pelo Supervisor para medir
+    o quanto do projeto já foi promovido de DEV para HML."""
+    p = get_profile(profile)
+    if not p.microsoft.hml_workspace_id:
+        console.print(
+            "[bold red]Falha:[/bold red] FABRIC_WORKSPACE_ID_HML não configurado no .env. "
+            "Copie o GUID da URL do workspace HML no portal Fabric."
+        )
+        raise typer.Exit(code=1)
+
+    def _progress(index: int, total: int, name: str) -> None:
+        console.print(f"[{index}/{total}] {name}")
+
+    try:
+        result = sync_workspace_notebooks(
+            p, output_dir=output_dir, on_progress=_progress, max_workers=max_workers,
+            workspace_id=p.microsoft.hml_workspace_id,
+        )
+    except NotebookSyncError as exc:
+        console.print(f"[bold red]Falha ao sincronizar notebooks:[/bold red] {exc}")
+        raise typer.Exit(code=1)
+
+    console.print(
+        f"[green]OK[/green]: {result['downloaded']}/{result['total']} notebook(s) em {result['output_dir']} "
+        f"(paralelismo: {result['max_workers']} worker(s))"
+    )
+    if result["failures"]:
+        console.print(f"[yellow]{len(result['failures'])} falha(s):[/yellow]")
+        for failure in result["failures"]:
+            console.print(f"  - {failure}")
+
 
 
 @app.command("generate")

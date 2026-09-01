@@ -295,6 +295,21 @@ docker compose exec dlctl az login
 A sessão fica persistida no volume nomeado `azure-cli-config`, então não
 precisa logar de novo a cada `docker compose up`.
 
+> ⚠️ **Essa sessão é do container, não de cada pessoa.** Se várias pessoas
+> usam o mesmo container/servidor (dashboard compartilhado), o `az login`
+> feito uma vez vale para todo mundo que acessar aquele dashboard — não é um
+> login por usuário do navegador. Se aparecer o erro `FabricAuthError: Não
+> foi possível obter o token do Azure CLI: ERROR: Please run 'az login' to
+> setup account.` (ex.: ao clicar em "Puxar/atualizar notebooks"), é porque
+> essa sessão do container nunca foi criada ou expirou — rode `docker compose
+> exec dlctl az login --use-device-code` de novo (com uma conta que tenha
+> acesso ao workspace Fabric) e o erro some para todas as ações seguintes,
+> sem precisar repetir a cada execução. Se cada pessoa do time precisa usar
+> suas **próprias** permissões do Fabric (em vez de compartilhar uma única
+> identidade), cada uma deve ter sua própria instalação (local ou container
+> próprio) em vez de uma instância compartilhada — veja a seção
+> "Considerações para múltiplas máquinas / múltiplos usuários" abaixo.
+
 Rodar qualquer comando do CLI sem abrir o dashboard:
 
 ```bash
@@ -467,6 +482,14 @@ Descubra o IP do servidor com `ipconfig` (Windows) ou `ip addr` / `hostname -I` 
 - Cada máquina que instala o projeto (seção 2) tem seu **próprio** `.env`,
   `config/profiles.yaml` e `state/dlctl.db` — são arquivos locais, não
   sincronizados automaticamente entre máquinas.
+- Com `FABRIC_AUTH_MODE=azure_cli` (padrão), cada máquina/container também
+  precisa da sua **própria** sessão de `az login` — não é algo que se
+  configura pelo `.env`. Se cada pessoa instala o projeto localmente, cada
+  uma roda `az login` (com sua própria conta) uma vez na sua máquina; se o
+  time usa um dashboard compartilhado via Docker (seção 2.1), quem administra
+  o servidor roda `az login` uma vez dentro do container — e todo mundo que
+  acessa aquele dashboard passa a usar essa mesma identidade/permissões do
+  Fabric (não há login individual por usuário do navegador nesse modo).
 - Se cada pessoa do time roda sua própria instância localmente, cada uma verá
   apenas o histórico de execuções que ela mesma gerou. Para um histórico
   **compartilhado** (mesmas execuções/mapeamentos visíveis para todo o time),
