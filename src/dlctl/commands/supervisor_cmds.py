@@ -21,12 +21,16 @@ def scan(
     profile: str = typer.Option(None, "--profile"),
     lakehouse_dev_input: str = typer.Option("input/lakehouse-dev", "--lakehouse-dev-input"),
     workspaces_input: str = typer.Option("input/Workspaces", "--workspaces-input", help="Pasta/zip com os JSONs do Fabric Scanner API (opcional, alimenta a contagem de Dashboards/BI)."),
+    only_referenced_workspaces: bool = typer.Option(False, "--only-referenced-workspaces", help="Considera só workspaces de input/Workspaces que têm alguma Dataset Table batendo com uma tabela conhecida em input/lakehouse-dev (Bronze/Silver/Gold) — descarta workspaces do tenant sem relação com este projeto."),
     save: bool = typer.Option(False, "--save", help="Exporta o relatório (Excel + CSV) em manifests/dashboard/ e salva um snapshot no histórico."),
 ):
     """Roda o diagnóstico geral do projeto e imprime o percentual por
     categoria (Bronze/Silver/Gold/Dashboards/Views) e o percentual geral."""
     p = get_profile(profile)
-    result = scan_project(p, lakehouse_dev_input=lakehouse_dev_input, workspaces_input=workspaces_input)
+    result = scan_project(
+        p, lakehouse_dev_input=lakehouse_dev_input, workspaces_input=workspaces_input,
+        only_referenced_workspaces=only_referenced_workspaces,
+    )
 
     print_table(
         "Diagnóstico do projeto (Supervisor)",
@@ -38,6 +42,11 @@ def scan(
         ],
     )
     console.print(f"\n[bold]% geral do projeto:[/bold] {result['overall_percent']}%")
+    if result["workspaces_referenciados"] is not None:
+        console.print(
+            f"[cyan]Workspaces referenciados:[/cyan] {len(result['workspaces_referenciados'])} de "
+            f"{result['workspaces_total']} em input/Workspaces (--only-referenced-workspaces ativo)"
+        )
     if result["excluded_from_overall"]:
         console.print(
             f"[yellow]Fora do % geral (sem meta configurada):[/yellow] {', '.join(result['excluded_from_overall'])} "

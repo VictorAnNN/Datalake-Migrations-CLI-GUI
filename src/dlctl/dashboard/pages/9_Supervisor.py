@@ -54,6 +54,14 @@ with col_run2:
         help="Alimenta a contagem real de Dashboards/BI (relatórios do Power BI/Fabric). Deixe em branco para pular.",
     )
 
+only_referenced_workspaces = st.checkbox(
+    "Considerar só workspaces referenciados em lakehouse-dev",
+    value=False,
+    help="Nem todo workspace de input/Workspaces faz parte deste projeto. Marque para descartar, do cálculo de "
+         "Dashboards/BI e Gold, os workspaces que não têm nenhuma Dataset Table batendo com uma tabela conhecida "
+         "em input/lakehouse-dev (Bronze/Silver/Gold).",
+)
+
 if st.button(
     "🔎 Rodar diagnóstico", type="primary",
     help="Varre input/lakehouse-dev e input/Workspaces e recalcula os percentuais. Somente leitura, não altera nada.",
@@ -61,14 +69,24 @@ if st.button(
     with st.spinner("Varrendo notebooks e workspaces..."):
         st.session_state["supervisor_result"] = scan_project(
             profile, lakehouse_dev_input=lakehouse_dev_input, workspaces_input=workspaces_input or None,
+            only_referenced_workspaces=only_referenced_workspaces,
         )
 
 result = st.session_state.get("supervisor_result")
+
 
 if not result:
     st.info("Clique em **🔎 Rodar diagnóstico** acima para ver os números do projeto.")
 else:
     st.caption(f"Última varredura: {result['generated_at']}")
+
+    if result.get("workspaces_referenciados") is not None:
+        st.info(
+            f"🔎 Filtro ativo: **{len(result['workspaces_referenciados'])} de {result['workspaces_total']}** "
+            "workspaces de `input/Workspaces` têm alguma Dataset Table batendo com lakehouse-dev e entraram no cálculo."
+        )
+        with st.expander("Ver workspaces considerados"):
+            st.write(result["workspaces_referenciados"])
 
     st.markdown("#### 📊 % geral do projeto")
     st.progress(min(result["overall_percent"], 100) / 100)

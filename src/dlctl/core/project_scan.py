@@ -168,6 +168,23 @@ def _dashboard_table_names(workspace_rows: list[dict]) -> dict[str, set[str]]:
     return result
 
 
+def _workspaces_referenciados(workspace_rows: list[dict], table_universe: set[str]) -> set[str]:
+    """Nomes dos workspaces que têm pelo menos uma Dataset Table cujo nome
+    bate com alguma tabela conhecida em input/lakehouse-dev (Bronze/Silver/
+    Gold, esperado ou existente) — ou seja, workspaces que de fato fazem
+    parte deste projeto de migração, e não só workspaces do tenant que não
+    têm nenhuma relação com o que está sendo migrado."""
+    referenced: set[str] = set()
+    for r in workspace_rows:
+        if r["item_type"] == "Dataset Table" and _norm(r["item_name"]) in table_universe:
+            referenced.add(r["workspace"])
+    return referenced
+
+
+def _filter_workspace_rows(workspace_rows: list[dict], workspaces_to_keep: set[str]) -> list[dict]:
+    return [r for r in workspace_rows if r["workspace"] in workspaces_to_keep]
+
+
 def _gold_needed_for_dashboards(dashboard_tables: dict[str, set[str]]) -> set[str]:
     """União de todas as tabelas necessárias (por qualquer dashboard) — o
     universo de tabelas Gold que o cliente precisa para os dashboards dele."""
@@ -191,12 +208,19 @@ def scan_project(
     profile: Profile,
     lakehouse_dev_input: str = "input/lakehouse-dev",
     workspaces_input: Optional[str] = "input/Workspaces",
+    only_referenced_workspaces: bool = False,
 ) -> dict:
     """Varre os artefatos reais do projeto e monta o diagnóstico geral
     (Bronze/Silver/Gold/Dashboards/Views). "Esperado" é a união de tudo que
     foi encontrado em `input/` (mappings + linhagem de notebooks + Oracle
     refs de Workspaces); "existente" é sempre a contagem real de notebooks
-    já criados em `input/lakehouse-dev`."""
+    já criados em `input/lakehouse-dev`.
+
+    Se `only_referenced_workspaces=True`, descarta do cálculo de Dashboards/BI
+    e Gold os workspaces de `input/Workspaces` que não têm nenhuma Dataset
+    Table batendo com uma tabela conhecida em `input/lakehouse-dev` (Bronze/
+    Silver/Gold) — nem todo workspace do tenant faz parte deste projeto de
+    migração, só os que de fato referenciam algo já mapeado/gerado aqui."""
     lakehouse_dev_input = _resolve_input_path(lakehouse_dev_input)
     workspaces_input = _resolve_input_path(workspaces_input) if workspaces_input else None
     workspaces_found = bool(workspaces_input) and Path(workspaces_input).exists()
@@ -234,13 +258,21 @@ def scan_project(
     dashboards_existente = 0
     gold_needed: set[str] = set()
     gold_existente_names: set[str] = set()
+    workspaces_total = 0
+    workspaces_referenciados: set[str] = set()
     if workspaces_found:
         workspace_rows = build_workspace_inventory(workspaces_input)
+        workspaces_total = len({r["workspace"] for r in workspace_rows if r["item_type"] == "Workspace"})
         bronze_universe |= _oracle_tables_from_workspaces(workspaces_input)
         gold_existente_names = _gold_table_names_realmente_criadas(lakehouse_dev_input)
+        if only_referenced_workspaces:
+            table_universe = bronze_universe | silver_universe | gold_universe | gold_existente_names
+            workspaces_referenciados = _workspaces_referenciados(workspace_rows, table_universe)
+            workspace_rows = _filter_workspace_rows(workspace_rows, workspaces_referenciados)
         dashboard_tables = _dashboard_table_names(workspace_rows)
         dashboards_esperado, dashboards_existente = _dashboards_prontos(dashboard_tables, gold_existente_names)
         gold_needed = _gold_needed_for_dashboards(dashboard_tables)
+
 
     # Gold "esperado": tabelas que os dashboards do cliente realmente precisam
     # (Dataset Tables dos relatórios em input/Workspaces) — muito mais preciso
@@ -275,8 +307,10 @@ def scan_project(
          "fonte_meta": gold_fonte},
         {"categoria": "Dashboards/BI", "existente": dashboards_existente, "esperado": dashboards_esperado,
          "percentual": _pct(dashboards_existente, dashboards_esperado),
-         "fonte_meta": "Total de relatórios em input/Workspaces; \"pronto\" = dataset já bate com uma tabela Gold criada"
-                       if workspaces_found else "input/Workspaces não encontrado"},
+         "fonte_meta": (
+             ("Total de relatórios em input/Workspaces" + (" (só workspaces referenciados em lakehouse-dev)" if only_referenced_workspaces else ""))
+             + "; \"pronto\" = dataset já bate com uma tabela Gold criada"
+         ) if workspaces_found else "input/Workspaces não encontrado"},
         {"categoria": "Views/Processos intermediários",
          "existente": category_counts["controle"] + category_counts["qualidade_dados"],
          "esperado": targets["intermediate"],
@@ -300,6 +334,9 @@ def scan_project(
         "workspace_rows": workspace_rows,
         "lakehouse_dev_input": lakehouse_dev_input,
         "workspaces_input": workspaces_input if workspaces_found else None,
+        "only_referenced_workspaces": only_referenced_workspaces,
+        "workspaces_total": workspaces_total,
+        "workspaces_referenciados": sorted(workspaces_referenciados) if only_referenced_workspaces else None,
     }
 
 
