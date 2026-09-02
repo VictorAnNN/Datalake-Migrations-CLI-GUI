@@ -101,11 +101,21 @@ search = col_c.text_input(
     help="Busca por texto parcial em qualquer coluna do item (nome, workspace, detalhe, etc.).",
 )
 
+report_options = sorted(df.loc[df["item_type"] == "Report", "item_name"].unique())
+report_filter = st.multiselect(
+    "Dashboard/Relatório", report_options,
+    help="Filtra o inventário por relatório/dashboard específico (mostra somente as linhas 'Report' "
+         "com esse nome). Deixe vazio para ver todos.",
+)
+
 filtered = df.copy()
 if workspace_filter:
     filtered = filtered[filtered["workspace"].isin(workspace_filter)]
 if type_filter:
     filtered = filtered[filtered["item_type"].isin(type_filter)]
+if report_filter:
+    filtered = filtered[filtered["item_type"] == "Report"]
+    filtered = filtered[filtered["item_name"].isin(report_filter)]
 if search:
     term = search.casefold()
     mask = filtered.apply(lambda r: term in " ".join(str(v) for v in r.values).casefold(), axis=1)

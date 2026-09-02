@@ -165,9 +165,19 @@ with tab_overview:
         df_runs = pd.DataFrame([r.model_dump() for r in runs])
     else:
         df_runs = _demo_runs_dataframe()
+    status_color_map = {
+        "success": "#4A148C",   # roxo escuro
+        "failed": "#C2185B",    # rosa escuro
+        "blocked": "#7B1FA2",   # roxo/violeta
+        "skipped": "#9C27B0",   # violeta
+    }
     fig = px.bar(df_runs, x="run_id", y=[1] * len(df_runs), color="status",
                  title="Execuções por status" + ("" if has_real_runs else " (simulado)"),
-                 labels={"y": "quantidade"})
+                 labels={"y": "quantidade"},
+                 color_discrete_map=status_color_map,
+                 color_discrete_sequence=["#4A148C", "#7B1FA2", "#9C27B0", "#C2185B"])
+    fig.update_traces(width=0.35, marker_line_width=0)
+    fig.update_layout(bargap=0.4, bargroupgap=0.2)
     st.plotly_chart(fig, use_container_width=True)
     st.dataframe(df_runs[["run_id", "domain", "status", "started_at", "finished_at", "summary"]],
                  use_container_width=True)
@@ -177,8 +187,11 @@ with tab_overview:
     st.subheader("Distribuição de status por passo (todos os runs)")
     df_steps = pd.DataFrame([s.model_dump() for s in steps]) if steps else _demo_steps_dataframe()
     fig2 = px.histogram(df_steps, x="step_name", color="status", barmode="group",
-                         title=None if steps else "(simulado)")
-    fig2.update_layout(xaxis_tickangle=-30)
+                         title=None if steps else "(simulado)",
+                         color_discrete_map=status_color_map,
+                         color_discrete_sequence=["#4A148C", "#7B1FA2", "#9C27B0", "#C2185B"])
+    fig2.update_traces(marker_line_width=0)
+    fig2.update_layout(xaxis_tickangle=-30, bargap=0.35, bargroupgap=0.15)
     st.plotly_chart(fig2, use_container_width=True)
 
 # ---------------- Mapeamentos ----------------

@@ -24,6 +24,9 @@ pela convenção de prefixo do cliente:
 - `DW`  -> Silver (Prata)
 - `DM` ou `PR` -> Gold
 - fora da regra -> Bronze
+Se a tabela vier como view (`VW_`/`V_` na frente), o prefixo de view é
+ignorado e a classificação segue o prefixo mapeado logo depois
+(ex.: `VW_DW_PEDIDO` -> Silver, `V_PR_PEDIDO` -> Gold).
 """
 from __future__ import annotations
 
@@ -80,8 +83,16 @@ def _norm(name: str) -> str:
 def _classify_by_prefix(table_name: str) -> str:
     """Regra de prefixo do cliente, usada só para tabelas descobertas via SQL
     (que não têm uma coluna de camada própria no Excel): DW -> Silver, DM/PR
-    -> Gold, qualquer outra coisa -> Bronze."""
+    -> Gold, qualquer outra coisa -> Bronze.
+
+    Se o nome vier prefixado com `VW_`/`V_` (view sobre uma tabela DW/DM/PR),
+    o prefixo de view é descartado antes de checar a convenção, já que a
+    classificação real segue o prefixo mapeado que vem depois."""
     name = _norm(table_name)
+    if name.startswith("VW_"):
+        name = name[len("VW_"):]
+    elif name.startswith("V_"):
+        name = name[len("V_"):]
     if name.startswith("DW"):
         return "Silver"
     if name.startswith("DM") or name.startswith("PR"):
