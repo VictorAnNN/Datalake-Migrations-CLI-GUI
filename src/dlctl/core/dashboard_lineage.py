@@ -35,6 +35,7 @@ from dlctl.core.global_scope import (
     _autofit,
     _classify_by_prefix,
     _extract_tables_from_sql,
+    _is_physical_table_name as _is_valid_physical_table_name,
     _norm,
     compute_global_scope,
     read_excel_tables,
@@ -47,7 +48,9 @@ from dlctl.core.table_lineage_graph import (
 from dlctl.generators.lineage_generator import _load_json_files, _read_json
 
 _TRAILING_NUMBER_SUFFIX = re.compile(r"\s+\d+$")
-_PHYSICAL_TABLE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_$#-]*$")
+_GENERIC_MODEL_TABLE_NAMES = {
+    "TASKS", "CALENDAR", "FEATURES", "MEASUREMENTS",
+}
 
 
 def _normalize_dataflow_key(name: str) -> str:
@@ -64,7 +67,8 @@ def _is_physical_table_name(name: str) -> bool:
     tabelas do modelo Power BI, não nomes de tabela física usados no
     mapeamento. Espaços, portanto, desqualificam o valor nesta etapa.
     """
-    return bool(_PHYSICAL_TABLE_NAME.fullmatch(str(name or "").strip()))
+    normalized = _norm(name)
+    return normalized not in _GENERIC_MODEL_TABLE_NAMES and _is_valid_physical_table_name(normalized)
 
 
 def _load_scan_dataflows(scan_input: str) -> dict[str, str]:
@@ -265,7 +269,15 @@ def build_dashboard_lineage(
             })
 
     dataset_dataflow_rows: list[dict] = []
+    dataset_dataflow_links: list[dict] = []
     for ds_id, ds in datasets_by_id.items():
+        for df_id in ds["dataflow_ids"]:
+            info = dataflows_by_id.get(df_id)
+            if info:
+                dataset_dataflow_links.append({
+                    "dataset": ds["name"], "dataflow": info["name"],
+                    "workspace": ds["workspace"],
+                })
         tables, direct_tables, origem = _resolve_dataset_tables(ds_id)
         if not tables:
             dataset_dataflow_rows.append({
@@ -368,6 +380,7 @@ def build_dashboard_lineage(
     return {
         "dashboard_rows": dashboard_rows,
         "dataset_dataflow_rows": dataset_dataflow_rows,
+        "dataset_dataflow_links": dataset_dataflow_links,
         "upstream_rows": upstream_rows,
         "mapped_upstream_rows": sorted(
             mapped_upstream_rows,
@@ -450,6 +463,12 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     for r in result["dataset_dataflow_rows"]:
         ws_dd.append([r["workspace"], r["tipo"], r["nome"], r["tabela"], r["camada"], r["dominio"], r["origem"]])
     _autofit(ws_dd)
+
+    ws_dataset_dataflow = wb.create_sheet("Dataset e Dataflow")
+    ws_dataset_dataflow.append(["Workspace", "Dataset", "Dataflow"])
+    for r in result.get("dataset_dataflow_links", []):
+        ws_dataset_dataflow.append([r["workspace"], r["dataset"], r["dataflow"]])
+    _autofit(ws_dataset_dataflow)
 
     ws_up = wb.create_sheet("Linhagem SQL (upstream)")
     ws_up.append(["Tabela Origem", "Camada Origem", "Tabela Destino", "Camada Destino"])

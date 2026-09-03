@@ -11,7 +11,7 @@ import pytest
 
 from dlctl.core import lineage_graph
 from dlctl.core import state as state_db
-from dlctl.core.global_scope import read_excel_pipeline_edges
+from dlctl.core.global_scope import _extract_tables_from_sql, read_excel_pipeline_edges
 from dlctl.core.dashboard_lineage import _is_physical_table_name, build_dashboard_lineage
 from dlctl.core.table_lineage_graph import build_mapped_table_dependency_graph
 from dlctl.generators.lineage_generator import (
@@ -172,9 +172,27 @@ def test_dashboard_lineage_classifies_sharepoint_and_ignores_spaced_labels(tmp_p
 
     assert _is_physical_table_name("DM_REAL_TABLE")
     assert not _is_physical_table_name("LINHAS DE RC")
+    assert not _is_physical_table_name("TASKS")
+    assert not _is_physical_table_name("CALENDAR")
+    assert not _is_physical_table_name("FEATURES")
+    assert not _is_physical_table_name("MEASUREMENTS")
     assert {row["tabela"] for row in result["dashboard_rows"] if row["tabela"]} == {"DM_REAL_TABLE"}
     assert result["summary"]["total_fontes_sharepoint_bronze"] == 1
     assert result["sharepoint_rows"][0]["observacao"].startswith("Fonte SharePoint")
+
+
+def test_cte_aliases_are_never_counted_as_physical_tables():
+    content = """
+    WITH first_cte (id) AS (SELECT id FROM BRONZE_A),
+         \"QuotedCte\" AS (SELECT id FROM BRONZE_B)
+    SELECT * FROM first_cte
+    JOIN QuotedCte ON QuotedCte.id = first_cte.id
+    JOIN SILVER_REAL ON SILVER_REAL.id = first_cte.id
+    """
+
+    assert _extract_tables_from_sql(content) == {
+        "BRONZE_A", "BRONZE_B", "SILVER_REAL"
+    }
 
 
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):

@@ -49,6 +49,7 @@ CAMADA_LABEL_PT = {"bronze": "Bronze", "silver": "Prata", "gold": "Ouro"}
 CAMADA_ORDER = {"bronze": 0, "silver": 1, "gold": 2}
 GRAPH_DASHBOARD_COLOR = "#2E8B57"
 GRAPH_DATASET_COLOR = "#2878C8"
+GRAPH_DATAFLOW_COLOR = "#7C3AED"
 CAMADA_NODE_COLOR = {"Bronze": "#D64545", "Silver": "#A7ADB7", "Gold": "#E0B323"}
 
 
@@ -60,7 +61,7 @@ def _sort_camadas(items) -> list:
     return sorted(items, key=lambda kv: CAMADA_ORDER.get(str(kv[0]).strip().lower(), 99))
 
 
-def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
     dash_df = pd.DataFrame(result["dashboard_rows"]).rename(columns={
         "workspace": "Workspace", "dashboard": "Dashboard/Relatório", "dataset": "Dataset",
         "tabela": "Tabela", "camada": "Camada", "dominio": "Domínio", "origem": "Origem",
@@ -82,14 +83,17 @@ def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
         "camada": "Camada", "workspace": "Workspace", "dashboard": "Dashboard/Relatório",
         "dataset": "Dataset", "status": "Status",
     })
+    dataset_dataflow_df = pd.DataFrame(result.get("dataset_dataflow_links", [])).rename(columns={
+        "dataset": "Dataset", "dataflow": "Dataflow", "workspace": "Workspace",
+    })
     sharepoint_df = pd.DataFrame(result.get("sharepoint_rows", [])).rename(columns={
         "workspace": "Workspace", "dashboard": "Dashboard/Relatório", "dataset": "Dataset",
         "tipo": "Tipo", "fonte": "Fonte", "observacao": "Observação",
     })
-    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, result["summary"]
+    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, dataset_dataflow_df, result["summary"]
 
 
-def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
     sheets = pd.read_excel(path, sheet_name=None)
     resumo_df = sheets.get("Resumo", pd.DataFrame())
     summary = {
@@ -140,7 +144,8 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
     if "Camada Mapeada" not in crosswalk_df.columns and not crosswalk_df.empty:
         crosswalk_df["Camada Mapeada"] = crosswalk_df["Camada"]
     sharepoint_df = sheets.get("Fontes SharePoint Bronze", pd.DataFrame()).fillna("")
-    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary
+    dataset_dataflow_df = sheets.get("Dataset e Dataflow", pd.DataFrame()).fillna("")
+    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, dataset_dataflow_df, summary
 
 
 st.set_page_config(page_title="Supervisório — Constellation Migration Control", layout="wide", page_icon="🕸️")
@@ -186,10 +191,10 @@ if st.button(
         result = build_dashboard_lineage(workspaces_input, scan_input, sharedpoint_input)
     batch_id = f"linhagem_{datetime.now():%Y%m%d_%H%M%S}"
     paths = export_dashboard_lineage_report(result, artifacts_dir, batch_id)
-    dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary = _result_to_frames(result)
+    dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, dataset_dataflow_df, summary = _result_to_frames(result)
     st.session_state["linhagem_result"] = {
         "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df,
-        "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "summary": summary,
+        "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "dataset_dataflow_df": dataset_dataflow_df, "summary": summary,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "excel_path": paths["excel_path"],
     }
@@ -198,10 +203,10 @@ if st.button(
 if "linhagem_result" not in st.session_state:
     latest_path = find_latest_lineage_excel(artifacts_dir)
     if latest_path:
-        dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary = _load_from_excel(latest_path)
+        dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, dataset_dataflow_df, summary = _load_from_excel(latest_path)
         st.session_state["linhagem_result"] = {
             "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df,
-            "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "summary": summary,
+            "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "dataset_dataflow_df": dataset_dataflow_df, "summary": summary,
             "generated_at": pd.Timestamp(latest_path.stat().st_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S"),
             "excel_path": str(latest_path),
         }
@@ -222,6 +227,7 @@ up_df: pd.DataFrame = result.get("up_df", pd.DataFrame())
 mapped_df: pd.DataFrame = result.get("mapped_df", pd.DataFrame())
 crosswalk_df: pd.DataFrame = result.get("crosswalk_df", pd.DataFrame())
 sharepoint_df: pd.DataFrame = result.get("sharepoint_df", pd.DataFrame())
+dataset_dataflow_df: pd.DataFrame = result.get("dataset_dataflow_df", pd.DataFrame())
 summary: dict = result["summary"]
 camadas_ordenadas = _sort_camadas(summary["tabelas_por_camada"].items())
 
@@ -236,6 +242,12 @@ picked = [label for label in st.session_state.get("dashboard_filter", []) if lab
 filtered = dash_df[dash_df["_label"].isin(picked)] if picked else dash_df
 tabelas_validas = filtered[filtered["Tabela"].astype(str) != ""]
 dashboard_tables = set(tabelas_validas["Tabela"])
+selected_datasets = set(filtered["Dataset"])
+selected_dataflows = set(
+    dataset_dataflow_df.loc[
+        dataset_dataflow_df["Dataset"].isin(selected_datasets), "Dataflow"
+    ]
+) if not dataset_dataflow_df.empty else set()
 
 if not crosswalk_df.empty:
     crosswalk_df = crosswalk_df.copy()
@@ -292,7 +304,7 @@ card_layer_items = _sort_camadas(card_layer_counts.items())
 
 sharepoint_count = sharepoint_selected["Fonte"].nunique() if not sharepoint_selected.empty else 0
 st.markdown("### Indicadores da visão selecionada")
-card_cols = st.columns(2 + len(camadas_ordenadas) + (1 if card_extra is not None else 0) + 1)
+card_cols = st.columns(2 + len(camadas_ordenadas) + (1 if card_extra is not None else 0) + 2)
 with card_cols[0]:
     st.metric("Total de dashboards", int(card_dashboard_count))
 with card_cols[1]:
@@ -305,18 +317,23 @@ if card_extra is not None:
         st.metric("Tabelas que chegam a dashboards", card_extra)
 with card_cols[-1]:
     st.metric("Fontes SharePoint (Bronze)", int(sharepoint_count))
+with card_cols[-2]:
+    st.metric("Dataflows", len(selected_dataflows))
 
 st.markdown("#### Distribuição por camada")
 col_bar, col_pie = st.columns(2)
-camada_chart_df = pd.DataFrame(camadas_ordenadas, columns=["camada", "total"])
+camada_chart_df = pd.DataFrame(
+    [(camada, card_layer_counts.get(camada, 0)) for camada, _ in camadas_ordenadas],
+    columns=["camada", "total"],
+)
 camada_chart_df["camada"] = camada_chart_df["camada"].map(_camada_label)
 with col_bar:
     bar_fig = go.Figure(data=[go.Bar(x=camada_chart_df["camada"], y=camada_chart_df["total"], marker_color=COLOR_PRIMARY)])
-    bar_fig.update_layout(height=320, margin=dict(l=20, r=20, t=40, b=40), title="Tabelas distintas por camada")
+    bar_fig.update_layout(height=320, margin=dict(l=20, r=20, t=40, b=40), title=f"Tabelas distintas por camada — {card_mode}")
     st.plotly_chart(bar_fig, use_container_width=True)
 with col_pie:
     pie_fig = px.pie(
-        camada_chart_df, names="camada", values="total", title="Distribuição das tabelas por camada", hole=0.45,
+        camada_chart_df, names="camada", values="total", title=f"Distribuição das tabelas por camada — {card_mode}", hole=0.45,
         color_discrete_sequence=CATEGORY_COLOR_SEQUENCE,
     )
     pie_fig.update_layout(height=320, margin=dict(l=20, r=20, t=40, b=10))
@@ -378,7 +395,7 @@ st.dataframe(
 )
 st.caption(f"{len(filtered)} linha(s) — {filtered['Dashboard/Relatório'].nunique()} dashboard(s), {distinct_sel} tabela(s) distinta(s).")
 with graph_slot.container():
-    st.markdown("#### 🕸️ Rastreio da linhagem (Dashboard → Dataset → Tabela)")
+    st.markdown("#### 🕸️ Rastreio da linhagem (Dashboard → Dataset → Dataflow → Tabela)")
     graph = nx.DiGraph()
     for _, row in filtered.iterrows():
         dash_node = f"RPT::{row['Workspace']}::{row['Dashboard/Relatório']}"
@@ -389,7 +406,19 @@ with graph_slot.container():
         if row["Tabela"]:
             tbl_node = f"TBL::{row['Tabela']}"
             graph.add_node(tbl_node, label=row["Tabela"], kind="tabela", camada=row["Camada"])
-            graph.add_edge(ds_node, tbl_node)
+            linked_dataflows = set(
+                dataset_dataflow_df.loc[
+                    dataset_dataflow_df["Dataset"] == row["Dataset"], "Dataflow"
+                ]
+            ) if not dataset_dataflow_df.empty else set()
+            if linked_dataflows:
+                for dataflow in linked_dataflows:
+                    df_node = f"DF::{row['Workspace']}::{dataflow}"
+                    graph.add_node(df_node, label=dataflow, kind="dataflow")
+                    graph.add_edge(ds_node, df_node)
+                    graph.add_edge(df_node, tbl_node)
+            else:
+                graph.add_edge(ds_node, tbl_node)
 
     # Encadeia as tabelas entre si (Gold -> Silver -> Bronze) usando o
     # rastreio SQL/.vw/.tab — segue em várias passadas até estabilizar,
@@ -444,6 +473,8 @@ with graph_slot.container():
                 node_color.append(CAMADA_NODE_COLOR.get(data.get("camada", ""), COLOR_DANGER))
             elif data["kind"] == "dataset":
                 node_color.append(GRAPH_DATASET_COLOR)
+            elif data["kind"] == "dataflow":
+                node_color.append(GRAPH_DATAFLOW_COLOR)
             else:
                 node_color.append(GRAPH_DASHBOARD_COLOR)
         node_trace = go.Scatter(
@@ -455,7 +486,11 @@ with graph_slot.container():
         fig.update_layout(
             showlegend=False, height=580, margin=dict(l=10, r=10, t=40, b=10),
             xaxis=dict(visible=False), yaxis=dict(visible=False),
-            title="Dashboard → Dataset → Tabela (cor da tabela = camada: âmbar Bronze / azul-aço Prata / verde Ouro)",
+            title=(
+                "Dashboard → Dataset → Dataflow → Tabela | "
+                "Verde: Dashboard | Azul: Dataset | Violeta: Dataflow | "
+                "Amarelo: Ouro | Prata: Silver | Vermelho: Bronze"
+            ),
         )
         st.plotly_chart(fig, use_container_width=True)
 

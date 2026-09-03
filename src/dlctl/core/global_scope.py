@@ -116,11 +116,33 @@ _DSX_TABLEDEF_PATTERN = re.compile(
 # vírgula "..., outro_nome AS (...)") — é só um apelido de subquery em
 # memória, não uma tabela física, então nunca deve ser tratado como tabela
 # descoberta mesmo quando reaparece num FROM/JOIN mais abaixo no mesmo script.
-_CTE_ALIAS_PATTERN = re.compile(r"\b([A-Za-z_][A-Za-z0-9_$#]*)\s+AS\s*\(", re.IGNORECASE)
+_CTE_ALIAS_PATTERN = re.compile(
+    r"(?:\bWITH\s+|,)\s*(?:\"([^\"]+)\"|([A-Za-z_][A-Za-z0-9_$#]*))"
+    r"(?:\s*\([^)]*\))?\s+AS\s*\(",
+    re.IGNORECASE,
+)
+_PHYSICAL_TABLE_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_$#-]*$")
+
+
+def _cte_aliases(content: str) -> set[str]:
+    return {
+        _norm(match.group(1) or match.group(2))
+        for match in _CTE_ALIAS_PATTERN.finditer(content)
+    }
 
 
 def _norm(name: str) -> str:
     return str(name or "").strip().upper()
+
+
+def _is_physical_table_name(name: str) -> bool:
+    """Valida o formato mínimo de um nome de objeto físico do Lakehouse.
+
+    Espaços e texto livre indicam rótulo amigável do modelo, não tabela.
+    Prefixos e sufixos completos são preservados. A existência do objeto
+    ainda depende de evidência do SQL/Dataflow ou do catálogo do Lakehouse.
+    """
+    return bool(_PHYSICAL_TABLE_NAME_PATTERN.fullmatch(_norm(name)))
 
 
 def _classify_by_prefix(table_name: str) -> str:
@@ -233,7 +255,7 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
             if not value or not isinstance(value, str):
                 continue
             table_name = value.strip()
-            if _norm(table_name) in _IGNORED_TABLE_VALUES:
+            if _norm(table_name) in _IGNORED_TABLE_VALUES or not _is_physical_table_name(table_name):
                 continue
             norm_name = _norm(table_name)
             if norm_name in tables_by_camada[nome]:
@@ -320,7 +342,7 @@ def _extract_tables_from_sql(content: str, suffix: str = "") -> set[str]:
     descoberta — são só apelidos de subquery em memória, mesmo quando
     reaparecem num FROM/JOIN mais abaixo no script (ex.: `LEFT JOIN
     DMSUBINV`, onde DMSUBINV é a CTE, não uma tabela física)."""
-    cte_aliases = {_norm(m.group(1)) for m in _CTE_ALIAS_PATTERN.finditer(content)}
+    cte_aliases = _cte_aliases(content)
 
     tables: set[str] = set()
     for match in _FROM_JOIN_PATTERN.finditer(content):
