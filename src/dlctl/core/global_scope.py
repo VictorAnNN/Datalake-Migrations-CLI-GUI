@@ -320,6 +320,19 @@ def _extract_tables_from_sql(content: str, suffix: str = "") -> set[str]:
     descoberta — são só apelidos de subquery em memória, mesmo quando
     reaparecem num FROM/JOIN mais abaixo no script (ex.: `LEFT JOIN
     DMSUBINV`, onde DMSUBINV é a CTE, não uma tabela física)."""
+    # Exports do Power Query preservam escapes M dentro da SQL nativa
+    # (por exemplo ``FROM schema.table#(lf)``). Se o texto bruto for
+    # submetido ao regex, o ``#`` — válido em identificadores Oracle — é
+    # anexado ao nome da tabela e gera falsos objetos como ``TABLE#``.
+    # Decodificamos somente os escapes estruturais antes da análise; nomes
+    # Oracle que realmente contenham ``#`` continuam aceitos normalmente.
+    content = (
+        content.replace("#(cr,lf)", "\n")
+        .replace("#(cr)", "\n")
+        .replace("#(lf)", "\n")
+        .replace("#(tab)", "\t")
+    )
+
     cte_aliases = {_norm(m.group(1)) for m in _CTE_ALIAS_PATTERN.finditer(content)}
 
     tables: set[str] = set()
@@ -575,4 +588,3 @@ def list_scope_snapshots(output_dir: Path, extended: bool = False) -> list[dict]
         except (OSError, json.JSONDecodeError):
             continue
     return snapshots
-

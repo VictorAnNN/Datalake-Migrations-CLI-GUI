@@ -11,8 +11,12 @@ import pytest
 
 from dlctl.core import lineage_graph
 from dlctl.core import state as state_db
-from dlctl.core.global_scope import read_excel_pipeline_edges
-from dlctl.core.dashboard_lineage import _is_physical_table_name, build_dashboard_lineage
+from dlctl.core.global_scope import _extract_tables_from_sql, read_excel_pipeline_edges
+from dlctl.core.dashboard_lineage import (
+    _is_physical_table_name,
+    _load_scan_dataflows,
+    build_dashboard_lineage,
+)
 from dlctl.core.table_lineage_graph import build_mapped_table_dependency_graph
 from dlctl.generators.lineage_generator import (
     build_sharepoint_dependency_trail,
@@ -90,6 +94,41 @@ def test_process_lakehouse_dev_parses_silver_and_gold(lakehouse_dev_fixture):
 def test_process_lakehouse_dev_empty_dir_returns_empty(tmp_path):
     result = process_lakehouse_dev(str(tmp_path / "does-not-exist"))
     assert result == {"tabelas": [], "linhagem": []}
+
+
+def test_extract_tables_from_power_query_sql_decodes_structural_escapes():
+    content = (
+        "from fssupri.pr_purchase_order_val#(lf)) "
+        "join fssupri.pr_requisition#(cr,lf) on 1 = 1"
+    )
+
+    assert _extract_tables_from_sql(content) == {
+        "PR_PURCHASE_ORDER_VAL",
+        "PR_REQUISITION",
+    }
+
+
+def test_load_scan_dataflows_prefers_decoded_mashup_document(tmp_path):
+    scan_root = tmp_path / "scan"
+    scan_root.mkdir()
+    document = (
+        'section Section1; shared Query = Oracle.Database("DB", '
+        '[Query = "select * from fssupri.pr_purchase_order_val#(lf) '
+        'join fssupri.pr_requisition on 1 = 1"]);'
+    )
+    payload = {
+        "name": "DATAFLOW_SUPPLY_FUSION_02",
+        "pbi:mashup": {"document": document},
+    }
+    (scan_root / "dataflow.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    loaded = _load_scan_dataflows(str(scan_root))
+
+    assert loaded["DATAFLOW_SUPPLY_FUSION_02"] == document
+    assert _extract_tables_from_sql(loaded["DATAFLOW_SUPPLY_FUSION_02"]) == {
+        "PR_PURCHASE_ORDER_VAL",
+        "PR_REQUISITION",
+    }
 
 
 def test_read_excel_pipeline_edges_preserves_links_when_layer_is_empty(tmp_path):

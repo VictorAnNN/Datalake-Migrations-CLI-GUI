@@ -93,7 +93,14 @@ def _reference_evidence(
 
 def _load_scan_dataflows(scan_input: str) -> dict[str, str]:
     """Carrega os JSONs de `input/scan` (exports de Dataflow com código M
-    embutido) e indexa pelo nome normalizado -> conteúdo bruto do arquivo."""
+    embutido) e indexa pelo nome normalizado -> documento M decodificado.
+
+    O JSON bruto contém escapes do próprio JSON e escapes estruturais do
+    Power Query (por exemplo, ``#(lf)``). Analisar o arquivo serializado pode
+    concatenar o fim de um identificador com o token seguinte e também omitir
+    referências reais. O conteúdo bruto fica apenas como fallback para scans
+    legados que não tenham ``pbi:mashup.document``.
+    """
     root = Path(scan_input)
     scans: dict[str, str] = {}
     if not root.exists():
@@ -104,10 +111,14 @@ def _load_scan_dataflows(scan_input: str) -> dict[str, str]:
         except OSError:
             continue
         try:
-            name = json.loads(content).get("name") or jf.stem
+            payload = json.loads(content)
+            name = payload.get("name") or jf.stem
+            mashup = payload.get("pbi:mashup") or {}
+            document = mashup.get("document", "") if isinstance(mashup, dict) else ""
         except (json.JSONDecodeError, AttributeError):
             name = jf.stem
-        scans[_normalize_dataflow_key(name)] = content
+            document = ""
+        scans[_normalize_dataflow_key(name)] = document or content
     return scans
 
 
