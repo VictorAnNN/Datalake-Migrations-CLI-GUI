@@ -19,9 +19,9 @@ extraída dos mesmos scripts .sql/.prc/.tab/.vw de `input/sharedpoint`) até
 achar as tabelas Silver/Bronze que a alimentam — por isso o total de
 tabelas/camadas cresce em relação ao que vem só de Workspaces/Scan.
 
-Quando o Dataset não usa Dataflow nenhum, cai no fallback de listar as
-tabelas do próprio modelo Power BI (best-effort, sinalizado na coluna
-'Origem' porque o nome pode não bater com o nome físico real)."""
+As referências dos Dataflows, das M-queries internas e dos nomes das entidades
+do modelo são combinadas. Nomes de entidade continuam best-effort, enquanto
+`FROM`/`JOIN` extraídos das M-queries recebem evidência estática forte."""
 from __future__ import annotations
 
 import json
@@ -42,6 +42,7 @@ from dlctl.core.global_scope import (
 )
 from dlctl.core.table_lineage_graph import (
     build_mapped_table_dependency_graph,
+    build_table_source_system_hints,
     build_table_dependency_graph,
     trace_upstream,
 )
@@ -74,8 +75,7 @@ def _is_physical_table_name(name: str) -> bool:
 
 def _reference_evidence(
     table_name: str,
-    base_origin: str,
-    direct_tables: set[str],
+    direct_origins: dict[str, str],
     documented_tables: set[str],
 ) -> tuple[str, str, str]:
     """Qualifica a evidência sem confundir nome do modelo com objeto físico.
@@ -87,10 +87,13 @@ def _reference_evidence(
     sinais prova existência no motor. Os demais nomes permanecem candidatos.
     """
     table = _norm(table_name)
-    if table not in direct_tables:
+    direct_origin = direct_origins.get(table)
+    if not direct_origin:
         return "REFERENCIA_UPSTREAM_ESTATICA", "Alta", "Tabela ou view"
-    if base_origin == "via Dataflow (M-query)":
+    if direct_origin == "via Dataflow (M-query)":
         return "REFERENCIA_M_QUERY", "Alta", "Tabela ou view"
+    if direct_origin == "via Dataset M-query":
+        return "REFERENCIA_M_QUERY_MODELO", "Alta", "Tabela ou view"
     if table in documented_tables:
         return "NOME_MODELO_DOCUMENTADO", "Média", "Objeto documentado pelo cliente"
     return "NOME_MODELO_CANDIDATO", "Baixa", "Entidade do modelo semântico"
@@ -135,6 +138,7 @@ def _build_end_to_end_mapping_rows(
     dashboard_endpoints: dict[tuple[str, str, str, str, str, str], dict[str, dict]],
     classify,
     client_sources_by_table: dict[str, set[str]] | None = None,
+    script_sources_by_table: dict[str, set[str]] | None = None,
     rejected_rows: list[dict] | None = None,
 ) -> list[dict]:
     """Diagnostica cada tabela do mapping até um endpoint de dashboard.
@@ -157,6 +161,7 @@ def _build_end_to_end_mapping_rows(
     confidence_rank = {"Alta": 0, "Média": 1, "Baixa": 2, "": 3}
     layer_rank = {"Bronze": 0, "Silver": 1, "Gold": 2}
     client_sources_by_table = client_sources_by_table or {}
+    script_sources_by_table = script_sources_by_table or {}
     rows: list[dict] = []
 
     source_labels = {
@@ -175,6 +180,9 @@ def _build_end_to_end_mapping_rows(
         direct = set(client_sources_by_table.get(table, set()))
         if direct:
             return _display_sources(direct), "Mapping do cliente (coluna Sistema)"
+        scripted = set(script_sources_by_table.get(table, set()))
+        if scripted:
+            return _display_sources(scripted), "Sistema explícito no caminho/comentário do script"
 
         # Não há inferência por prefixo. Para linhas Gold/Silver sem Sistema,
         # herda-se somente a origem da dependência upstream explícita mais
@@ -191,14 +199,17 @@ def _build_end_to_end_mapping_rows(
                 if source in visited:
                     continue
                 visited.add(source)
-                source_values = set(client_sources_by_table.get(source, set()))
+                source_values = (
+                    set(client_sources_by_table.get(source, set()))
+                    or set(script_sources_by_table.get(source, set()))
+                )
                 if source_values:
                     nearest_distance = distance + 1
                     inherited.update(source_values)
                 else:
                     queue.append((source, distance + 1))
         if inherited:
-            return _display_sources(inherited), "Herdado da dependência upstream mais próxima"
+            return _display_sources(inherited), "Herdado da dependência upstream explícita mais próxima"
         return "Não identificado", "Sem Sistema no mapping ou dependência upstream qualificada"
 
     for mapped_table in sorted(client_tables):
@@ -403,6 +414,11 @@ def build_dashboard_lineage(
                     _norm(t.get("name", "")) for t in ds.get("tables", [])
                     if t.get("name") and _is_physical_table_name(t.get("name", ""))
                 ]
+                source_tables: set[str] = set()
+                for table in ds.get("tables", []):
+                    for source in table.get("source", []):
+                        if isinstance(source, dict) and source.get("expression"):
+                            source_tables.update(_extract_tables_from_sql(str(source["expression"])))
                 for usage in ds.get("datasourceUsages", []):
                     instance = next(
                         (item for item in data.get("datasourceInstances", [])
@@ -429,7 +445,8 @@ def build_dashboard_lineage(
                 datasets_by_id[ds_id] = {
                     "id": ds_id, "name": ds.get("name", ds_id),
                     "workspace_id": ws_id, "workspace": ws_name,
-                    "tables": tables, "dataflow_ids": dataflow_ids,
+                    "tables": tables, "source_tables": source_tables,
+                    "dataflow_ids": dataflow_ids,
                 }
             for df in ws.get("dataflows", []):
                 df_id = str(df.get("objectId") or df.get("id", ""))
@@ -505,39 +522,44 @@ def build_dashboard_lineage(
         if key in tables_by_scan_key:
             dataflow_tables[df_id] = tables_by_scan_key[key]
 
-    # Cache por dataset: (todas as tabelas achadas incl. rastreio upstream,
-    # só as tabelas "diretas" antes do rastreio, texto de origem).
-    resolved_cache: dict[str, tuple[set[str], set[str], str]] = {}
+    # Cache por dataset: tabelas rastreadas, proveniência de cada endpoint
+    # direto e resumo das fontes consultadas.
+    resolved_cache: dict[str, tuple[set[str], dict[str, str], str]] = {}
 
-    def _resolve_dataset_tables(ds_id: str) -> tuple[set[str], set[str], str]:
+    def _resolve_dataset_tables(ds_id: str) -> tuple[set[str], dict[str, str], str]:
         if ds_id in resolved_cache:
             return resolved_cache[ds_id]
         ds = datasets_by_id.get(ds_id)
         if not ds:
-            resolved_cache[ds_id] = (set(), set(), "dataset não resolvido")
+            resolved_cache[ds_id] = (set(), {}, "dataset não resolvido")
             return resolved_cache[ds_id]
-        resolved: set[str] = set()
+        direct_origins: dict[str, str] = {}
         for df_id in ds["dataflow_ids"]:
-            resolved |= dataflow_tables.get(df_id, set())
-        if resolved:
-            origem = "via Dataflow (M-query)"
-        elif ds["tables"]:
-            resolved = {_norm(t) for t in ds["tables"]}
-            origem = "direto no dataset (nome do modelo, pode não bater com o físico)"
-        else:
-            resolved_cache[ds_id] = (set(), set(), "sem fontes identificadas")
+            for table in dataflow_tables.get(df_id, set()):
+                direct_origins[table] = "via Dataflow (M-query)"
+        for table in ds.get("source_tables", set()):
+            direct_origins.setdefault(table, "via Dataset M-query")
+        for table in ds["tables"]:
+            direct_origins.setdefault(
+                _norm(table), "direto no dataset (nome do modelo, pode não bater com o físico)"
+            )
+        if not direct_origins:
+            resolved_cache[ds_id] = (set(), {}, "sem fontes identificadas")
             return resolved_cache[ds_id]
+
+        origin_kinds = set(direct_origins.values())
+        origem = " + ".join(sorted(origin_kinds))
 
         # Rastreia pra trás (Bronze/Silver) a partir das tabelas resolvidas
         # (normalmente Gold) via o grafo de dependência dos scripts.
-        visited, edges = trace_upstream(resolved, upstream_by_table)
+        visited, edges = trace_upstream(set(direct_origins), upstream_by_table)
         upstream_edges.update(edges)
-        resolved_cache[ds_id] = (visited, resolved, origem)
+        resolved_cache[ds_id] = (visited, direct_origins, origem)
         return resolved_cache[ds_id]
 
-    def _row_origem(t: str, base_origem: str, direct_tables: set[str]) -> str:
-        if t in direct_tables:
-            return base_origem
+    def _row_origem(t: str, base_origem: str, direct_origins: dict[str, str]) -> str:
+        if t in direct_origins:
+            return direct_origins[t]
         return f"rastreio SQL/.vw/.tab (upstream — {base_origem})"
 
     dashboard_rows: list[dict] = []
@@ -553,7 +575,7 @@ def build_dashboard_lineage(
     reports_without_sources = 0
     for rp in reports:
         ds = datasets_by_id.get(rp["dataset_id"])
-        tables, direct_tables, origem = _resolve_dataset_tables(rp["dataset_id"])
+        tables, direct_origins, origem = _resolve_dataset_tables(rp["dataset_id"])
         report_key = ((rp["report_id"],) if rp["report_id"] else
                       (rp["workspace_id"], rp["name"], rp["dataset_id"]))
         seen_dashboards.add(report_key)
@@ -576,12 +598,13 @@ def build_dashboard_lineage(
         for t in sorted(tables):
             camada, dominio = _classify(t)
             evidence, confidence, object_kind = _reference_evidence(
-                t, origem, direct_tables, documented_tables
+                t, direct_origins, documented_tables
             )
             distinct_tables.add(t)
-            if origem.startswith("direto no dataset"):
+            direct_origin = direct_origins.get(t, "")
+            if direct_origin.startswith("direto no dataset"):
                 candidate_model_tables.add(t)
-            elif t in direct_tables:
+            elif "M-query" in direct_origin:
                 mquery_tables.add(t)
             if confidence == "Alta":
                 high_confidence_references.add(t)
@@ -594,7 +617,7 @@ def build_dashboard_lineage(
                 "report_id": rp["report_id"], "dashboard": rp["name"],
                 "dataset_id": rp["dataset_id"], "dataset": dataset_name,
                 "tabela": t, "camada": camada, "dominio": dominio,
-                "origem": _row_origem(t, origem, direct_tables),
+                "origem": _row_origem(t, origem, direct_origins),
                 "tipo_evidencia": evidence, "confianca": confidence,
                 "tipo_objeto": object_kind,
             })
@@ -609,7 +632,7 @@ def build_dashboard_lineage(
                     "dataset": ds["name"], "dataflow": info["name"],
                     "workspace": ds["workspace"],
                 })
-        tables, direct_tables, origem = _resolve_dataset_tables(ds_id)
+        tables, direct_origins, origem = _resolve_dataset_tables(ds_id)
         if not tables:
             dataset_dataflow_rows.append({
                 "workspace": ds["workspace"], "tipo": "Dataset", "nome": ds["name"],
@@ -621,7 +644,7 @@ def build_dashboard_lineage(
             dataset_dataflow_rows.append({
                 "workspace": ds["workspace"], "tipo": "Dataset", "nome": ds["name"],
                 "tabela": t, "camada": camada, "dominio": dominio,
-                "origem": _row_origem(t, origem, direct_tables),
+                "origem": _row_origem(t, origem, direct_origins),
             })
     for df_id, info in dataflows_by_id.items():
         tables = dataflow_tables.get(df_id, set())
@@ -741,6 +764,7 @@ def build_dashboard_lineage(
         dashboard_endpoints=dashboard_endpoints,
         classify=_classify,
         client_sources_by_table=excel_data.get("source_systems_by_table", {}),
+        script_sources_by_table=build_table_source_system_hints(sharedpoint_input),
         rejected_rows=excel_data.get("rejected_rows", []),
     )
     end_to_end_status_totals = Counter(row["status_fim_a_fim"] for row in end_to_end_mapping_rows)

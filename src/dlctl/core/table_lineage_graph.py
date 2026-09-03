@@ -65,6 +65,18 @@ _TARGET_DML_PATTERN = re.compile(
 # (só o 1º e o último pedaço interessam; o(s) do meio é o nome do estágio,
 # não uma tabela — ex.: "DW_AGREEMENT_CF|Copy_26|PR_AGREEMENT").
 _DSX_STAGE_NAMES_PATTERN = re.compile(r'StageNames\s+"([^"]+)"')
+_SOURCE_SYSTEM_HINTS = {
+    "MAXIMO": "MAXIMO",
+    "ORACLE ERP": "ORACLE ERP",
+    "FUSION": "ORACLE ERP",
+    "OTRS": "OTRS",
+    "GESTOR": "GESTOR",
+    "BARRIERS": "BARRIERS",
+    "DRAKE": "DRAKE",
+}
+_SYSTEM_COMMENT_PATTERN = re.compile(
+    r"^\s*--\s*SISTEMA\s*-+\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE,
+)
 
 
 def _extract_dsx_lineage(content: str) -> set[tuple[str, str]]:
@@ -103,6 +115,52 @@ def _extract_targets_and_sources(content: str, suffix: str) -> tuple[set[str], s
 
     sources -= targets
     return targets, sources
+
+
+def build_table_source_system_hints(
+    sharedpoint_input: str = "input/sharedpoint",
+) -> dict[str, set[str]]:
+    """Map targets to source systems explicitly stated by file path/comment.
+
+    This evidence is stronger than inheriting a system from an upstream table.
+    Only DML/DDL targets are tagged; source dimensions mentioned by a script are
+    deliberately excluded to avoid assigning the fact's system to shared data.
+    """
+    root = Path(sharedpoint_input)
+    scan_roots = [root]
+    other_root = root.parent / OTHER_SOURCES_DIR_NAME
+    if other_root.exists():
+        scan_roots.append(other_root)
+
+    hints: dict[str, set[str]] = {}
+    allowed_extensions = set(OTHER_SOURCES_SCAN_EXTENSIONS)
+    for scan_root in scan_roots:
+        if not scan_root.exists():
+            continue
+        for path in scan_root.rglob("*"):
+            if not path.is_file() or path.suffix.lower() not in allowed_extensions:
+                continue
+            try:
+                content = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+
+            evidence = " ".join(part.upper() for part in path.parts)
+            comment = _SYSTEM_COMMENT_PATTERN.search(content)
+            if comment:
+                evidence += " " + comment.group(1).upper()
+            systems = {
+                canonical for token, canonical in _SOURCE_SYSTEM_HINTS.items()
+                if re.search(
+                    rf"(?<![A-Z0-9]){re.escape(token)}(?![A-Z0-9])", evidence
+                )
+            }
+            if not systems:
+                continue
+            targets, _ = _extract_targets_and_sources(content, path.suffix)
+            for target in targets:
+                hints.setdefault(target, set()).update(systems)
+    return hints
 
 
 def build_table_dependency_graph(sharedpoint_input: str = "input/sharedpoint", known_tables: set[str] | None = None) -> dict[str, set[str]]:

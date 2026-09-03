@@ -192,10 +192,9 @@ def dashboard_lineage_export(
     total por camada), 'Linhagem Dashboards' e 'Dataset e Dataflows'
     (agregado, no estilo da aba homônima usada como referência).
 
-    Limitações: quando o Dataset não usa Dataflow, a referência vem do nome
-    do próprio modelo Power BI e é marcada como candidata de baixa confiança;
-    Dataflows sem export correspondente em `--scan-input` ficam sem tabela
-    identificada."""
+    As referências de Dataflow, M-query interna e entidades do modelo são
+    combinadas, com confiança separada. Dataflows sem export correspondente
+    em `--scan-input` permanecem sem referências M próprias."""
     if bool(fabric_snapshot) != bool(fabric_onelake_evidence_root):
         raise typer.BadParameter(
             "--fabric-snapshot e --fabric-onelake-evidence-root devem ser informados juntos."

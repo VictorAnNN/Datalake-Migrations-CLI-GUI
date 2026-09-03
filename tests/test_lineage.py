@@ -343,6 +343,80 @@ def test_dashboard_lineage_counts_sharepoint_reports_by_canonical_id(tmp_path):
     assert result["summary"]["total_dashboards_com_sharepoint"] == 2
 
 
+def test_dashboard_lineage_combines_dataflow_and_dataset_m_query_evidence(tmp_path):
+    import openpyxl
+
+    workspaces_root = tmp_path / "Workspaces"
+    workspaces_root.mkdir()
+    payload = {
+        "datasourceInstances": [],
+        "workspaces": [{
+            "id": "ws-1", "name": "OPER-SUPPLY-PERFORMANCE",
+            "reports": [{
+                "id": "rp-1", "name": "Itens Críticos", "datasetId": "ds-1",
+            }],
+            "datasets": [{
+                "id": "ds-1", "name": "Itens Críticos",
+                "upstreamDataflows": [{"targetDataflowId": "df-1"}],
+                "tables": [{
+                    "name": "PR_INVENTORY_MAXIMO_TOT",
+                    "source": [{
+                        "expression": (
+                            'let Source = Oracle.Database("og05prd", '
+                            '[Query="select * from dmoper.pr_inventory_maximo_tot"]) in Source'
+                        ),
+                    }],
+                }],
+            }],
+            "dataflows": [{"objectId": "df-1", "name": "DATAFLOW_SUPPLY"}],
+        }],
+    }
+    (workspaces_root / "workspace.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    scan_root = tmp_path / "scan"
+    scan_root.mkdir()
+    (scan_root / "DATAFLOW_SUPPLY.json").write_text(json.dumps({
+        "name": "DATAFLOW_SUPPLY",
+        "pbi:mashup": {"document": 'let Source = [Query="select * from OTHER_TABLE"]'},
+    }), encoding="utf-8")
+
+    sharedpoint_root = tmp_path / "sharedpoint"
+    script_root = sharedpoint_root / "2 - Maximo" / "3. Script Bronze x Silver"
+    script_root.mkdir(parents=True)
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Tabelas"
+    worksheet.cell(1, 24).value = "(6)\nCamada Gold"
+    worksheet.cell(2, 24).value = "PR_INVENTORY_MAXIMO_TOT"
+    workbook.save(sharedpoint_root / "Projeto Lakehouse - Tabelas e Pipelines.xlsx")
+    (script_root / "PR_INVENTORY_MAXIMO_TOT.prc.txt").write_text(
+        """-- SISTEMA - INVENTORY MAXIMO
+        INSERT INTO DMOPER.PR_INVENTORY_MAXIMO_TOT
+        SELECT * FROM DMOPER.V_INVENTORY;
+        """,
+        encoding="utf-8",
+    )
+
+    result = build_dashboard_lineage(
+        str(workspaces_root), str(scan_root), str(sharedpoint_root)
+    )
+    dashboard_tables = {
+        row["tabela"]: row for row in result["dashboard_rows"] if row["tabela"]
+    }
+    target = next(
+        row for row in result["end_to_end_mapping_rows"]
+        if row["tabela_mapeada"] == "PR_INVENTORY_MAXIMO_TOT"
+    )
+
+    assert {"OTHER_TABLE", "PR_INVENTORY_MAXIMO_TOT"} <= set(dashboard_tables)
+    assert dashboard_tables["PR_INVENTORY_MAXIMO_TOT"]["tipo_evidencia"] == "REFERENCIA_M_QUERY_MODELO"
+    assert dashboard_tables["PR_INVENTORY_MAXIMO_TOT"]["confianca"] == "Alta"
+    assert target["status_fim_a_fim"] == "COMPLETO_DIRETO"
+    assert target["dashboard"] == "Itens Críticos"
+    assert target["sistema_origem"] == "Máximo"
+    assert target["evidencia_sistema_origem"].startswith("Sistema explícito")
+
+
 def test_dashboard_lineage_exposes_client_layer_conflicts(tmp_path):
     import openpyxl
 

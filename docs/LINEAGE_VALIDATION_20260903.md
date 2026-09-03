@@ -12,17 +12,17 @@
 
 Base: 600 entradas, sendo 589 tabelas canônicas e 11 entradas não canônicas.
 
-- 569 entradas possuem sistema identificado.
+- 580 entradas possuem sistema identificado.
 - 568 foram classificadas diretamente pela coluna `Sistema`.
-- 1 foi classificada pela dependência upstream mais próxima.
-- 31 permanecem como `Não identificado`; devem ser corrigidas no mapping ou respaldadas por uma dependência explícita.
+- 1 foi classificada pelo sistema explícito no script e 11 pela dependência upstream mais próxima.
+- 20 permanecem como `Não identificado`; devem ser corrigidas no mapping ou respaldadas por uma dependência explícita.
 
 Distribuição identificada:
 
 | Sistema | Entradas |
 |---|---:|
-| Oracle ERP (Fusion) | 283 |
-| Máximo | 142 |
+| Oracle ERP (Fusion) | 293 |
+| Máximo | 143 |
 | RM | 95 |
 | GESTOR | 22 |
 | OTRS | 13 |
@@ -41,7 +41,7 @@ Snapshot de `LAKEHOUSE-DEV` coletado em 03/09/2026 às 17:05 BRT.
   - `PR_FDC_DOCUMENTS_PAYMENTS`: mapping Financeiro; `LH_SUPRIMENTOS.gold`.
   - `PR_GL_BALANCE`: mapping Controladoria; `LH_FINANCEIRO.gold`.
   - `PR_GL_JOURNAL`: mapping Controladoria; `LH_FINANCEIRO.gold`.
-- 93/103 linhagens estáticas fim a fim possuem a tabela inicial materializada.
+- 133/194 linhagens estáticas fim a fim possuem a tabela inicial materializada.
 - 8 relatórios e 10 nomes únicos de modelos semânticos têm correspondência nominal no DEV.
 - IDs legados de report/dataset não coincidem com os IDs do DEV; cópia/publicação gera novas identidades.
 - 151/589 tabelas possuem notebook candidato por correspondência nominal. Isso é indício, não vínculo de execução.
@@ -50,12 +50,20 @@ O cruzamento usa 38 listagens de schema do OneLake coletadas até 10 minutos ap�
 
 | Status estático | Total | Encontrada | Ausente |
 |---|---:|---:|---:|
-| Órfão sem aresta | 386 | 279 | 107 |
-| Parcial sem dashboard | 100 | 39 | 61 |
-| Completo direto | 61 | 51 | 10 |
-| Completo | 42 | 42 | 0 |
+| Órfão sem aresta | 337 | 253 | 84 |
+| Parcial sem dashboard | 58 | 25 | 33 |
+| Completo direto | 122 | 83 | 39 |
+| Completo | 72 | 50 | 22 |
 
-`Órfão sem aresta` significa que o mapping não possui aresta downstream nos scripts/views/Excel analisados; 279 deles estão materializados no DEV. `Parcial sem dashboard` significa que a cadeia estática conhecida não alcança um endpoint do scan; 39 deles também estão materializados. Portanto, esses rótulos não significam ausência no Fabric.
+`Órfão sem aresta` significa que o mapping não possui aresta downstream nos scripts/views/Excel analisados; 253 deles estão materializados no DEV. `Parcial sem dashboard` significa que a cadeia estática conhecida não alcança um endpoint do scan; 25 deles também estão materializados. Portanto, esses rótulos não significam ausência no Fabric.
+
+## Correção de cobertura das M-queries internas
+
+O rastreador anterior descartava as tabelas internas do modelo quando o dataset também declarava Dataflows upstream. Agora as três evidências são combinadas: export do Dataflow, `FROM`/`JOIN` das M-queries do modelo e nome da entidade semântica, cada uma com confiança própria.
+
+Com a correção, as tabelas mapeadas com consumidor identificado passaram de 103 para 194; órfãs caíram de 386 para 337 e parciais de 100 para 58.
+
+`PR_INVENTORY_MAXIMO_TOT` é o caso de regressão: passou de órfã para `COMPLETO_DIRETO`, ligada a dois relatórios. Sua fonte agora é `Máximo`, sustentada pelo caminho/comentário da procedure, e não `Oracle ERP (Fusion)` herdado de uma dependência indireta.
 
 Notebooks candidatos exigem o nome canônico completo da tabela como token no nome do notebook; nomes curtos não são inferidos. Reports e modelos são associados por nome canônico, pois IDs legados não sobrevivem à publicação.
 
