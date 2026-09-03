@@ -174,6 +174,14 @@ def test_dashboard_lineage_classifies_sharepoint_and_ignores_spaced_labels(tmp_p
     assert _is_physical_table_name("DM_REAL_TABLE")
     assert not _is_physical_table_name("LINHAS DE RC")
     assert {row["tabela"] for row in result["dashboard_rows"] if row["tabela"]} == {"DM_REAL_TABLE"}
+    model_row = next(row for row in result["dashboard_rows"] if row["tabela"] == "DM_REAL_TABLE")
+    assert model_row["tipo_evidencia"] == "NOME_MODELO_CANDIDATO"
+    assert model_row["confianca"] == "Baixa"
+    assert model_row["tipo_objeto"] == "Entidade do modelo semântico"
+    assert result["summary"]["total_referencias_alta_confianca"] == 0
+    assert result["summary"]["total_candidatas_modelo_baixa_confianca"] == 1
+    assert result["summary"]["qualidade_por_status"] == {"CANDIDATO_BAIXA_CONFIANCA": 1}
+    assert result["dashboard_quality_rows"][0]["total_referencias"] == 1
     assert result["summary"]["total_fontes_sharepoint_bronze"] == 1
     assert result["sharepoint_rows"][0]["observacao"].startswith("Fonte SharePoint")
 
@@ -204,6 +212,69 @@ def test_dashboard_lineage_counts_same_name_reports_by_canonical_id(tmp_path):
 
     assert result["summary"]["total_dashboards"] == 2
     assert {row["report_id"] for row in result["dashboard_rows"]} == {"rp-1", "rp-2"}
+    assert len(result["dashboard_quality_rows"]) == 2
+
+
+def test_dashboard_lineage_counts_sharepoint_reports_by_canonical_id(tmp_path):
+    workspaces_root = tmp_path / "Workspaces"
+    workspaces_root.mkdir()
+    payload = {
+        "datasourceInstances": [{
+            "datasourceType": "SharePointList",
+            "connectionDetails": {"sharePointSiteUrl": "https://contoso.sharepoint.com/sites/data"},
+            "datasourceId": "sp-1",
+        }],
+        "workspaces": [{
+            "id": "ws-1", "name": "Workspace",
+            "reports": [
+                {"id": "rp-1", "name": "Mesmo nome", "datasetId": "ds-1"},
+                {"id": "rp-2", "name": "Mesmo nome", "datasetId": "ds-2"},
+            ],
+            "datasets": [
+                {"id": "ds-1", "name": "Dataset 1", "tables": [],
+                 "datasourceUsages": [{"datasourceInstanceId": "sp-1"}]},
+                {"id": "ds-2", "name": "Dataset 2", "tables": [],
+                 "datasourceUsages": [{"datasourceInstanceId": "sp-1"}]},
+            ],
+            "dataflows": [],
+        }],
+    }
+    (workspaces_root / "workspace.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    result = build_dashboard_lineage(
+        str(workspaces_root), str(tmp_path / "scan"), str(tmp_path / "sharedpoint")
+    )
+
+    assert result["summary"]["total_dashboards_com_sharepoint"] == 2
+
+
+def test_dashboard_lineage_exposes_client_layer_conflicts(tmp_path):
+    import openpyxl
+
+    workspaces_root = tmp_path / "Workspaces"
+    workspaces_root.mkdir()
+    (workspaces_root / "workspace.json").write_text(
+        json.dumps({"datasourceInstances": [], "workspaces": []}), encoding="utf-8"
+    )
+    sharedpoint_root = tmp_path / "sharedpoint"
+    sharedpoint_root.mkdir()
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Tabelas"
+    worksheet.cell(1, 16).value = "(4)\nCamada Silver"
+    worksheet.cell(1, 24).value = "(6)\nCamada Gold"
+    worksheet.cell(2, 16).value = "PR_ORDEM_SERVICO"
+    worksheet.cell(3, 24).value = "PR_ORDEM_SERVICO"
+    workbook.save(sharedpoint_root / "Projeto Lakehouse - Tabelas e Pipelines.xlsx")
+
+    result = build_dashboard_lineage(
+        str(workspaces_root), str(tmp_path / "scan"), str(sharedpoint_root)
+    )
+
+    assert result["summary"]["total_conflitos_camada_excel_cliente"] == 1
+    assert result["client_layer_conflicts"] == [{
+        "tabela": "PR_ORDEM_SERVICO", "camadas": "Gold, Silver"
+    }]
 
 
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):

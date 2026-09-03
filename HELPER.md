@@ -289,6 +289,7 @@ Fabric, para você saber com certeza se algo mudou ou não.
 | Comando | O que faz |
 |---|---|
 | `supervisor scan [--lakehouse-dev-input DIR] [--workspaces-input DIR_OU_ZIP] [--save]` | Calcula, para Bronze/Silver/Dashboards, quanto **deveria existir no total** (união de `mappings/*.csv` + linhagem extraída de *todos* os notebooks de `input/lakehouse-dev` + tabelas Oracle referenciadas em `input/Workspaces` + total de relatórios do Power BI); para **Gold**, olha para todos os dashboards que o cliente precisa e calcula quais tabelas Gold eles realmente exigem (Dataset Tables dos relatórios em `input/Workspaces`) contra quantas dessas tabelas já existem de verdade em `input/lakehouse-dev`. Views/Processos intermediários usa uma meta manual. Com `--save`, exporta o relatório para `manifests/dashboard/` e grava no histórico |
+| `supervisor dashboard-lineage-export` | Exporta Report -> Dataset -> referências M/SQL com IDs canônicos, proveniência e confiança; nomes do modelo semântico ficam explícitos como candidatos, não como prova de tabela física |
 | `supervisor history` | Lista as visões já salvas (`scan --save`), com percentual geral e caminho do Excel de cada uma |
 | `supervisor set-targets [--intermediate N]` | Define a meta de Views/processos intermediários em `config/project_targets.yaml` (Bronze/Silver/Gold/Dashboards já são calculados automaticamente a partir de `input/`, sem precisar de meta manual) |
 
