@@ -105,7 +105,8 @@ def build_dashboard_lineage(
         if not data:
             continue
         for ws in data.get("workspaces", []):
-            ws_name = ws.get("name", ws.get("id", ""))
+            ws_id = str(ws.get("id", ""))
+            ws_name = ws.get("name", ws_id)
             for ds in ws.get("datasets", []):
                 ds_id = str(ds.get("id", ""))
                 tables = [
@@ -126,7 +127,7 @@ def build_dashboard_lineage(
                         continue
                     source_key = (ws_name, ds_id, instance.get("datasourceType", ""), str(source_url))
                     sharepoint_sources[source_key] = {
-                        "workspace": ws_name, "dataset_id": ds_id,
+                        "workspace_id": ws_id, "workspace": ws_name, "dataset_id": ds_id,
                         "dataset": ds.get("name", ds_id),
                         "tipo": instance.get("datasourceType", ""), "fonte": str(source_url),
                         "observacao": "Fonte SharePoint carregada por ingestão para a camada Bronze",
@@ -136,15 +137,21 @@ def build_dashboard_lineage(
                     if u.get("targetDataflowId")
                 ]
                 datasets_by_id[ds_id] = {
-                    "name": ds.get("name", ds_id), "workspace": ws_name,
+                    "id": ds_id, "name": ds.get("name", ds_id),
+                    "workspace_id": ws_id, "workspace": ws_name,
                     "tables": tables, "dataflow_ids": dataflow_ids,
                 }
             for df in ws.get("dataflows", []):
                 df_id = str(df.get("objectId") or df.get("id", ""))
-                dataflows_by_id[df_id] = {"name": df.get("name", df_id), "workspace": ws_name}
+                dataflows_by_id[df_id] = {
+                    "id": df_id, "name": df.get("name", df_id),
+                    "workspace_id": ws_id, "workspace": ws_name,
+                }
             for rp in ws.get("reports", []):
                 reports.append({
+                    "workspace_id": ws_id,
                     "workspace": ws_name, "name": rp.get("name", rp.get("id", "")),
+                    "report_id": str(rp.get("id", "")),
                     "dataset_id": str(rp.get("datasetId", "")),
                 })
 
@@ -156,11 +163,12 @@ def build_dashboard_lineage(
         linked_reports = report_keys_by_dataset.get(source["dataset_id"], [])
         if linked_reports:
             for report in linked_reports:
-                sharepoint_rows.append({**source, "dashboard": report["name"]})
+                sharepoint_rows.append({
+                    **source, "report_id": report["report_id"],
+                    "dashboard": report["name"],
+                })
         else:
-            sharepoint_rows.append({**source, "dashboard": ""})
-    for source in sharepoint_rows:
-        source.pop("dataset_id", None)
+            sharepoint_rows.append({**source, "report_id": "", "dashboard": ""})
 
     # Camada/domínio de apoio: reaproveita o escopo estendido (Excel +
     # scripts .sql/.prc/.tab/.vw/.dsx de input/sharedpoint) já classificado.
@@ -242,24 +250,44 @@ def build_dashboard_lineage(
         return f"rastreio SQL/.vw/.tab (upstream — {base_origem})"
 
     dashboard_rows: list[dict] = []
-    seen_dashboards: set[tuple[str, str]] = set()
+    seen_dashboards: set[tuple[str, ...]] = set()
     distinct_tables: set[str] = set()
+    candidate_model_tables: set[str] = set()
+    mquery_tables: set[str] = set()
+    reports_with_tables: set[tuple[str, ...]] = set()
+    unresolved_dataset_reports = 0
+    reports_without_sources = 0
     for rp in reports:
         ds = datasets_by_id.get(rp["dataset_id"])
         tables, direct_tables, origem = _resolve_dataset_tables(rp["dataset_id"])
-        seen_dashboards.add((rp["workspace"], rp["name"]))
+        report_key = ((rp["report_id"],) if rp["report_id"] else
+                      (rp["workspace_id"], rp["name"], rp["dataset_id"]))
+        seen_dashboards.add(report_key)
         dataset_name = ds["name"] if ds else "(não resolvido)"
         if not tables:
+            if origem == "dataset não resolvido":
+                unresolved_dataset_reports += 1
+            else:
+                reports_without_sources += 1
             dashboard_rows.append({
-                "workspace": rp["workspace"], "dashboard": rp["name"], "dataset": dataset_name,
+                "workspace_id": rp["workspace_id"], "workspace": rp["workspace"],
+                "report_id": rp["report_id"], "dashboard": rp["name"],
+                "dataset_id": rp["dataset_id"], "dataset": dataset_name,
                 "tabela": "", "camada": "", "dominio": "", "origem": origem,
             })
             continue
+        reports_with_tables.add(report_key)
         for t in sorted(tables):
             camada, dominio = _classify(t)
             distinct_tables.add(t)
+            if origem.startswith("direto no dataset"):
+                candidate_model_tables.add(t)
+            elif t in direct_tables:
+                mquery_tables.add(t)
             dashboard_rows.append({
-                "workspace": rp["workspace"], "dashboard": rp["name"], "dataset": dataset_name,
+                "workspace_id": rp["workspace_id"], "workspace": rp["workspace"],
+                "report_id": rp["report_id"], "dashboard": rp["name"],
+                "dataset_id": rp["dataset_id"], "dataset": dataset_name,
                 "tabela": t, "camada": camada, "dominio": dominio,
                 "origem": _row_origem(t, origem, direct_tables),
             })
@@ -322,9 +350,13 @@ def build_dashboard_lineage(
     # com as tabelas efetivamente alcançadas por cada dashboard. O vínculo
     # só existe para nomes completos idênticos; não há aproximação por
     # prefixo/sufixo ou semelhança textual.
-    dashboard_tables: dict[tuple[str, str, str], set[str]] = {}
+    dashboard_tables: dict[tuple[str, str, str, str, str, str], set[str]] = {}
     for row in dashboard_rows:
-        key = (row["workspace"], row["dashboard"], row["dataset"])
+        key = (
+            row.get("workspace_id", ""), row["workspace"],
+            row.get("report_id", ""), row["dashboard"],
+            row.get("dataset_id", ""), row["dataset"],
+        )
         if row["tabela"]:
             dashboard_tables.setdefault(key, set()).add(row["tabela"])
     mapping_dashboard_rows: list[dict] = []
@@ -341,18 +373,21 @@ def build_dashboard_lineage(
                 "tabela_rastreada": mapped_table,
                     "camada": _classify(mapped_table)[0],
                     "camada_mapeada": _classify(mapped_table)[0],
-                "workspace": "", "dashboard": "", "dataset": "",
+                "workspace_id": "", "workspace": "", "report_id": "",
+                "dashboard": "", "dataset_id": "", "dataset": "",
                 "status": "Mapeada pelo cliente — sem dashboard consumidor identificado",
             })
             continue
-        for (workspace, dashboard, dataset), matched_tables in consumers:
+        for (workspace_id, workspace, report_id, dashboard, dataset_id, dataset), matched_tables in consumers:
             for traced_table in sorted(matched_tables):
                 mapping_dashboard_rows.append({
                     "tabela_mapeada": mapped_table,
                     "tabela_rastreada": traced_table,
                     "camada": _classify(traced_table)[0],
                     "camada_mapeada": _classify(mapped_table)[0],
-                    "workspace": workspace, "dashboard": dashboard, "dataset": dataset,
+                    "workspace_id": workspace_id, "workspace": workspace,
+                    "report_id": report_id, "dashboard": dashboard,
+                    "dataset_id": dataset_id, "dataset": dataset,
                     "status": "Conexão confirmada por nome completo na linhagem do dashboard",
                 })
     mapped_without_dashboard = {
@@ -380,6 +415,15 @@ def build_dashboard_lineage(
         ),
         "summary": {
             "total_dashboards": len(seen_dashboards),
+            "total_reports_scan": len(reports),
+            "total_reports_com_tabelas": len(reports_with_tables),
+            "total_reports_dataset_nao_resolvido": unresolved_dataset_reports,
+            "total_reports_sem_fontes": reports_without_sources,
+            "total_dataflows_scan": len(dataflows_by_id),
+            "total_exports_dataflow": len(scan_dataflows),
+            "total_dataflows_com_export": len(dataflow_tables),
+            "total_tabelas_candidatas_modelo": len(candidate_model_tables),
+            "total_tabelas_diretas_mquery": len(mquery_tables),
             "total_tabelas_distintas": len(distinct_tables),
             "tabelas_por_camada": dict(camada_totals),
             "total_tabelas_excel_cliente": len(client_tables),
@@ -419,6 +463,15 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     ws_resumo.append(["Métrica", "Valor"])
     summary = result["summary"]
     ws_resumo.append(["Total de dashboards/relatórios", summary["total_dashboards"]])
+    ws_resumo.append(["Relatórios no scan (IDs canônicos)", summary.get("total_reports_scan", summary["total_dashboards"])])
+    ws_resumo.append(["Relatórios com alguma tabela rastreada", summary.get("total_reports_com_tabelas", 0)])
+    ws_resumo.append(["Relatórios com dataset não resolvido", summary.get("total_reports_dataset_nao_resolvido", 0)])
+    ws_resumo.append(["Relatórios sem fontes identificadas", summary.get("total_reports_sem_fontes", 0)])
+    ws_resumo.append(["Dataflows no scan de workspaces", summary.get("total_dataflows_scan", 0)])
+    ws_resumo.append(["Exports de Dataflow fornecidos", summary.get("total_exports_dataflow", 0)])
+    ws_resumo.append(["Dataflows casados com export", summary.get("total_dataflows_com_export", 0)])
+    ws_resumo.append(["Tabelas candidatas vindas do nome do modelo", summary.get("total_tabelas_candidatas_modelo", 0)])
+    ws_resumo.append(["Tabelas físicas diretas extraídas de M-query", summary.get("total_tabelas_diretas_mquery", 0)])
     ws_resumo.append(["Total de tabelas físicas distintas", summary["total_tabelas_distintas"]])
     for camada, total in sorted(summary["tabelas_por_camada"].items()):
         ws_resumo.append([f"Tabelas na camada {camada}", total])
@@ -440,9 +493,9 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     _autofit(ws_resumo)
 
     ws_dash = wb.create_sheet("Linhagem Dashboards")
-    ws_dash.append(["Workspace", "Dashboard/Relatório", "Dataset", "Tabela", "Camada", "Domínio", "Origem"])
+    ws_dash.append(["Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório", "Dataset ID", "Dataset", "Tabela", "Camada", "Domínio", "Origem"])
     for r in result["dashboard_rows"]:
-        ws_dash.append([r["workspace"], r["dashboard"], r["dataset"], r["tabela"], r["camada"], r["dominio"], r["origem"]])
+        ws_dash.append([r.get("workspace_id", ""), r["workspace"], r.get("report_id", ""), r["dashboard"], r.get("dataset_id", ""), r["dataset"], r["tabela"], r["camada"], r["dominio"], r["origem"]])
     _autofit(ws_dash)
 
     ws_dd = wb.create_sheet("Dataset e Dataflows")
@@ -466,20 +519,24 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     ws_crosswalk = wb.create_sheet("Mapping até Dashboards")
     ws_crosswalk.append([
         "Tabela Mapeada", "Tabela Rastreada", "Camada", "Camada Mapeada",
-        "Workspace", "Dashboard/Relatório", "Dataset", "Status",
+        "Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório",
+        "Dataset ID", "Dataset", "Status",
     ])
     for r in result.get("mapping_dashboard_rows", []):
         ws_crosswalk.append([
             r["tabela_mapeada"], r["tabela_rastreada"], r["camada"],
-            r["camada_mapeada"], r["workspace"], r["dashboard"], r["dataset"], r["status"],
+            r["camada_mapeada"], r.get("workspace_id", ""), r["workspace"],
+            r.get("report_id", ""), r["dashboard"], r.get("dataset_id", ""),
+            r["dataset"], r["status"],
         ])
     _autofit(ws_crosswalk)
 
     ws_sharepoint = wb.create_sheet("Fontes SharePoint Bronze")
-    ws_sharepoint.append(["Workspace", "Dashboard/Relatório", "Dataset", "Tipo", "Fonte", "Camada", "Observação"])
+    ws_sharepoint.append(["Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório", "Dataset ID", "Dataset", "Tipo", "Fonte", "Camada", "Observação"])
     for r in result.get("sharepoint_rows", []):
         ws_sharepoint.append([
-            r["workspace"], r["dashboard"], r["dataset"], r["tipo"],
+            r.get("workspace_id", ""), r["workspace"], r.get("report_id", ""),
+            r["dashboard"], r.get("dataset_id", ""), r["dataset"], r["tipo"],
             r["fonte"], "Bronze", r["observacao"],
         ])
     _autofit(ws_sharepoint)

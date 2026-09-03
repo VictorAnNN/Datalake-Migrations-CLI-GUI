@@ -62,7 +62,9 @@ def _sort_camadas(items) -> list:
 
 def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
     dash_df = pd.DataFrame(result["dashboard_rows"]).rename(columns={
-        "workspace": "Workspace", "dashboard": "Dashboard/Relatório", "dataset": "Dataset",
+        "workspace_id": "Workspace ID", "workspace": "Workspace",
+        "report_id": "Report ID", "dashboard": "Dashboard/Relatório",
+        "dataset_id": "Dataset ID", "dataset": "Dataset",
         "tabela": "Tabela", "camada": "Camada", "dominio": "Domínio", "origem": "Origem",
     })
     dd_df = pd.DataFrame(result["dataset_dataflow_rows"]).rename(columns={
@@ -79,11 +81,14 @@ def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
     })
     crosswalk_df = pd.DataFrame(result.get("mapping_dashboard_rows", [])).rename(columns={
         "tabela_mapeada": "Tabela Mapeada", "tabela_rastreada": "Tabela Rastreada",
-        "camada": "Camada", "workspace": "Workspace", "dashboard": "Dashboard/Relatório",
-        "dataset": "Dataset", "status": "Status",
+        "camada": "Camada", "workspace_id": "Workspace ID", "workspace": "Workspace",
+        "report_id": "Report ID", "dashboard": "Dashboard/Relatório",
+        "dataset_id": "Dataset ID", "dataset": "Dataset", "status": "Status",
     })
     sharepoint_df = pd.DataFrame(result.get("sharepoint_rows", [])).rename(columns={
-        "workspace": "Workspace", "dashboard": "Dashboard/Relatório", "dataset": "Dataset",
+        "workspace_id": "Workspace ID", "workspace": "Workspace",
+        "report_id": "Report ID", "dashboard": "Dashboard/Relatório",
+        "dataset_id": "Dataset ID", "dataset": "Dataset",
         "tipo": "Tipo", "fonte": "Fonte", "observacao": "Observação",
     })
     return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, result["summary"]
@@ -101,11 +106,34 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
         "tabelas_excel_sem_dashboard": 0,
         "dependencias_tabelas_excel_sem_dashboard": 0,
         "total_fontes_sharepoint_bronze": 0, "total_dashboards_com_sharepoint": 0,
+        "total_reports_scan": 0, "total_reports_com_tabelas": 0,
+        "total_reports_dataset_nao_resolvido": 0, "total_reports_sem_fontes": 0,
+        "total_dataflows_scan": 0, "total_exports_dataflow": 0,
+        "total_dataflows_com_export": 0, "total_tabelas_candidatas_modelo": 0,
+        "total_tabelas_diretas_mquery": 0,
     }
     for _, row in resumo_df.iterrows():
         metric, valor = row.get("Métrica"), row.get("Valor")
         if metric == "Total de dashboards/relatórios":
             summary["total_dashboards"] = int(valor)
+        elif metric == "Relatórios no scan (IDs canônicos)":
+            summary["total_reports_scan"] = int(valor)
+        elif metric == "Relatórios com alguma tabela rastreada":
+            summary["total_reports_com_tabelas"] = int(valor)
+        elif metric == "Relatórios com dataset não resolvido":
+            summary["total_reports_dataset_nao_resolvido"] = int(valor)
+        elif metric == "Relatórios sem fontes identificadas":
+            summary["total_reports_sem_fontes"] = int(valor)
+        elif metric == "Dataflows no scan de workspaces":
+            summary["total_dataflows_scan"] = int(valor)
+        elif metric == "Exports de Dataflow fornecidos":
+            summary["total_exports_dataflow"] = int(valor)
+        elif metric == "Dataflows casados com export":
+            summary["total_dataflows_com_export"] = int(valor)
+        elif metric == "Tabelas candidatas vindas do nome do modelo":
+            summary["total_tabelas_candidatas_modelo"] = int(valor)
+        elif metric == "Tabelas físicas diretas extraídas de M-query":
+            summary["total_tabelas_diretas_mquery"] = int(valor)
         elif metric == "Total de tabelas físicas distintas":
             summary["total_tabelas_distintas"] = int(valor)
         elif isinstance(metric, str) and metric.startswith("Tabelas na camada "):
@@ -133,13 +161,22 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
         elif isinstance(metric, str) and metric.startswith("Excel do cliente na camada "):
             summary["tabelas_por_camada_excel_cliente"][metric.replace("Excel do cliente na camada ", "").strip()] = int(valor)
     dash_df = sheets.get("Linhagem Dashboards", pd.DataFrame()).fillna("")
+    for column in ("Workspace ID", "Report ID", "Dataset ID"):
+        if column not in dash_df.columns:
+            dash_df[column] = ""
     dd_df = sheets.get("Dataset e Dataflows", pd.DataFrame()).fillna("")
     up_df = sheets.get("Linhagem SQL (upstream)", pd.DataFrame()).fillna("")
     mapped_df = sheets.get("Dependências Mapeamento", pd.DataFrame()).fillna("")
     crosswalk_df = sheets.get("Mapping até Dashboards", pd.DataFrame()).fillna("")
+    for column in ("Workspace ID", "Report ID", "Dataset ID"):
+        if column not in crosswalk_df.columns:
+            crosswalk_df[column] = ""
     if "Camada Mapeada" not in crosswalk_df.columns and not crosswalk_df.empty:
         crosswalk_df["Camada Mapeada"] = crosswalk_df["Camada"]
     sharepoint_df = sheets.get("Fontes SharePoint Bronze", pd.DataFrame()).fillna("")
+    for column in ("Workspace ID", "Report ID", "Dataset ID"):
+        if column not in sharepoint_df.columns:
+            sharepoint_df[column] = ""
     return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary
 
 
@@ -225,12 +262,24 @@ sharepoint_df: pd.DataFrame = result.get("sharepoint_df", pd.DataFrame())
 summary: dict = result["summary"]
 camadas_ordenadas = _sort_camadas(summary["tabelas_por_camada"].items())
 
+dataflow_total = summary.get("total_dataflows_scan", 0)
+dataflow_covered = summary.get("total_dataflows_com_export", 0)
+if dataflow_total and dataflow_covered < dataflow_total:
+    st.warning(
+        f"Cobertura parcial de Dataflows: {dataflow_covered}/{dataflow_total} possuem export M casado. "
+        "Os totais incluem candidatos extraídos do nome do modelo semântico e não devem ser tratados "
+        "como inventário físico confirmado."
+    )
+
 if dash_df.empty:
     st.info("Nenhuma linha de linhagem de dashboards no artefato carregado.")
     st.stop()
 
 dash_df = dash_df.copy()
-dash_df["_label"] = dash_df["Workspace"].astype(str) + " / " + dash_df["Dashboard/Relatório"].astype(str)
+dash_df["_label"] = (
+    dash_df["Workspace"].astype(str) + " / " + dash_df["Dashboard/Relatório"].astype(str)
+    + dash_df["Report ID"].astype(str).map(lambda value: f" [{value[:8]}]" if value else "")
+)
 labels = sorted(dash_df["_label"].unique())
 picked = [label for label in st.session_state.get("dashboard_filter", []) if label in labels]
 filtered = dash_df[dash_df["_label"].isin(picked)] if picked else dash_df
@@ -239,14 +288,20 @@ dashboard_tables = set(tabelas_validas["Tabela"])
 
 if not crosswalk_df.empty:
     crosswalk_df = crosswalk_df.copy()
-    crosswalk_df["_label"] = crosswalk_df["Workspace"].astype(str) + " / " + crosswalk_df["Dashboard/Relatório"].astype(str)
+    crosswalk_df["_label"] = (
+        crosswalk_df["Workspace"].astype(str) + " / " + crosswalk_df["Dashboard/Relatório"].astype(str)
+        + crosswalk_df["Report ID"].astype(str).map(lambda value: f" [{value[:8]}]" if value else "")
+    )
     crosswalk_selected = crosswalk_df[crosswalk_df["_label"].isin(picked)] if picked else crosswalk_df
 else:
     crosswalk_selected = crosswalk_df
 
 if not sharepoint_df.empty:
     sharepoint_df = sharepoint_df.copy()
-    sharepoint_df["_label"] = sharepoint_df["Workspace"].astype(str) + " / " + sharepoint_df["Dashboard/Relatório"].astype(str)
+    sharepoint_df["_label"] = (
+        sharepoint_df["Workspace"].astype(str) + " / " + sharepoint_df["Dashboard/Relatório"].astype(str)
+        + sharepoint_df["Report ID"].astype(str).map(lambda value: f" [{value[:8]}]" if value else "")
+    )
     sharepoint_selected = sharepoint_df[sharepoint_df["_label"].isin(picked)] if picked else sharepoint_df
 else:
     sharepoint_selected = sharepoint_df
