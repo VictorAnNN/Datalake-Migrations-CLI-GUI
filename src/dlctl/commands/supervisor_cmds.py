@@ -181,21 +181,32 @@ def dashboard_lineage_export(
     sharedpoint_input: str = typer.Option("input/sharedpoint", "--sharedpoint-input", help="Pasta com o Excel 'Projeto Lakehouse - Tabelas e Pipelines.xlsx' + scripts .sql/.prc/.tab/.vw/.dsx, usada só de apoio para classificar camada/domínio."),
 ):
     """Descobre a linhagem de TODOS os dashboards/relatórios do tenant:
-    Dashboard -> Dataset -> (Dataflow, quando existir) -> tabela física ->
-    camada (Bronze/Silver/Gold, pelo prefixo) -> domínio. Exporta um Excel
+    Dashboard -> Dataset -> (Dataflow, quando existir) -> referência de
+    tabela -> camada/domínio. Exporta um Excel
     com as abas 'Resumo' (total de dashboards, total de tabelas distintas,
     total por camada), 'Linhagem Dashboards' e 'Dataset e Dataflows'
     (agregado, no estilo da aba homônima usada como referência).
 
-    Limitações: quando o Dataset não usa Dataflow, a tabela vem do nome do
-    próprio modelo Power BI (pode não bater com o nome físico real);
+    Limitações: quando o Dataset não usa Dataflow, a referência vem do nome
+    do próprio modelo Power BI e é marcada como candidata de baixa confiança;
     Dataflows sem export correspondente em `--scan-input` ficam sem tabela
     identificada."""
     result = build_dashboard_lineage(workspaces_input, scan_input, sharedpoint_input)
     summary = result["summary"]
 
     console.print(f"[bold]Total de dashboards/relatórios:[/bold] {summary['total_dashboards']}")
-    console.print(f"[bold]Total de tabelas físicas distintas:[/bold] {summary['total_tabelas_distintas']}")
+    console.print(
+        "[bold]Referências distintas (inclui candidatas do modelo):[/bold] "
+        f"{summary['total_tabelas_distintas']}"
+    )
+    console.print(
+        "[bold]Referências estáticas via M/SQL/mapping:[/bold] "
+        f"{summary.get('total_referencias_alta_confianca', 0)}"
+    )
+    console.print(
+        "[yellow]Nomes somente do modelo semântico (baixa confiança):[/yellow] "
+        f"{summary.get('total_candidatas_modelo_baixa_confianca', 0)}"
+    )
     print_table(
         "Tabelas por camada",
         ["camada", "total"],

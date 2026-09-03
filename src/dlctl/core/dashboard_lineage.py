@@ -67,6 +67,30 @@ def _is_physical_table_name(name: str) -> bool:
     return bool(_PHYSICAL_TABLE_NAME.fullmatch(str(name or "").strip()))
 
 
+def _reference_evidence(
+    table_name: str,
+    base_origin: str,
+    direct_tables: set[str],
+    documented_tables: set[str],
+) -> tuple[str, str, str]:
+    """Qualifica a evidência sem confundir nome do modelo com objeto físico.
+
+    O Scanner chama de ``tables`` tanto entidades do modelo semântico quanto
+    tabelas físicas. Uma referência extraída de M/SQL ou alcançada pelo
+    mapping explícito é evidência estática forte de dependência. Um nome do
+    modelo que também aparece no inventário é corroborado, mas nenhum desses
+    sinais prova existência no motor. Os demais nomes permanecem candidatos.
+    """
+    table = _norm(table_name)
+    if table not in direct_tables:
+        return "REFERENCIA_UPSTREAM_ESTATICA", "Alta", "Tabela ou view"
+    if base_origin == "via Dataflow (M-query)":
+        return "REFERENCIA_M_QUERY", "Alta", "Tabela ou view"
+    if table in documented_tables:
+        return "NOME_MODELO_DOCUMENTADO", "Média", "Objeto documentado pelo cliente"
+    return "NOME_MODELO_CANDIDATO", "Baixa", "Entidade do modelo semântico"
+
+
 def _load_scan_dataflows(scan_input: str) -> dict[str, str]:
     """Carrega os JSONs de `input/scan` (exports de Dataflow com código M
     embutido) e indexa pelo nome normalizado -> conteúdo bruto do arquivo."""
@@ -92,9 +116,12 @@ def build_dashboard_lineage(
     scan_input: str = "input/scan",
     sharedpoint_input: str = "input/sharedpoint",
 ) -> dict:
-    """Monta a linhagem completa dashboard -> dataset -> (dataflow) -> tabela
-    física -> camada/domínio, mais o resumo (total de dashboards, total de
-    tabelas distintas, total por camada)."""
+    """Monta a linhagem dashboard -> dataset -> referência de tabela.
+
+    Cada referência recebe proveniência e confiança. Nomes vindos apenas da
+    entidade do modelo semântico continuam disponíveis para investigação,
+    mas não são apresentados como prova de existência física.
+    """
     datasets_by_id: dict[str, dict] = {}
     dataflows_by_id: dict[str, dict] = {}
     reports: list[dict] = []
@@ -176,6 +203,7 @@ def build_dashboard_lineage(
     camada_by_table: dict[str, dict] = {}
     for r in scope.get("rows", []):
         camada_by_table.setdefault(_norm(r["tabela"]), {"camada": r["camada"], "dominio": r.get("dominio", "")})
+    documented_tables = set(camada_by_table)
 
     def _classify(table_name: str) -> tuple[str, str]:
         info = camada_by_table.get(table_name)
@@ -254,6 +282,9 @@ def build_dashboard_lineage(
     distinct_tables: set[str] = set()
     candidate_model_tables: set[str] = set()
     mquery_tables: set[str] = set()
+    high_confidence_references: set[str] = set()
+    documented_model_references: set[str] = set()
+    low_confidence_model_candidates: set[str] = set()
     reports_with_tables: set[tuple[str, ...]] = set()
     unresolved_dataset_reports = 0
     reports_without_sources = 0
@@ -274,22 +305,35 @@ def build_dashboard_lineage(
                 "report_id": rp["report_id"], "dashboard": rp["name"],
                 "dataset_id": rp["dataset_id"], "dataset": dataset_name,
                 "tabela": "", "camada": "", "dominio": "", "origem": origem,
+                "tipo_evidencia": "NAO_RESOLVIDA", "confianca": "",
+                "tipo_objeto": "",
             })
             continue
         reports_with_tables.add(report_key)
         for t in sorted(tables):
             camada, dominio = _classify(t)
+            evidence, confidence, object_kind = _reference_evidence(
+                t, origem, direct_tables, documented_tables
+            )
             distinct_tables.add(t)
             if origem.startswith("direto no dataset"):
                 candidate_model_tables.add(t)
             elif t in direct_tables:
                 mquery_tables.add(t)
+            if confidence == "Alta":
+                high_confidence_references.add(t)
+            elif confidence == "Média":
+                documented_model_references.add(t)
+            else:
+                low_confidence_model_candidates.add(t)
             dashboard_rows.append({
                 "workspace_id": rp["workspace_id"], "workspace": rp["workspace"],
                 "report_id": rp["report_id"], "dashboard": rp["name"],
                 "dataset_id": rp["dataset_id"], "dataset": dataset_name,
                 "tabela": t, "camada": camada, "dominio": dominio,
                 "origem": _row_origem(t, origem, direct_tables),
+                "tipo_evidencia": evidence, "confianca": confidence,
+                "tipo_objeto": object_kind,
             })
 
     dataset_dataflow_rows: list[dict] = []
@@ -328,6 +372,15 @@ def build_dashboard_lineage(
         for camada, tables in excel_data.get("tables_by_camada", {}).items()
     }
     client_tables = set().union(*excel_tables_by_layer.values()) if excel_tables_by_layer else set()
+    client_layers_by_table: dict[str, set[str]] = {}
+    for camada, tables in excel_tables_by_layer.items():
+        for table in tables:
+            client_layers_by_table.setdefault(table, set()).add(camada)
+    client_layer_conflicts = [
+        {"tabela": table, "camadas": ", ".join(sorted(layers))}
+        for table, layers in sorted(client_layers_by_table.items())
+        if len(layers) > 1
+    ]
     client_layer_by_table = {
         table: camada
         for camada, tables in excel_tables_by_layer.items()
@@ -400,6 +453,52 @@ def build_dashboard_lineage(
         traced_tables, _ = trace_upstream({mapped_table}, mapped_upstream)
         dependencies_without_dashboard.update(traced_tables - {mapped_table})
 
+    quality_by_report: dict[tuple[str, ...], dict] = {}
+    for row in dashboard_rows:
+        report_key = (
+            (row.get("report_id", ""),) if row.get("report_id") else
+            (row.get("workspace_id", ""), row["dashboard"], row.get("dataset_id", ""))
+        )
+        quality = quality_by_report.setdefault(report_key, {
+            "workspace_id": row.get("workspace_id", ""), "workspace": row["workspace"],
+            "report_id": row.get("report_id", ""), "dashboard": row["dashboard"],
+            "dataset_id": row.get("dataset_id", ""), "dataset": row["dataset"],
+            "referencias": set(), "alta": set(), "media": set(), "baixa": set(),
+            "origens_sem_tabela": set(),
+        })
+        if row["tabela"]:
+            quality["referencias"].add(row["tabela"])
+            confidence_key = {"Alta": "alta", "Média": "media", "Baixa": "baixa"}.get(row.get("confianca", ""))
+            if confidence_key:
+                quality[confidence_key].add(row["tabela"])
+        elif row["origem"]:
+            quality["origens_sem_tabela"].add(row["origem"])
+
+    dashboard_quality_rows: list[dict] = []
+    quality_status_totals: Counter = Counter()
+    for quality in quality_by_report.values():
+        if quality["alta"]:
+            status = "RASTREADO_COM_EVIDENCIA_ESTATICA"
+        elif quality["media"]:
+            status = "CORROBORADO_PELO_INVENTARIO"
+        elif quality["baixa"]:
+            status = "CANDIDATO_BAIXA_CONFIANCA"
+        elif "dataset não resolvido" in quality["origens_sem_tabela"]:
+            status = "DATASET_NAO_RESOLVIDO"
+        else:
+            status = "SEM_FONTE_IDENTIFICADA"
+        quality_status_totals[status] += 1
+        dashboard_quality_rows.append({
+            "workspace_id": quality["workspace_id"], "workspace": quality["workspace"],
+            "report_id": quality["report_id"], "dashboard": quality["dashboard"],
+            "dataset_id": quality["dataset_id"], "dataset": quality["dataset"],
+            "status": status, "total_referencias": len(quality["referencias"]),
+            "referencias_alta": len(quality["alta"]),
+            "referencias_media": len(quality["media"]),
+            "referencias_baixa": len(quality["baixa"]),
+            "observacao": "; ".join(sorted(quality["origens_sem_tabela"])),
+        })
+
     return {
         "dashboard_rows": dashboard_rows,
         "dataset_dataflow_rows": dataset_dataflow_rows,
@@ -409,6 +508,11 @@ def build_dashboard_lineage(
             key=lambda row: (row["tabela_destino"], row["tabela_origem"]),
         ),
         "mapping_dashboard_rows": mapping_dashboard_rows,
+        "client_layer_conflicts": client_layer_conflicts,
+        "dashboard_quality_rows": sorted(
+            dashboard_quality_rows,
+            key=lambda row: (row["workspace"], row["dashboard"], row["report_id"]),
+        ),
         "sharepoint_rows": sorted(
             sharepoint_rows,
             key=lambda row: (row["workspace"], row["dashboard"], row["dataset"], row["fonte"]),
@@ -424,10 +528,20 @@ def build_dashboard_lineage(
             "total_dataflows_com_export": len(dataflow_tables),
             "total_tabelas_candidatas_modelo": len(candidate_model_tables),
             "total_tabelas_diretas_mquery": len(mquery_tables),
+            "total_referencias_alta_confianca": len(high_confidence_references),
+            "total_referencias_modelo_documentadas": len(
+                documented_model_references - high_confidence_references
+            ),
+            "total_candidatas_modelo_baixa_confianca": len(
+                low_confidence_model_candidates
+                - high_confidence_references
+                - documented_model_references
+            ),
             "total_tabelas_distintas": len(distinct_tables),
             "tabelas_por_camada": dict(camada_totals),
             "total_tabelas_excel_cliente": len(client_tables),
             "tabelas_por_camada_excel_cliente": dict(client_layer_totals),
+            "total_conflitos_camada_excel_cliente": len(client_layer_conflicts),
             "total_tabelas_consolidado": len(combined_tables),
             "tabelas_por_camada_consolidado": dict(combined_layer_totals),
             "tabelas_em_comum": len(client_tables & distinct_tables),
@@ -442,8 +556,11 @@ def build_dashboard_lineage(
             "dependencias_tabelas_excel_sem_dashboard": len(dependencies_without_dashboard),
             "total_fontes_sharepoint_bronze": len({row["fonte"] for row in sharepoint_rows}),
             "total_dashboards_com_sharepoint": len({
-                row["dashboard"] for row in sharepoint_rows if row["dashboard"]
+                ((row.get("report_id"),) if row.get("report_id") else
+                 (row.get("workspace_id", ""), row["dashboard"], row.get("dataset_id", "")))
+                for row in sharepoint_rows if row["dashboard"]
             }),
+            "qualidade_por_status": dict(quality_status_totals),
         },
     }
 
@@ -472,12 +589,19 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     ws_resumo.append(["Dataflows casados com export", summary.get("total_dataflows_com_export", 0)])
     ws_resumo.append(["Tabelas candidatas vindas do nome do modelo", summary.get("total_tabelas_candidatas_modelo", 0)])
     ws_resumo.append(["Tabelas físicas diretas extraídas de M-query", summary.get("total_tabelas_diretas_mquery", 0)])
-    ws_resumo.append(["Total de tabelas físicas distintas", summary["total_tabelas_distintas"]])
+    ws_resumo.append([
+        "Referências distintas (inclui nomes candidatos do modelo; não prova existência física)",
+        summary["total_tabelas_distintas"],
+    ])
+    ws_resumo.append(["Referências estáticas via M/SQL/mapping (confiança alta)", summary.get("total_referencias_alta_confianca", 0)])
+    ws_resumo.append(["Nomes do modelo corroborados pelo inventário (confiança média)", summary.get("total_referencias_modelo_documentadas", 0)])
+    ws_resumo.append(["Nomes somente do modelo semântico (confiança baixa)", summary.get("total_candidatas_modelo_baixa_confianca", 0)])
     for camada, total in sorted(summary["tabelas_por_camada"].items()):
         ws_resumo.append([f"Tabelas na camada {camada}", total])
     ws_resumo.append([])
     ws_resumo.append(["Consolidado — tabelas únicas do Excel + dashboards", summary.get("total_tabelas_consolidado", 0)])
     ws_resumo.append(["Tabelas únicas mapeadas no Excel do cliente", summary.get("total_tabelas_excel_cliente", 0)])
+    ws_resumo.append(["Conflitos de camada no Excel do cliente", summary.get("total_conflitos_camada_excel_cliente", 0)])
     ws_resumo.append(["Tabelas únicas alcançadas pelos dashboards", summary.get("total_tabelas_distintas", 0)])
     ws_resumo.append(["Tabelas em comum entre Excel e dashboards", summary.get("tabelas_em_comum", 0)])
     ws_resumo.append(["Apenas no Excel do cliente", summary.get("tabelas_apenas_excel_cliente", 0)])
@@ -490,12 +614,24 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
         ws_resumo.append([f"Consolidado na camada {camada}", total])
     for camada, total in sorted(summary.get("tabelas_por_camada_excel_cliente", {}).items()):
         ws_resumo.append([f"Excel do cliente na camada {camada}", total])
+    for status, total in sorted(summary.get("qualidade_por_status", {}).items()):
+        ws_resumo.append([f"Relatórios — {status}", total])
     _autofit(ws_resumo)
 
     ws_dash = wb.create_sheet("Linhagem Dashboards")
-    ws_dash.append(["Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório", "Dataset ID", "Dataset", "Tabela", "Camada", "Domínio", "Origem"])
+    ws_dash.append([
+        "Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório",
+        "Dataset ID", "Dataset", "Tabela", "Camada", "Domínio", "Origem",
+        "Tipo de evidência", "Confiança", "Tipo de objeto",
+    ])
     for r in result["dashboard_rows"]:
-        ws_dash.append([r.get("workspace_id", ""), r["workspace"], r.get("report_id", ""), r["dashboard"], r.get("dataset_id", ""), r["dataset"], r["tabela"], r["camada"], r["dominio"], r["origem"]])
+        ws_dash.append([
+            r.get("workspace_id", ""), r["workspace"], r.get("report_id", ""),
+            r["dashboard"], r.get("dataset_id", ""), r["dataset"], r["tabela"],
+            r["camada"], r["dominio"], r["origem"],
+            r.get("tipo_evidencia", ""), r.get("confianca", ""),
+            r.get("tipo_objeto", ""),
+        ])
     _autofit(ws_dash)
 
     ws_dd = wb.create_sheet("Dataset e Dataflows")
@@ -540,6 +676,30 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
             r["fonte"], "Bronze", r["observacao"],
         ])
     _autofit(ws_sharepoint)
+
+    ws_quality = wb.create_sheet("Qualidade por Dashboard")
+    ws_quality.append([
+        "Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório",
+        "Dataset ID", "Dataset", "Status", "Referências distintas",
+        "Alta confiança", "Média confiança", "Baixa confiança", "Observação",
+    ])
+    for r in result.get("dashboard_quality_rows", []):
+        ws_quality.append([
+            r["workspace_id"], r["workspace"], r["report_id"], r["dashboard"],
+            r["dataset_id"], r["dataset"], r["status"], r["total_referencias"],
+            r["referencias_alta"], r["referencias_media"], r["referencias_baixa"],
+            r["observacao"],
+        ])
+    _autofit(ws_quality)
+
+    ws_conflicts = wb.create_sheet("Conflitos de Camada")
+    ws_conflicts.append(["Tabela", "Camadas declaradas", "Ação necessária"])
+    for r in result.get("client_layer_conflicts", []):
+        ws_conflicts.append([
+            r["tabela"], r["camadas"],
+            "Confirmar camada canônica; nenhuma decisão automática foi tomada",
+        ])
+    _autofit(ws_conflicts)
 
     wb.save(str(excel_path))
     return {"excel_path": str(excel_path)}
