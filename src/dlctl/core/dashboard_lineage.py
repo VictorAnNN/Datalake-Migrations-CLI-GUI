@@ -26,7 +26,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections import Counter
+from collections import Counter, deque
 from pathlib import Path
 
 import openpyxl
@@ -120,6 +120,171 @@ def _load_scan_dataflows(scan_input: str) -> dict[str, str]:
             document = ""
         scans[_normalize_dataflow_key(name)] = document or content
     return scans
+
+
+def _build_end_to_end_mapping_rows(
+    client_tables: set[str],
+    client_layers_by_table: dict[str, set[str]],
+    client_domains_by_table: dict[str, set[str]],
+    dependencies_by_target: dict[str, set[str]],
+    dashboard_endpoints: dict[tuple[str, str, str, str, str, str], dict[str, dict]],
+    classify,
+) -> list[dict]:
+    """Diagnostica cada tabela do mapping até um endpoint de dashboard.
+
+    O grafo recebido usa ``destino -> origens``. Aqui ele é invertido e
+    percorrido no sentido Bronze/Silver/Gold -> consumidor. O menor caminho
+    é evidência estática; não comprova execução ou materialização no Fabric.
+    """
+    downstream: dict[str, set[str]] = {}
+    for target, sources in dependencies_by_target.items():
+        for source in sources:
+            if source and target and source != target:
+                downstream.setdefault(source, set()).add(target)
+
+    endpoint_consumers: dict[str, list[tuple[tuple[str, str, str, str, str, str], dict]]] = {}
+    for key, endpoints in dashboard_endpoints.items():
+        for table, evidence in endpoints.items():
+            endpoint_consumers.setdefault(table, []).append((key, evidence))
+
+    confidence_rank = {"Alta": 0, "Média": 1, "Baixa": 2, "": 3}
+    layer_rank = {"Bronze": 0, "Silver": 1, "Gold": 2}
+    rows: list[dict] = []
+
+    for mapped_table in sorted(client_tables):
+        parent: dict[str, str | None] = {mapped_table: None}
+        distance = {mapped_table: 0}
+        queue = deque([mapped_table])
+        while queue:
+            current = queue.popleft()
+            for target in sorted(downstream.get(current, set())):
+                if target in parent:
+                    continue
+                parent[target] = current
+                distance[target] = distance[current] + 1
+                queue.append(target)
+
+        reachable_endpoints = [table for table in parent if table in endpoint_consumers]
+        consumers: list[tuple[tuple[str, str, str, str, str, str], str, dict]] = []
+        for endpoint in reachable_endpoints:
+            consumers.extend((key, endpoint, evidence) for key, evidence in endpoint_consumers[endpoint])
+        consumers.sort(key=lambda item: (
+            confidence_rank.get(item[2].get("confianca", ""), 3),
+            distance[item[1]], item[0][1], item[0][3], item[1],
+        ))
+
+        declared_layers = sorted(client_layers_by_table.get(mapped_table, set()))
+        domains = sorted(value for value in client_domains_by_table.get(mapped_table, set()) if value)
+        alerts = []
+        if len(declared_layers) > 1:
+            alerts.append(f"CONFLITO_CAMADA: {', '.join(declared_layers)}")
+        base = {
+            "tabela_mapeada": mapped_table,
+            "camada_mapeada": ", ".join(declared_layers) or classify(mapped_table)[0],
+            "dominio": ", ".join(domains),
+            "alertas": "; ".join(alerts),
+        }
+
+        if consumers:
+            best_key, endpoint, evidence = consumers[0]
+            path = []
+            cursor: str | None = endpoint
+            while cursor is not None:
+                path.append(cursor)
+                cursor = parent[cursor]
+            path.reverse()
+            canonical_consumers = {
+                ((key[2],) if key[2] else (key[0], key[3], key[4]))
+                for key, _, _ in consumers
+            }
+            dashboard_names = sorted({f"{key[1]} / {key[3]}" for key, _, _ in consumers})
+            sample = "; ".join(dashboard_names[:5])
+            if len(dashboard_names) > 5:
+                sample += f"; +{len(dashboard_names) - 5}"
+
+            confidence = evidence.get("confianca", "")
+            if confidence == "Baixa":
+                status, reaches = "CANDIDATO_BAIXA_CONFIANCA", "Candidato"
+                observation = (
+                    "O caminho chega somente a um nome de entidade do modelo semântico; "
+                    "o nome físico ainda não foi corroborado por M-query, SQL ou mapping."
+                )
+                action = "Confirmar o nome físico no modelo/Dataflow antes de contabilizar como cobertura."
+            elif len(path) == 1:
+                status, reaches = "COMPLETO_DIRETO", "Sim"
+                observation = "A própria tabela mapeada é referenciada diretamente pelo dataset/Dataflow do dashboard."
+                action = "Validar existência, materialização e consulta no Fabric."
+            else:
+                status, reaches = "COMPLETO", "Sim"
+                observation = "Cadeia estática confirmada até um endpoint consumido por dashboard, por nomes completos."
+                action = "Validar execução/materialização no Fabric e o teste funcional do dashboard."
+            if alerts:
+                observation += " Há conflito de camada declarado no mapping do cliente."
+            rows.append({
+                **base,
+                "status_fim_a_fim": status, "chega_dashboard": reaches,
+                "etapa_alcancada": "Dashboard", "qtd_dashboards": len(canonical_consumers),
+                "dashboards_amostra": sample, "tabela_endpoint": endpoint,
+                "caminho_exemplo": " -> ".join(path),
+                "workspace_id": best_key[0], "workspace": best_key[1],
+                "report_id": best_key[2], "dashboard": best_key[3],
+                "dataset_id": best_key[4], "dataset": best_key[5],
+                "tipo_evidencia_endpoint": evidence.get("tipo_evidencia", ""),
+                "confianca": confidence, "codigo_motivo": status,
+                "observacao": observation, "acao_recomendada": action,
+            })
+            continue
+
+        reached_tables = set(parent)
+        reached_layer = max(
+            (classify(table)[0] for table in reached_tables),
+            key=lambda layer: layer_rank.get(layer, -1),
+            default=classify(mapped_table)[0],
+        )
+        if mapped_table not in downstream:
+            status = "ORFAO_SEM_ARESTA"
+            observation = (
+                "A tabela consta no mapping do cliente, mas nenhum script, view ou ligação do Excel "
+                "fornecido indica um consumidor downstream."
+            )
+            action = "Localizar o script/pipeline consumidor ou confirmar descontinuação/fora de escopo."
+            path_text = mapped_table
+        else:
+            status = "PARCIAL_SEM_DASHBOARD"
+            furthest = max(
+                reached_tables,
+                key=lambda table: (layer_rank.get(classify(table)[0], -1), distance[table], table),
+            )
+            path = []
+            cursor = furthest
+            while cursor is not None:
+                path.append(cursor)
+                cursor = parent[cursor]
+            path_text = " -> ".join(reversed(path))
+            observation = (
+                f"Há cadeia estática até a camada {reached_layer}, mas nenhum endpoint coincide com "
+                "a linhagem de dashboard disponível."
+            )
+            if reached_layer == "Gold":
+                action = "Verificar dataset/report consumidor, nome físico versus modelo e cobertura do Scanner API."
+            elif reached_layer == "Silver":
+                action = "Localizar a transformação Silver→Gold ou confirmar consumo direto pela Gold/dashboard."
+            else:
+                action = "Localizar a transformação Bronze→Silver/Gold."
+        if alerts:
+            observation += " Há conflito de camada declarado no mapping do cliente."
+        rows.append({
+            **base,
+            "status_fim_a_fim": status, "chega_dashboard": "Não",
+            "etapa_alcancada": reached_layer, "qtd_dashboards": 0,
+            "dashboards_amostra": "", "tabela_endpoint": "",
+            "caminho_exemplo": path_text,
+            "workspace_id": "", "workspace": "", "report_id": "", "dashboard": "",
+            "dataset_id": "", "dataset": "", "tipo_evidencia_endpoint": "",
+            "confianca": "", "codigo_motivo": status,
+            "observacao": observation, "acao_recomendada": action,
+        })
+    return rows
 
 
 def build_dashboard_lineage(
@@ -384,6 +549,9 @@ def build_dashboard_lineage(
     }
     client_tables = set().union(*excel_tables_by_layer.values()) if excel_tables_by_layer else set()
     client_layers_by_table: dict[str, set[str]] = {}
+    client_domains_by_table: dict[str, set[str]] = {}
+    for row in excel_data.get("rows", []):
+        client_domains_by_table.setdefault(row["tabela"], set()).add(row.get("dominio", ""))
     for camada, tables in excel_tables_by_layer.items():
         for table in tables:
             client_layers_by_table.setdefault(table, set()).add(camada)
@@ -415,6 +583,7 @@ def build_dashboard_lineage(
     # só existe para nomes completos idênticos; não há aproximação por
     # prefixo/sufixo ou semelhança textual.
     dashboard_tables: dict[tuple[str, str, str, str, str, str], set[str]] = {}
+    dashboard_endpoints: dict[tuple[str, str, str, str, str, str], dict[str, dict]] = {}
     for row in dashboard_rows:
         key = (
             row.get("workspace_id", ""), row["workspace"],
@@ -423,6 +592,11 @@ def build_dashboard_lineage(
         )
         if row["tabela"]:
             dashboard_tables.setdefault(key, set()).add(row["tabela"])
+            if not row["origem"].startswith("rastreio "):
+                dashboard_endpoints.setdefault(key, {})[row["tabela"]] = {
+                    "tipo_evidencia": row.get("tipo_evidencia", ""),
+                    "confianca": row.get("confianca", ""),
+                }
     mapping_dashboard_rows: list[dict] = []
     for mapped_table in sorted(client_tables):
         mapped_closure, _ = trace_upstream({mapped_table}, mapped_upstream)
@@ -463,6 +637,16 @@ def build_dashboard_lineage(
     for mapped_table in mapped_without_dashboard:
         traced_tables, _ = trace_upstream({mapped_table}, mapped_upstream)
         dependencies_without_dashboard.update(traced_tables - {mapped_table})
+
+    end_to_end_mapping_rows = _build_end_to_end_mapping_rows(
+        client_tables=client_tables,
+        client_layers_by_table=client_layers_by_table,
+        client_domains_by_table=client_domains_by_table,
+        dependencies_by_target=upstream_by_table,
+        dashboard_endpoints=dashboard_endpoints,
+        classify=_classify,
+    )
+    end_to_end_status_totals = Counter(row["status_fim_a_fim"] for row in end_to_end_mapping_rows)
 
     quality_by_report: dict[tuple[str, ...], dict] = {}
     for row in dashboard_rows:
@@ -519,6 +703,7 @@ def build_dashboard_lineage(
             key=lambda row: (row["tabela_destino"], row["tabela_origem"]),
         ),
         "mapping_dashboard_rows": mapping_dashboard_rows,
+        "end_to_end_mapping_rows": end_to_end_mapping_rows,
         "client_layer_conflicts": client_layer_conflicts,
         "dashboard_quality_rows": sorted(
             dashboard_quality_rows,
@@ -565,6 +750,13 @@ def build_dashboard_lineage(
                 row["tabela_mapeada"] for row in mapping_dashboard_rows if not row["dashboard"]
             }),
             "dependencias_tabelas_excel_sem_dashboard": len(dependencies_without_dashboard),
+            "fim_a_fim_por_status": dict(end_to_end_status_totals),
+            "total_fim_a_fim_confirmado": sum(
+                end_to_end_status_totals[status] for status in ("COMPLETO", "COMPLETO_DIRETO")
+            ),
+            "total_fim_a_fim_candidato": end_to_end_status_totals["CANDIDATO_BAIXA_CONFIANCA"],
+            "total_fim_a_fim_parcial": end_to_end_status_totals["PARCIAL_SEM_DASHBOARD"],
+            "total_fim_a_fim_orfao": end_to_end_status_totals["ORFAO_SEM_ARESTA"],
             "total_fontes_sharepoint_bronze": len({row["fonte"] for row in sharepoint_rows}),
             "total_dashboards_com_sharepoint": len({
                 ((row.get("report_id"),) if row.get("report_id") else
@@ -627,6 +819,8 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
         ws_resumo.append([f"Excel do cliente na camada {camada}", total])
     for status, total in sorted(summary.get("qualidade_por_status", {}).items()):
         ws_resumo.append([f"Relatórios — {status}", total])
+    for status, total in sorted(summary.get("fim_a_fim_por_status", {}).items()):
+        ws_resumo.append([f"Mapping fim a fim — {status}", total])
     _autofit(ws_resumo)
 
     ws_dash = wb.create_sheet("Linhagem Dashboards")
@@ -677,6 +871,61 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
             r["dataset"], r["status"],
         ])
     _autofit(ws_crosswalk)
+
+    ws_e2e = wb.create_sheet("Fim a Fim - Diagnóstico")
+    ws_e2e.append([
+        "Tabela Mapeada", "Camada Mapeada", "Domínio", "Status Fim a Fim",
+        "Chega a Dashboard", "Etapa Alcançada", "Qtd. Dashboards", "Dashboards (amostra)",
+        "Tabela Endpoint", "Caminho Exemplo", "Workspace ID", "Workspace", "Report ID",
+        "Dashboard/Relatório", "Dataset ID", "Dataset", "Tipo Evidência Endpoint",
+        "Confiança", "Código Motivo", "Observação", "Ação Recomendada", "Alertas",
+    ])
+    for r in result.get("end_to_end_mapping_rows", []):
+        ws_e2e.append([
+            r["tabela_mapeada"], r["camada_mapeada"], r["dominio"], r["status_fim_a_fim"],
+            r["chega_dashboard"], r["etapa_alcancada"], r["qtd_dashboards"],
+            r["dashboards_amostra"], r["tabela_endpoint"], r["caminho_exemplo"],
+            r["workspace_id"], r["workspace"], r["report_id"], r["dashboard"],
+            r["dataset_id"], r["dataset"], r["tipo_evidencia_endpoint"], r["confianca"],
+            r["codigo_motivo"], r["observacao"], r["acao_recomendada"], r["alertas"],
+        ])
+    _autofit(ws_e2e)
+
+    ws_legend = wb.create_sheet("Legenda Diagnóstico")
+    ws_legend.append(["Código", "Interpretação", "Próxima decisão"])
+    ws_legend.append([
+        "COMPLETO",
+        "Existe caminho estático por nome completo entre a tabela mapeada e um endpoint de dashboard.",
+        "Validar materialização e teste funcional; a linhagem não prova runtime.",
+    ])
+    ws_legend.append([
+        "COMPLETO_DIRETO",
+        "A própria tabela mapeada é um endpoint referenciado diretamente pelo dataset/Dataflow.",
+        "Validar existência e consulta no Fabric.",
+    ])
+    ws_legend.append([
+        "CANDIDATO_BAIXA_CONFIANCA",
+        "A coincidência termina apenas em nome de entidade do modelo semântico.",
+        "Confirmar o objeto físico antes de contabilizar cobertura.",
+    ])
+    ws_legend.append([
+        "PARCIAL_SEM_DASHBOARD",
+        "Há dependências downstream, mas nenhuma chega a endpoint dos dashboards disponíveis.",
+        "Investigar o próximo elo indicado em Ação Recomendada.",
+    ])
+    ws_legend.append([
+        "ORFAO_SEM_ARESTA",
+        "Nenhum artefato fornecido indica consumidor downstream para a tabela.",
+        "Localizar script/pipeline consumidor ou confirmar fora de escopo/descontinuação.",
+    ])
+    ws_legend.append([
+        "CONFLITO_CAMADA",
+        "A mesma tabela foi declarada em mais de uma camada no mapping do cliente.",
+        "Definir a camada canônica; o alerta não apaga uma cadeia encontrada.",
+    ])
+    ws_legend.append([])
+    ws_legend.append(["Limite da evidência", "Resultado estático dos arquivos fornecidos.", "Não prova publicação, execução ou materialização no Fabric."])
+    _autofit(ws_legend)
 
     ws_sharepoint = wb.create_sheet("Fontes SharePoint Bronze")
     ws_sharepoint.append(["Workspace ID", "Workspace", "Report ID", "Dashboard/Relatório", "Dataset ID", "Dataset", "Tipo", "Fonte", "Camada", "Observação"])

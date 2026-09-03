@@ -13,6 +13,7 @@ from dlctl.core import lineage_graph
 from dlctl.core import state as state_db
 from dlctl.core.global_scope import _extract_tables_from_sql, read_excel_pipeline_edges
 from dlctl.core.dashboard_lineage import (
+    _build_end_to_end_mapping_rows,
     _is_physical_table_name,
     _load_scan_dataflows,
     build_dashboard_lineage,
@@ -314,6 +315,73 @@ def test_dashboard_lineage_exposes_client_layer_conflicts(tmp_path):
     assert result["client_layer_conflicts"] == [{
         "tabela": "PR_ORDEM_SERVICO", "camadas": "Gold, Silver"
     }]
+
+
+def test_end_to_end_mapping_reports_complete_partial_and_orphan_paths():
+    def classify(table):
+        if table.startswith("DW_"):
+            return "Silver", ""
+        if table.startswith("DM_"):
+            return "Gold", ""
+        return "Bronze", ""
+
+    key = ("ws-1", "Workspace", "rp-1", "Dashboard", "ds-1", "Dataset")
+    rows = _build_end_to_end_mapping_rows(
+        client_tables={"BRONZE_OK", "BRONZE_PARTIAL", "BRONZE_ORPHAN"},
+        client_layers_by_table={
+            "BRONZE_OK": {"Bronze"}, "BRONZE_PARTIAL": {"Bronze"},
+            "BRONZE_ORPHAN": {"Bronze"},
+        },
+        client_domains_by_table={"BRONZE_OK": {"Suprimentos"}},
+        dependencies_by_target={
+            "DW_OK": {"BRONZE_OK"}, "DM_OK": {"DW_OK"},
+            "DW_PARTIAL": {"BRONZE_PARTIAL"},
+        },
+        dashboard_endpoints={key: {
+            "DM_OK": {"tipo_evidencia": "REFERENCIA_M_QUERY", "confianca": "Alta"},
+        }},
+        classify=classify,
+    )
+    by_table = {row["tabela_mapeada"]: row for row in rows}
+
+    assert by_table["BRONZE_OK"]["status_fim_a_fim"] == "COMPLETO"
+    assert by_table["BRONZE_OK"]["caminho_exemplo"] == "BRONZE_OK -> DW_OK -> DM_OK"
+    assert by_table["BRONZE_OK"]["qtd_dashboards"] == 1
+    assert by_table["BRONZE_PARTIAL"]["status_fim_a_fim"] == "PARCIAL_SEM_DASHBOARD"
+    assert by_table["BRONZE_PARTIAL"]["etapa_alcancada"] == "Silver"
+    assert by_table["BRONZE_ORPHAN"]["status_fim_a_fim"] == "ORFAO_SEM_ARESTA"
+
+
+def test_end_to_end_mapping_does_not_confirm_low_confidence_model_name():
+    key = ("ws-1", "Workspace", "rp-1", "Dashboard", "ds-1", "Dataset")
+    rows = _build_end_to_end_mapping_rows(
+        client_tables={"DM_CANDIDATE"},
+        client_layers_by_table={"DM_CANDIDATE": {"Gold"}},
+        client_domains_by_table={}, dependencies_by_target={},
+        dashboard_endpoints={key: {
+            "DM_CANDIDATE": {"tipo_evidencia": "NOME_MODELO_CANDIDATO", "confianca": "Baixa"},
+        }},
+        classify=lambda table: ("Gold", ""),
+    )
+
+    assert rows[0]["status_fim_a_fim"] == "CANDIDATO_BAIXA_CONFIANCA"
+    assert rows[0]["chega_dashboard"] == "Candidato"
+
+
+def test_end_to_end_mapping_surfaces_layer_conflict_without_hiding_completion():
+    key = ("ws-1", "Workspace", "rp-1", "Dashboard", "ds-1", "Dataset")
+    rows = _build_end_to_end_mapping_rows(
+        client_tables={"DM_CONFLICT"},
+        client_layers_by_table={"DM_CONFLICT": {"Gold", "Silver"}},
+        client_domains_by_table={}, dependencies_by_target={},
+        dashboard_endpoints={key: {
+            "DM_CONFLICT": {"tipo_evidencia": "NOME_MODELO_DOCUMENTADO", "confianca": "Média"},
+        }},
+        classify=lambda table: ("Gold", ""),
+    )
+
+    assert rows[0]["status_fim_a_fim"] == "COMPLETO_DIRETO"
+    assert rows[0]["alertas"] == "CONFLITO_CAMADA: Gold, Silver"
 
 
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):

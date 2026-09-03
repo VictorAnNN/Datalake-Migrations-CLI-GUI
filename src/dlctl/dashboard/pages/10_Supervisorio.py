@@ -60,7 +60,7 @@ def _sort_camadas(items) -> list:
     return sorted(items, key=lambda kv: CAMADA_ORDER.get(str(kv[0]).strip().lower(), 99))
 
 
-def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def _result_to_frames(result: dict) -> tuple:
     dash_df = pd.DataFrame(result["dashboard_rows"]).rename(columns={
         "workspace_id": "Workspace ID", "workspace": "Workspace",
         "report_id": "Report ID", "dashboard": "Dashboard/Relatório",
@@ -91,10 +91,22 @@ def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
         "dataset_id": "Dataset ID", "dataset": "Dataset",
         "tipo": "Tipo", "fonte": "Fonte", "observacao": "Observação",
     })
-    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, result["summary"]
+    e2e_df = pd.DataFrame(result.get("end_to_end_mapping_rows", [])).rename(columns={
+        "tabela_mapeada": "Tabela Mapeada", "camada_mapeada": "Camada Mapeada",
+        "dominio": "Domínio", "status_fim_a_fim": "Status Fim a Fim",
+        "chega_dashboard": "Chega a Dashboard", "etapa_alcancada": "Etapa Alcançada",
+        "qtd_dashboards": "Qtd. Dashboards", "dashboards_amostra": "Dashboards (amostra)",
+        "tabela_endpoint": "Tabela Endpoint", "caminho_exemplo": "Caminho Exemplo",
+        "workspace_id": "Workspace ID", "workspace": "Workspace", "report_id": "Report ID",
+        "dashboard": "Dashboard/Relatório", "dataset_id": "Dataset ID", "dataset": "Dataset",
+        "tipo_evidencia_endpoint": "Tipo Evidência Endpoint", "confianca": "Confiança",
+        "codigo_motivo": "Código Motivo", "observacao": "Observação",
+        "acao_recomendada": "Ação Recomendada", "alertas": "Alertas",
+    })
+    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, e2e_df, result["summary"]
 
 
-def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def _load_from_excel(path: Path) -> tuple:
     sheets = pd.read_excel(path, sheet_name=None)
     resumo_df = sheets.get("Resumo", pd.DataFrame())
     summary = {
@@ -111,6 +123,7 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
         "total_dataflows_scan": 0, "total_exports_dataflow": 0,
         "total_dataflows_com_export": 0, "total_tabelas_candidatas_modelo": 0,
         "total_tabelas_diretas_mquery": 0,
+        "fim_a_fim_por_status": {},
     }
     for _, row in resumo_df.iterrows():
         metric, valor = row.get("Métrica"), row.get("Valor")
@@ -160,6 +173,8 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
             summary["tabelas_por_camada_consolidado"][metric.replace("Consolidado na camada ", "").strip()] = int(valor)
         elif isinstance(metric, str) and metric.startswith("Excel do cliente na camada "):
             summary["tabelas_por_camada_excel_cliente"][metric.replace("Excel do cliente na camada ", "").strip()] = int(valor)
+        elif isinstance(metric, str) and metric.startswith("Mapping fim a fim — "):
+            summary["fim_a_fim_por_status"][metric.replace("Mapping fim a fim — ", "").strip()] = int(valor)
     dash_df = sheets.get("Linhagem Dashboards", pd.DataFrame()).fillna("")
     for column in ("Workspace ID", "Report ID", "Dataset ID"):
         if column not in dash_df.columns:
@@ -177,7 +192,8 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
     for column in ("Workspace ID", "Report ID", "Dataset ID"):
         if column not in sharepoint_df.columns:
             sharepoint_df[column] = ""
-    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary
+    e2e_df = sheets.get("Fim a Fim - Diagnóstico", pd.DataFrame()).fillna("")
+    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, e2e_df, summary
 
 
 st.set_page_config(page_title="Supervisório — Constellation Migration Control", layout="wide", page_icon="🕸️")
@@ -223,10 +239,11 @@ if st.button(
         result = build_dashboard_lineage(workspaces_input, scan_input, sharedpoint_input)
     batch_id = f"linhagem_{datetime.now():%Y%m%d_%H%M%S}"
     paths = export_dashboard_lineage_report(result, artifacts_dir, batch_id)
-    dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary = _result_to_frames(result)
+    dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, e2e_df, summary = _result_to_frames(result)
     st.session_state["linhagem_result"] = {
         "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df,
-        "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "summary": summary,
+        "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "e2e_df": e2e_df,
+        "summary": summary,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "excel_path": paths["excel_path"],
     }
@@ -235,10 +252,11 @@ if st.button(
 if "linhagem_result" not in st.session_state:
     latest_path = find_latest_lineage_excel(artifacts_dir)
     if latest_path:
-        dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary = _load_from_excel(latest_path)
+        dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, e2e_df, summary = _load_from_excel(latest_path)
         st.session_state["linhagem_result"] = {
             "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df,
-            "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "summary": summary,
+            "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "e2e_df": e2e_df,
+            "summary": summary,
             "generated_at": pd.Timestamp(latest_path.stat().st_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S"),
             "excel_path": str(latest_path),
         }
@@ -259,6 +277,7 @@ up_df: pd.DataFrame = result.get("up_df", pd.DataFrame())
 mapped_df: pd.DataFrame = result.get("mapped_df", pd.DataFrame())
 crosswalk_df: pd.DataFrame = result.get("crosswalk_df", pd.DataFrame())
 sharepoint_df: pd.DataFrame = result.get("sharepoint_df", pd.DataFrame())
+e2e_df: pd.DataFrame = result.get("e2e_df", pd.DataFrame())
 summary: dict = result["summary"]
 camadas_ordenadas = _sort_camadas(summary["tabelas_por_camada"].items())
 
@@ -535,6 +554,22 @@ with st.expander("🔗 Mapping do cliente → camadas → dashboards"):
         "que contêm o mesmo nome completo na linhagem direcional."
     )
     st.dataframe(crosswalk_df, use_container_width=True, hide_index=True)
+
+with st.expander("🧭 Diagnóstico fim a fim do mapping", expanded=False):
+    st.caption(
+        "Uma linha por tabela do mapping. Mostra o menor caminho estático conhecido, a etapa alcançada, "
+        "o motivo da interrupção e a ação recomendada. Não comprova execução/materialização no Fabric."
+    )
+    if e2e_df.empty:
+        st.info("O artefato carregado ainda não contém a aba de diagnóstico fim a fim.")
+    else:
+        status_options = sorted(e2e_df["Status Fim a Fim"].astype(str).unique())
+        selected_status = st.multiselect(
+            "Status fim a fim", status_options, default=status_options,
+            key="e2e_status_filter",
+        )
+        e2e_show = e2e_df[e2e_df["Status Fim a Fim"].isin(selected_status)]
+        st.dataframe(e2e_show, use_container_width=True, hide_index=True)
 
 with st.expander("🌐 Fontes SharePoint identificadas na camada Bronze"):
     st.caption(
