@@ -24,6 +24,7 @@ from dlctl.generators.lineage_generator import (
     generate_lineage_artifacts,
     process_lakehouse_dev,
 )
+from dlctl.core.project_scan import _dashboard_table_names, _dashboards_prontos
 
 
 def _write_silver_notebook(root: Path, domain: str) -> None:
@@ -278,6 +279,7 @@ def test_build_workspace_inventory_flattens_all_item_types(tmp_path):
     assert len(by_type["Dataset Table"]) == 1
     assert by_type["Dataset Table"][0]["item_name"] == "TabelaRecebimento"
     assert by_type["Dataset Table"][0]["parent_name"] == "Dataset Recebimento"
+    assert "dataset_id=ds-1" in by_type["Dataset Table"][0]["detail"]
 
     assert len(by_type["Report"]) == 2
     report_names = {r["item_name"] for r in by_type["Report"]}
@@ -287,6 +289,39 @@ def test_build_workspace_inventory_flattens_all_item_types(tmp_path):
 
 def test_build_workspace_inventory_missing_root_returns_empty(tmp_path):
     assert build_workspace_inventory(str(tmp_path / "missing")) == []
+
+
+def test_dashboard_table_mapping_is_scoped_by_workspace_and_dataset_id():
+    rows = [
+        {"workspace": "WS A", "workspace_id": "ws-a", "item_type": "Dataset",
+         "item_name": "Modelo Compartilhado", "item_id": "ds-a", "parent_name": "", "detail": ""},
+        {"workspace": "WS A", "workspace_id": "ws-a", "item_type": "Dataset Table",
+         "item_name": "DM_A", "item_id": "", "parent_name": "Modelo Compartilhado",
+         "detail": "dataset_id=ds-a, storage_mode=Import"},
+        {"workspace": "WS A", "workspace_id": "ws-a", "item_type": "Report",
+         "item_name": "Relatorio A", "item_id": "report-a", "parent_name": "ds-a", "detail": ""},
+        {"workspace": "WS B", "workspace_id": "ws-b", "item_type": "Dataset",
+         "item_name": "Modelo Compartilhado", "item_id": "ds-b", "parent_name": "", "detail": ""},
+        {"workspace": "WS B", "workspace_id": "ws-b", "item_type": "Dataset Table",
+         "item_name": "DM_B", "item_id": "", "parent_name": "Modelo Compartilhado",
+         "detail": "dataset_id=ds-b, storage_mode=DirectLake"},
+        {"workspace": "WS B", "workspace_id": "ws-b", "item_type": "Report",
+         "item_name": "Relatorio B", "item_id": "report-b", "parent_name": "ds-b", "detail": ""},
+    ]
+
+    mapping = _dashboard_table_names(rows)
+
+    assert mapping == {"report-a": {"DM_A"}, "report-b": {"DM_B"}}
+
+
+def test_dashboard_ready_requires_all_known_gold_dependencies():
+    dashboard_tables = {
+        "complete": {"DM_A", "DM_B"},
+        "partial": {"DM_A", "DM_MISSING"},
+        "unknown": set(),
+    }
+
+    assert _dashboards_prontos(dashboard_tables, {"DM_A", "DM_B"}) == (3, 1)
 
 
 def test_generate_lineage_artifacts_persists_workspace_inventory(tmp_profile, lakehouse_dev_fixture, tmp_path):

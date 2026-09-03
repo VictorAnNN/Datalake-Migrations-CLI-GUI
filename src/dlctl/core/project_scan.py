@@ -35,6 +35,7 @@ geral em vez de fingir 100%.
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -208,18 +209,32 @@ def _dashboard_table_names(workspace_rows: list[dict]) -> dict[str, set[str]]:
     """Mapeia cada Report (por item_id/nome) para o conjunto de nomes de
     tabela do seu dataset — ou seja, as tabelas que precisam existir
     (idealmente como Gold) para aquele dashboard funcionar."""
-    dataset_name_by_id = {r["item_id"]: r["item_name"] for r in workspace_rows if r["item_type"] == "Dataset"}
-    table_names_by_dataset_name: dict[str, set[str]] = {}
+    dataset_id_by_workspace_and_name = {
+        (r["workspace_id"], r["item_name"]): r["item_id"]
+        for r in workspace_rows if r["item_type"] == "Dataset"
+    }
+    table_names_by_dataset: dict[tuple[str, str], set[str]] = {}
     for r in workspace_rows:
         if r["item_type"] == "Dataset Table":
-            table_names_by_dataset_name.setdefault(r["parent_name"], set()).add(_norm(r["item_name"]))
+            detail = str(r.get("detail", ""))
+            match = re.search(r"(?:^|,\s*)dataset_id=([^,]*)", detail)
+            dataset_id = match.group(1).strip() if match else ""
+            if not dataset_id:
+                # Backward compatibility for inventories generated before the
+                # canonical parent ID was included in ``detail``.
+                dataset_id = dataset_id_by_workspace_and_name.get(
+                    (r["workspace_id"], r["parent_name"]), "",
+                )
+            if dataset_id:
+                key = (r["workspace_id"], dataset_id)
+                table_names_by_dataset.setdefault(key, set()).add(_norm(r["item_name"]))
 
     result: dict[str, set[str]] = {}
     for r in workspace_rows:
         if r["item_type"] != "Report":
             continue
-        dataset_name = dataset_name_by_id.get(r["parent_name"], "")
-        result[r["item_id"] or r["item_name"]] = table_names_by_dataset_name.get(dataset_name, set())
+        key = (r["workspace_id"], r["parent_name"])
+        result[r["item_id"] or r["item_name"]] = table_names_by_dataset.get(key, set())
     return result
 
 
@@ -266,11 +281,13 @@ def _gold_needed_for_dashboards(dashboard_tables: dict[str, set[str]]) -> set[st
 
 def _dashboards_prontos(dashboard_tables: dict[str, set[str]], gold_existente_names: set[str]) -> tuple[int, int]:
     """Retorna (total_dashboards, dashboards_prontos): um dashboard está
-    "pronto" quando pelo menos uma tabela do seu dataset já bate (por nome)
-    com uma tabela Gold realmente criada em input/lakehouse-dev — ou seja,
-    os dados que o alimentariam já existem no ambiente novo."""
+    "pronto" somente quando possui dependências conhecidas e todas elas
+    existem como tabelas Gold em input/lakehouse-dev."""
     total = len(dashboard_tables)
-    prontos = sum(1 for names in dashboard_tables.values() if names & gold_existente_names)
+    prontos = sum(
+        1 for names in dashboard_tables.values()
+        if names and names.issubset(gold_existente_names)
+    )
     return total, prontos
 
 

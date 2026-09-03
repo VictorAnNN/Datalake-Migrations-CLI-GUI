@@ -657,7 +657,9 @@ def build_workspace_inventory(workspaces_input: str) -> list[dict]:
                     rows.append({
                         "workspace": ws_name, "workspace_id": ws_id, "item_type": "Dataset Table",
                         "item_name": tbl_name, "item_id": "", "parent_name": ds_name,
-                        "detail": f"storage_mode={tbl.get('storageMode', '')}",
+                        # Preserve the canonical parent identifier. Dataset names are
+                        # not globally unique and may repeat in different workspaces.
+                        "detail": f"dataset_id={ds_id}, storage_mode={tbl.get('storageMode', '')}",
                         "source_file": source_file,
                     })
 
