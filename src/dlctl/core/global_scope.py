@@ -225,7 +225,7 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
     excel_path = Path(sharedpoint_input) / EXCEL_RELATIVE_PATH
     result = {
         "excel_found": False, "excel_path": str(excel_path),
-        "camada_names": [], "tables_by_camada": {}, "rows": [],
+        "camada_names": [], "tables_by_camada": {}, "rows": [], "rejected_rows": [],
     }
     if not excel_path.exists():
         return result
@@ -248,6 +248,8 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
 
     tables_by_camada: dict[str, set[str]] = {nome: set() for nome in camada_cols}
     rows: list[dict] = []
+    rejected_rows: list[dict] = []
+    rejected_keys: set[tuple[str, str]] = set()
     for row in rows_iter:
         domain = str(row[domain_col]).strip() if domain_col is not None and row[domain_col] else ""
         for nome, col_idx in camada_cols.items():
@@ -255,7 +257,16 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
             if not value or not isinstance(value, str):
                 continue
             table_name = value.strip()
-            if _norm(table_name) in _IGNORED_TABLE_VALUES or not _is_physical_table_name(table_name):
+            if _norm(table_name) in _IGNORED_TABLE_VALUES:
+                continue
+            if not _is_physical_table_name(table_name):
+                key = (nome, _norm(table_name))
+                if key not in rejected_keys:
+                    rejected_keys.add(key)
+                    rejected_rows.append({
+                        "valor": _norm(table_name), "camada": nome,
+                        "dominio": domain, "motivo": "FORMATO_NAO_CANONICO",
+                    })
                 continue
             norm_name = _norm(table_name)
             if norm_name in tables_by_camada[nome]:
@@ -271,6 +282,7 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
         "camada_names": list(camada_cols.keys()),
         "tables_by_camada": tables_by_camada,
         "rows": rows,
+        "rejected_rows": rejected_rows,
     })
     return result
 

@@ -133,6 +133,7 @@ def _build_end_to_end_mapping_rows(
     dependencies_by_target: dict[str, set[str]],
     dashboard_endpoints: dict[tuple[str, str, str, str, str, str], dict[str, dict]],
     classify,
+    rejected_rows: list[dict] | None = None,
 ) -> list[dict]:
     """Diagnostica cada tabela do mapping até um endpoint de dashboard.
 
@@ -283,6 +284,35 @@ def _build_end_to_end_mapping_rows(
             "etapa_alcancada": reached_layer, "qtd_dashboards": 0,
             "dashboards_amostra": "", "tabela_endpoint": "",
             "caminho_exemplo": path_text,
+            "workspace_id": "", "workspace": "", "report_id": "", "dashboard": "",
+            "dataset_id": "", "dataset": "", "tipo_evidencia_endpoint": "",
+            "confianca": "", "codigo_motivo": status,
+            "observacao": observation, "acao_recomendada": action,
+        })
+    for rejected in sorted(rejected_rows or [], key=lambda row: (row["valor"], row["camada"])):
+        value = rejected["valor"]
+        if re.search(r"\.(?:XLSX?|CSV|PARQUET)$", value, re.IGNORECASE):
+            status = "FONTE_ARQUIVO_NAO_TABELA"
+            observation = "A entrada é um arquivo de origem, não um nome físico de tabela."
+            action = "Registrar a ingestão Bronze e o nome da tabela física materializada a partir do arquivo."
+        elif re.fullmatch(r"[A-Z_][A-Z0-9_$#-]*\.[A-Z_][A-Z0-9_$#-]*", value):
+            status = "NOME_QUALIFICADO_NAO_NORMALIZADO"
+            observation = "A entrada usa nome qualificado (schema.objeto), enquanto o grafo compara nomes físicos canônicos."
+            action = "Separar schema e objeto; confirmar qual nome deve ser comparado no Lakehouse."
+        elif re.fullmatch(r"[A-Z0-9_$#-]*_[A-Z0-9_$#-]+\s+[A-Z0-9_$#-]{1,5}", value):
+            status = "ALIAS_EM_NOME_TABELA"
+            observation = "A entrada aparenta combinar nome físico e alias SQL na mesma célula."
+            action = "Remover o alias do mapping e manter somente o nome físico canônico."
+        else:
+            status = "ROTULO_NAO_CANONICO"
+            observation = "A entrada é texto livre/rótulo e não atende ao formato de nome físico de tabela."
+            action = "Informar a tabela física correspondente ou classificar explicitamente como artefato não tabular."
+        rows.append({
+            "tabela_mapeada": value, "camada_mapeada": rejected["camada"],
+            "dominio": rejected.get("dominio", ""), "alertas": "ENTRADA_NAO_CANONICA",
+            "status_fim_a_fim": status, "chega_dashboard": "Não",
+            "etapa_alcancada": "Mapping", "qtd_dashboards": 0,
+            "dashboards_amostra": "", "tabela_endpoint": "", "caminho_exemplo": value,
             "workspace_id": "", "workspace": "", "report_id": "", "dashboard": "",
             "dataset_id": "", "dataset": "", "tipo_evidencia_endpoint": "",
             "confianca": "", "codigo_motivo": status,
@@ -657,6 +687,7 @@ def build_dashboard_lineage(
         dependencies_by_target=upstream_by_table,
         dashboard_endpoints=dashboard_endpoints,
         classify=_classify,
+        rejected_rows=excel_data.get("rejected_rows", []),
     )
     end_to_end_status_totals = Counter(row["status_fim_a_fim"] for row in end_to_end_mapping_rows)
 
@@ -770,6 +801,13 @@ def build_dashboard_lineage(
             "total_fim_a_fim_candidato": end_to_end_status_totals["CANDIDATO_BAIXA_CONFIANCA"],
             "total_fim_a_fim_parcial": end_to_end_status_totals["PARCIAL_SEM_DASHBOARD"],
             "total_fim_a_fim_orfao": end_to_end_status_totals["ORFAO_SEM_ARESTA"],
+            "total_fim_a_fim_entrada_nao_canonica": sum(
+                total for status, total in end_to_end_status_totals.items()
+                if status in {
+                    "FONTE_ARQUIVO_NAO_TABELA", "NOME_QUALIFICADO_NAO_NORMALIZADO",
+                    "ALIAS_EM_NOME_TABELA", "ROTULO_NAO_CANONICO",
+                }
+            ),
             "total_fontes_sharepoint_bronze": len({row["fonte"] for row in sharepoint_rows}),
             "total_dashboards_com_sharepoint": len({
                 ((row.get("report_id"),) if row.get("report_id") else
@@ -941,6 +979,26 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
         "CONFLITO_CAMADA",
         "A mesma tabela foi declarada em mais de uma camada no mapping do cliente.",
         "Definir a camada canônica; o alerta não apaga uma cadeia encontrada.",
+    ])
+    ws_legend.append([
+        "FONTE_ARQUIVO_NAO_TABELA",
+        "A célula contém um arquivo de origem, não uma tabela física.",
+        "Relacionar o arquivo à ingestão Bronze e à tabela materializada.",
+    ])
+    ws_legend.append([
+        "NOME_QUALIFICADO_NAO_NORMALIZADO",
+        "A célula contém schema.objeto.",
+        "Separar schema e nome físico conforme o contrato do Lakehouse.",
+    ])
+    ws_legend.append([
+        "ALIAS_EM_NOME_TABELA",
+        "A célula aparenta conter nome físico e alias SQL.",
+        "Remover o alias e manter somente o nome canônico.",
+    ])
+    ws_legend.append([
+        "ROTULO_NAO_CANONICO",
+        "A célula contém texto livre/rótulo.",
+        "Informar a tabela física ou marcar explicitamente como item não tabular.",
     ])
     ws_legend.append([])
     ws_legend.append(["Limite da evidência", "Resultado estático dos arquivos fornecidos.", "Não prova publicação, execução ou materialização no Fabric."])

@@ -11,7 +11,7 @@ import pytest
 
 from dlctl.core import lineage_graph
 from dlctl.core import state as state_db
-from dlctl.core.global_scope import _extract_tables_from_sql, read_excel_pipeline_edges
+from dlctl.core.global_scope import _extract_tables_from_sql, read_excel_pipeline_edges, read_excel_tables
 from dlctl.core.dashboard_lineage import (
     _build_end_to_end_mapping_rows,
     _is_physical_table_name,
@@ -157,6 +157,28 @@ def test_read_excel_pipeline_edges_preserves_links_when_layer_is_empty(tmp_path)
         ("BRONZE_TABLE", "DW_SILVER_TABLE"),
         ("DW_SILVER_TABLE", "DM_GOLD_TABLE"),
     }
+
+
+def test_read_excel_tables_quarantines_noncanonical_mapping_values(tmp_path):
+    import openpyxl
+
+    sharedpoint_root = tmp_path / "sharedpoint"
+    sharedpoint_root.mkdir()
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Tabelas"
+    worksheet.cell(1, 10).value = "(2)\nCamada Bronze"
+    worksheet.cell(2, 10).value = "BRONZE_TABLE"
+    worksheet.cell(3, 10).value = "Fonte Manual.xlsx"
+    workbook.save(sharedpoint_root / "Projeto Lakehouse - Tabelas e Pipelines.xlsx")
+
+    result = read_excel_tables(str(sharedpoint_root))
+
+    assert result["tables_by_camada"]["Bronze"] == {"BRONZE_TABLE"}
+    assert result["rejected_rows"] == [{
+        "valor": "FONTE MANUAL.XLSX", "camada": "Bronze",
+        "dominio": "", "motivo": "FORMATO_NAO_CANONICO",
+    }]
 
 
 def test_mapped_table_graph_follows_view_alias_and_deduplicates_sources(tmp_path):
@@ -386,6 +408,25 @@ def test_end_to_end_mapping_surfaces_layer_conflict_without_hiding_completion():
 
     assert rows[0]["status_fim_a_fim"] == "COMPLETO_DIRETO"
     assert rows[0]["alertas"] == "CONFLITO_CAMADA: Gold, Silver"
+
+
+def test_end_to_end_mapping_explains_rejected_mapping_entries():
+    rows = _build_end_to_end_mapping_rows(
+        client_tables=set(), client_layers_by_table={}, client_domains_by_table={},
+        dependencies_by_target={}, dashboard_endpoints={},
+        classify=lambda table: ("Bronze", ""),
+        rejected_rows=[
+            {"valor": "ARQUIVO.XLSX", "camada": "Bronze", "dominio": "SUPPLY"},
+            {"valor": "SCHEMA.TABLE", "camada": "Bronze", "dominio": "SUPPLY"},
+            {"valor": "PJF_PROJECT_TYPES_B PRT", "camada": "Gold", "dominio": "SUPPLY"},
+            {"valor": "CRIAR TABELA SA", "camada": "Silver", "dominio": "SUPPLY"},
+        ],
+    )
+
+    assert {row["status_fim_a_fim"] for row in rows} == {
+        "FONTE_ARQUIVO_NAO_TABELA", "NOME_QUALIFICADO_NAO_NORMALIZADO",
+        "ALIAS_EM_NOME_TABELA", "ROTULO_NAO_CANONICO",
+    }
 
 
 def test_cte_aliases_are_never_counted_as_physical_tables():
