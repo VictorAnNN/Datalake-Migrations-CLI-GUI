@@ -20,6 +20,7 @@ from dlctl.core.dashboard_lineage import (
     export_dashboard_lineage_report,
 )
 from dlctl.core.dashboard_lineage_html import export_dashboard_lineage_html
+from dlctl.core.fabric_lineage import enrich_dashboard_lineage_with_fabric
 from dlctl.core.table_lineage_graph import build_mapped_table_dependency_graph
 from dlctl.generators.lineage_generator import (
     build_sharepoint_dependency_trail,
@@ -513,6 +514,83 @@ def test_dashboard_lineage_html_is_offline_searchable_and_escapes_script(tmp_pat
     assert "Oracle ERP (Fusion)" in content
     assert "https://" not in content
     assert "const DATA=" in content
+
+
+def test_fabric_enrichment_separates_static_lineage_from_physical_presence(tmp_path):
+    snapshot_dir = tmp_path / "fabric_full_20260903T200520Z_inventory-snapshot_test"
+    snapshot_dir.mkdir()
+    snapshot_path = snapshot_dir / "inventory_snapshot.json"
+    snapshot_path.write_text(json.dumps({"snapshot": {
+        "collectedAt": "2026-09-03T20:05:22+00:00",
+        "workspaceId": "ws-dev",
+        "folders": [{"id": "folder-1", "path": "SUPRIMENTOS/SILVER"}],
+        "items": [
+            {"id": "lh-sup", "type": "Lakehouse", "displayName": "LH_SUPRIMENTOS"},
+            {"id": "lh-fin", "type": "Lakehouse", "displayName": "LH_FINANCEIRO"},
+            {"id": "nb-1", "type": "Notebook", "displayName": "nb_PR_PRESENT", "folderId": "folder-1"},
+            {"id": "report-new", "type": "Report", "displayName": "Dashboard Compras"},
+            {"id": "model-new", "type": "SemanticModel", "displayName": "Modelo Compras"},
+        ],
+    }}), encoding="utf-8")
+
+    evidence_dir = tmp_path / "fabric_full_20260903T200700Z_onelake-list_test"
+    evidence_dir.mkdir()
+    (evidence_dir / "onelake_list.json").write_text(json.dumps({
+        "url": "https://onelake.dfs.fabric.microsoft.com/LAKEHOUSE-DEV/LH_SUPRIMENTOS.lakehouse/Tables/gold?recursive=false",
+        "response": {"paths": [
+            {"name": "gold/PR_PRESENT", "lastModified": "2026-09-03T20:00:00Z"},
+            {"name": "gold/PR_CROSS", "lastModified": "2026-09-03T20:00:00Z"},
+        ]},
+    }), encoding="utf-8")
+
+    result = {
+        "summary": {
+            "total_tabelas_excel_cliente": 3,
+            "total_fim_a_fim_confirmado": 1,
+            "total_fim_a_fim_parcial": 1,
+            "total_fim_a_fim_orfao": 1,
+            "total_fim_a_fim_entrada_nao_canonica": 0,
+        },
+        "end_to_end_mapping_rows": [
+            {"tabela_mapeada": "PR_PRESENT", "camada_mapeada": "Gold", "dominio": "Suprimentos", "status_fim_a_fim": "ORFAO_SEM_ARESTA"},
+            {"tabela_mapeada": "PR_CROSS", "camada_mapeada": "Gold", "dominio": "Financeiro", "status_fim_a_fim": "PARCIAL_SEM_DASHBOARD"},
+            {"tabela_mapeada": "PR_MISSING", "camada_mapeada": "Gold", "dominio": "Suprimentos", "status_fim_a_fim": "COMPLETO"},
+        ],
+        "mapping_dashboard_rows": [{
+            "tabela_mapeada": "PR_PRESENT", "dashboard": "Dashboard Compras",
+            "dataset": "Modelo Compras", "report_id": "report-old", "dataset_id": "model-old",
+        }],
+        "dashboard_quality_rows": [{
+            "dashboard": "Dashboard Compras", "dataset": "Modelo Compras",
+            "report_id": "report-old", "dataset_id": "model-old",
+        }],
+    }
+
+    enriched = enrich_dashboard_lineage_with_fabric(
+        result, snapshot_path=snapshot_path, onelake_evidence_root=tmp_path,
+    )
+    fabric = enriched["fabric"]
+    rows = {row["tabela_mapeada"]: row for row in enriched["end_to_end_mapping_rows"]}
+
+    assert fabric["physical_found"] == 2
+    assert fabric["expected_location"] == 1
+    assert fabric["cross_domain_or_layer"] == 1
+    assert fabric["not_found"] == 1
+    assert fabric["report_names_matched"] == 1
+    assert fabric["semantic_model_names_matched"] == 1
+    assert fabric["tables_with_notebook_candidate"] == 1
+    assert fabric["legacy_id_matches"] == 0
+    assert rows["PR_PRESENT"]["fabric_status"] == "NO LOCAL ESPERADO"
+    assert rows["PR_PRESENT"]["fabric_notebook_ids"] == "nb-1"
+    assert rows["PR_CROSS"]["fabric_status"] == "OUTRO DOMÍNIO/CAMADA"
+    assert rows["PR_MISSING"]["fabric_status"] == "NÃO ENCONTRADO"
+
+    output = export_dashboard_lineage_html(enriched, tmp_path / "fabric-lineage.html")
+    content = output.read_text(encoding="utf-8")
+    assert "Presença observada no Fabric DEV" in content
+    assert "Órfão sem aresta não significa ausente" in content
+    assert "LH_SUPRIMENTOS.gold.PR_PRESENT" in content
+    assert "Status no Fabric" in content
 
 
 def test_dashboard_lineage_report_exports_excel_and_html(tmp_path):

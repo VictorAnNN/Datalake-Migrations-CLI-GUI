@@ -46,6 +46,19 @@ Snapshot de `LAKEHOUSE-DEV` coletado em 03/09/2026 às 17:05 BRT.
 - IDs legados de report/dataset não coincidem com os IDs do DEV; cópia/publicação gera novas identidades.
 - 151/589 tabelas possuem notebook candidato por correspondência nominal. Isso é indício, não vínculo de execução.
 
+O cruzamento usa 38 listagens de schema do OneLake coletadas até 10 minutos após o snapshot. Listagens de raiz/camada não contam como evidência de tabela.
+
+| Status estático | Total | Encontrada | Ausente |
+|---|---:|---:|---:|
+| Órfão sem aresta | 386 | 279 | 107 |
+| Parcial sem dashboard | 100 | 39 | 61 |
+| Completo direto | 61 | 51 | 10 |
+| Completo | 42 | 42 | 0 |
+
+`Órfão sem aresta` significa que o mapping não possui aresta downstream nos scripts/views/Excel analisados; 279 deles estão materializados no DEV. `Parcial sem dashboard` significa que a cadeia estática conhecida não alcança um endpoint do scan; 39 deles também estão materializados. Portanto, esses rótulos não significam ausência no Fabric.
+
+Notebooks candidatos exigem o nome canônico completo da tabela como token no nome do notebook; nomes curtos não são inferidos. Reports e modelos são associados por nome canônico, pois IDs legados não sobrevivem à publicação.
+
 ## Limites da evidência
 
 O relatório comprova relações estáticas, correspondência nominal e presença física observada. Não comprova execução, atualização, contrato de colunas, relacionamento do modelo semântico, materialização recente ou resultado funcional dos visuais.

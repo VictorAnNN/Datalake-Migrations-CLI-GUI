@@ -12,6 +12,7 @@ import typer
 from dlctl.commands.common import console, get_profile, print_table
 from dlctl.core import state as state_db
 from dlctl.core.dashboard_lineage import build_dashboard_lineage, export_dashboard_lineage_report
+from dlctl.core.fabric_lineage import enrich_dashboard_lineage_with_fabric
 from dlctl.core.global_scope import compute_global_scope, export_global_scope_report
 from dlctl.core.project_scan import (
     export_supervisor_report,
@@ -179,6 +180,10 @@ def dashboard_lineage_export(
     workspaces_input: str = typer.Option("input/Workspaces", "--workspaces-input", help="Pasta ou .zip com os JSONs do Fabric Scanner API (Report -> Dataset -> Dataflow)."),
     scan_input: str = typer.Option("input/scan", "--scan-input", help="Pasta com os exports brutos de Dataflow (código M/Power Query embutido, usado para achar as tabelas físicas reais)."),
     sharedpoint_input: str = typer.Option("input/sharedpoint", "--sharedpoint-input", help="Pasta com o Excel 'Projeto Lakehouse - Tabelas e Pipelines.xlsx' + scripts .sql/.prc/.tab/.vw/.dsx, usada só de apoio para classificar camada/domínio."),
+    fabric_snapshot: str = typer.Option(None, "--fabric-snapshot", help="Snapshot imutável de inventory-snapshot para cruzamento nominal somente leitura."),
+    fabric_onelake_evidence_root: str = typer.Option(None, "--fabric-onelake-evidence-root", help="Raiz contendo as listagens OneLake coletadas junto ao snapshot."),
+    fabric_workspace: str = typer.Option("LAKEHOUSE-DEV", "--fabric-workspace", help="Workspace esperado nas evidências OneLake."),
+    fabric_evidence_window_minutes: int = typer.Option(10, "--fabric-evidence-window-minutes", min=1, help="Janela, após o snapshot, aceita para listagens OneLake."),
 ):
     """Descobre a linhagem de TODOS os dashboards/relatórios do tenant:
     Dashboard -> Dataset -> (Dataflow, quando existir) -> referência de
@@ -191,7 +196,20 @@ def dashboard_lineage_export(
     do próprio modelo Power BI e é marcada como candidata de baixa confiança;
     Dataflows sem export correspondente em `--scan-input` ficam sem tabela
     identificada."""
+    if bool(fabric_snapshot) != bool(fabric_onelake_evidence_root):
+        raise typer.BadParameter(
+            "--fabric-snapshot e --fabric-onelake-evidence-root devem ser informados juntos."
+        )
+
     result = build_dashboard_lineage(workspaces_input, scan_input, sharedpoint_input)
+    if fabric_snapshot:
+        result = enrich_dashboard_lineage_with_fabric(
+            result,
+            snapshot_path=fabric_snapshot,
+            onelake_evidence_root=fabric_onelake_evidence_root,
+            workspace_name=fabric_workspace,
+            evidence_window_minutes=fabric_evidence_window_minutes,
+        )
     summary = result["summary"]
 
     console.print(f"[bold]Total de dashboards/relatórios:[/bold] {summary['total_dashboards']}")
@@ -212,6 +230,22 @@ def dashboard_lineage_export(
         ["camada", "total"],
         [[camada, total] for camada, total in sorted(summary["tabelas_por_camada"].items())],
     )
+    if result.get("fabric"):
+        fabric = result["fabric"]
+        print_table(
+            f"Presença observada no Fabric ({fabric['workspace']})",
+            ["métrica", "resultado"],
+            [
+                ["Tabelas físicas", f"{fabric['physical_found']}/{fabric['canonical_tables']}"],
+                ["Local esperado", fabric["expected_location"]],
+                ["Outro domínio/camada", fabric["cross_domain_or_layer"]],
+                ["Não encontradas", fabric["not_found"]],
+                ["Origens E2E materializadas", f"{fabric['e2e_origins_materialized']}/{fabric['e2e_origins_total']}"],
+                ["Reports por nome", fabric["report_names_matched"]],
+                ["Modelos semânticos por nome", fabric["semantic_model_names_matched"]],
+                ["Tabelas com notebook candidato", fabric["tables_with_notebook_candidate"]],
+            ],
+        )
 
     p = get_profile(profile)
     batch_id = f"linhagem_{datetime.now():%Y%m%d_%H%M%S}"
