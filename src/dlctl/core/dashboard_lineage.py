@@ -134,6 +134,7 @@ def _build_end_to_end_mapping_rows(
     dependencies_by_target: dict[str, set[str]],
     dashboard_endpoints: dict[tuple[str, str, str, str, str, str], dict[str, dict]],
     classify,
+    client_sources_by_table: dict[str, set[str]] | None = None,
     rejected_rows: list[dict] | None = None,
 ) -> list[dict]:
     """Diagnostica cada tabela do mapping até um endpoint de dashboard.
@@ -155,7 +156,50 @@ def _build_end_to_end_mapping_rows(
 
     confidence_rank = {"Alta": 0, "Média": 1, "Baixa": 2, "": 3}
     layer_rank = {"Bronze": 0, "Silver": 1, "Gold": 2}
+    client_sources_by_table = client_sources_by_table or {}
     rows: list[dict] = []
+
+    source_labels = {
+        "ORACLE ERP": "Oracle ERP (Fusion)",
+        "MAXIMO": "Máximo",
+    }
+
+    def _display_sources(values: set[str]) -> str:
+        labels = {
+            source_labels.get(value.strip().upper(), value.strip())
+            for value in values if value and value.strip()
+        }
+        return ", ".join(sorted(labels, key=str.casefold))
+
+    def _resolve_source_system(table: str) -> tuple[str, str]:
+        direct = set(client_sources_by_table.get(table, set()))
+        if direct:
+            return _display_sources(direct), "Mapping do cliente (coluna Sistema)"
+
+        # Não há inferência por prefixo. Para linhas Gold/Silver sem Sistema,
+        # herda-se somente a origem da dependência upstream explícita mais
+        # próxima, mantendo a decisão auditável.
+        visited = {table}
+        queue = deque([(table, 0)])
+        nearest_distance: int | None = None
+        inherited: set[str] = set()
+        while queue:
+            current, distance = queue.popleft()
+            if nearest_distance is not None and distance >= nearest_distance:
+                continue
+            for source in sorted(dependencies_by_target.get(current, set())):
+                if source in visited:
+                    continue
+                visited.add(source)
+                source_values = set(client_sources_by_table.get(source, set()))
+                if source_values:
+                    nearest_distance = distance + 1
+                    inherited.update(source_values)
+                else:
+                    queue.append((source, distance + 1))
+        if inherited:
+            return _display_sources(inherited), "Herdado da dependência upstream mais próxima"
+        return "Não identificado", "Sem Sistema no mapping ou dependência upstream qualificada"
 
     for mapped_table in sorted(client_tables):
         parent: dict[str, str | None] = {mapped_table: None}
@@ -181,6 +225,7 @@ def _build_end_to_end_mapping_rows(
 
         declared_layers = sorted(client_layers_by_table.get(mapped_table, set()))
         domains = sorted(value for value in client_domains_by_table.get(mapped_table, set()) if value)
+        source_system, source_evidence = _resolve_source_system(mapped_table)
         alerts = []
         if len(declared_layers) > 1:
             alerts.append(f"CONFLITO_CAMADA: {', '.join(declared_layers)}")
@@ -188,6 +233,8 @@ def _build_end_to_end_mapping_rows(
             "tabela_mapeada": mapped_table,
             "camada_mapeada": ", ".join(declared_layers) or classify(mapped_table)[0],
             "dominio": ", ".join(domains),
+            "sistema_origem": source_system,
+            "evidencia_sistema_origem": source_evidence,
             "alertas": "; ".join(alerts),
         }
 
@@ -311,6 +358,11 @@ def _build_end_to_end_mapping_rows(
         rows.append({
             "tabela_mapeada": value, "camada_mapeada": rejected["camada"],
             "dominio": rejected.get("dominio", ""), "alertas": "ENTRADA_NAO_CANONICA",
+            "sistema_origem": _display_sources({rejected.get("sistema_origem", "")}) or "Não identificado",
+            "evidencia_sistema_origem": (
+                "Mapping do cliente (coluna Sistema)" if rejected.get("sistema_origem")
+                else "Sem Sistema no mapping ou dependência upstream qualificada"
+            ),
             "status_fim_a_fim": status, "chega_dashboard": "Não",
             "etapa_alcancada": "Mapping", "qtd_dashboards": 0,
             "dashboards_amostra": "", "tabela_endpoint": "", "caminho_exemplo": value,
@@ -688,9 +740,14 @@ def build_dashboard_lineage(
         dependencies_by_target=upstream_by_table,
         dashboard_endpoints=dashboard_endpoints,
         classify=_classify,
+        client_sources_by_table=excel_data.get("source_systems_by_table", {}),
         rejected_rows=excel_data.get("rejected_rows", []),
     )
     end_to_end_status_totals = Counter(row["status_fim_a_fim"] for row in end_to_end_mapping_rows)
+    source_system_totals = Counter(
+        row["sistema_origem"] for row in end_to_end_mapping_rows
+        if row.get("sistema_origem") and row["sistema_origem"] != "Não identificado"
+    )
 
     quality_by_report: dict[tuple[str, ...], dict] = {}
     for row in dashboard_rows:
@@ -809,6 +866,8 @@ def build_dashboard_lineage(
                     "ALIAS_EM_NOME_TABELA", "ROTULO_NAO_CANONICO",
                 }
             ),
+            "total_tabelas_com_sistema_origem": sum(source_system_totals.values()),
+            "sistemas_origem": dict(source_system_totals),
             "total_fontes_sharepoint_bronze": len({row["fonte"] for row in sharepoint_rows}),
             "total_dashboards_com_sharepoint": len({
                 ((row.get("report_id"),) if row.get("report_id") else
@@ -933,7 +992,8 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
 
     ws_e2e = wb.create_sheet("Fim a Fim - Diagnóstico")
     ws_e2e.append([
-        "Tabela Mapeada", "Camada Mapeada", "Domínio", "Status Fim a Fim",
+        "Tabela Mapeada", "Camada Mapeada", "Domínio", "Sistema de Origem",
+        "Evidência Sistema de Origem", "Status Fim a Fim",
         "Chega a Dashboard", "Etapa Alcançada", "Qtd. Dashboards", "Dashboards (amostra)",
         "Tabela Endpoint", "Caminho Exemplo", "Workspace ID", "Workspace", "Report ID",
         "Dashboard/Relatório", "Dataset ID", "Dataset", "Tipo Evidência Endpoint",
@@ -941,7 +1001,9 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     ])
     for r in result.get("end_to_end_mapping_rows", []):
         ws_e2e.append([
-            r["tabela_mapeada"], r["camada_mapeada"], r["dominio"], r["status_fim_a_fim"],
+            r["tabela_mapeada"], r["camada_mapeada"], r["dominio"],
+            r.get("sistema_origem", "Não identificado"), r.get("evidencia_sistema_origem", ""),
+            r["status_fim_a_fim"],
             r["chega_dashboard"], r["etapa_alcancada"], r["qtd_dashboards"],
             r["dashboards_amostra"], r["tabela_endpoint"], r["caminho_exemplo"],
             r["workspace_id"], r["workspace"], r["report_id"], r["dashboard"],

@@ -50,6 +50,8 @@ ODD_FILL = PatternFill("solid", fgColor="FFFFFF")
 EXCEL_RELATIVE_PATH = "Projeto Lakehouse - Tabelas e Pipelines.xlsx"
 SHEET_NAME = "Tabelas"
 DOMAIN_COLUMN_HEADER = "Domínio"
+SOURCE_SYSTEM_COLUMN_HEADER = "Sistema"
+SOURCE_TYPE_COLUMN_HEADER = "Tipo"
 
 # Aba com o plano de entregáveis do projeto — onde o total de dashboards a
 # migrar está declarado em texto livre (ex.: "Reapontamento dos 428
@@ -191,6 +193,18 @@ def _find_domain_column(header_row: tuple) -> Optional[int]:
     return None
 
 
+def _find_header_column(header_row: tuple, expected: str) -> Optional[int]:
+    """Resolve um cabeçalho ignorando quebras de linha e caixa."""
+    expected_key = " ".join(expected.replace("\n", " ").split()).casefold()
+    for i, header in enumerate(header_row):
+        if not header:
+            continue
+        key = " ".join(str(header).replace("\n", " ").split()).casefold()
+        if key == expected_key:
+            return i
+    return None
+
+
 def read_dashboard_target(sharedpoint_input: str, sheet_name: str = DELIVERABLES_SHEET_NAME) -> Optional[dict]:
     """Lê o total de dashboards a migrar declarado em texto livre na aba do
     plano de entreg\u00e1veis (ex.: \"428 dashboards conectados \u00e0 nova origem\") \u2014
@@ -221,11 +235,18 @@ def read_dashboard_target(sharedpoint_input: str, sheet_name: str = DELIVERABLES
 def read_excel_tables(sharedpoint_input: str) -> dict:
     """Lê a aba 'Tabelas' do Excel e retorna, por camada (Bronze/Silver/Gold/
     quaisquer outras), o conjunto de nomes de tabela únicos + o detalhe por
-    linha (tabela, camada, domínio)."""
+    linha (tabela, camada, domínio) e o sistema fonte declarado pelo cliente.
+
+    ``Sistema`` (ex.: Oracle ERP, MAXIMO, RM) é mantido separado de
+    ``Domínio`` (ex.: Suprimentos, Financeiro). O campo ``(0) Source`` pode
+    conter URL/caminho sensível e, por isso, não é lido nem propagado aos
+    relatórios autônomos.
+    """
     excel_path = Path(sharedpoint_input) / EXCEL_RELATIVE_PATH
     result = {
         "excel_found": False, "excel_path": str(excel_path),
         "camada_names": [], "tables_by_camada": {}, "rows": [], "rejected_rows": [],
+        "source_systems_by_table": {}, "source_types_by_table": {},
     }
     if not excel_path.exists():
         return result
@@ -243,6 +264,8 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
 
     camada_cols = _find_camada_columns(header_row)
     domain_col = _find_domain_column(header_row)
+    source_system_col = _find_header_column(header_row, SOURCE_SYSTEM_COLUMN_HEADER)
+    source_type_col = _find_header_column(header_row, SOURCE_TYPE_COLUMN_HEADER)
     if not camada_cols:
         return result
 
@@ -250,8 +273,20 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
     rows: list[dict] = []
     rejected_rows: list[dict] = []
     rejected_keys: set[tuple[str, str]] = set()
+    source_systems_by_table: dict[str, set[str]] = {}
+    source_types_by_table: dict[str, set[str]] = {}
     for row in rows_iter:
         domain = str(row[domain_col]).strip() if domain_col is not None and row[domain_col] else ""
+        source_system = (
+            str(row[source_system_col]).strip()
+            if source_system_col is not None and source_system_col < len(row) and row[source_system_col]
+            else ""
+        )
+        source_type = (
+            str(row[source_type_col]).strip()
+            if source_type_col is not None and source_type_col < len(row) and row[source_type_col]
+            else ""
+        )
         for nome, col_idx in camada_cols.items():
             value = row[col_idx] if col_idx < len(row) else None
             if not value or not isinstance(value, str):
@@ -266,15 +301,21 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
                     rejected_rows.append({
                         "valor": _norm(table_name), "camada": nome,
                         "dominio": domain, "motivo": "FORMATO_NAO_CANONICO",
+                        **({"sistema_origem": source_system} if source_system else {}),
                     })
                 continue
             norm_name = _norm(table_name)
+            if source_system:
+                source_systems_by_table.setdefault(norm_name, set()).add(source_system)
+            if source_type:
+                source_types_by_table.setdefault(norm_name, set()).add(source_type)
             if norm_name in tables_by_camada[nome]:
                 continue
             tables_by_camada[nome].add(norm_name)
             rows.append({
                 "tabela": norm_name, "camada": nome, "dominio": domain,
-                "origem": "Excel", "detalhe": "",
+                "origem": "Excel", "detalhe": "", "sistema_origem": source_system,
+                "tipo_origem": source_type,
             })
 
     result.update({
@@ -283,6 +324,8 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
         "tables_by_camada": tables_by_camada,
         "rows": rows,
         "rejected_rows": rejected_rows,
+        "source_systems_by_table": source_systems_by_table,
+        "source_types_by_table": source_types_by_table,
     })
     return result
 

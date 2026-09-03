@@ -97,7 +97,9 @@ def _result_to_frames(result: dict) -> tuple:
     })
     e2e_df = pd.DataFrame(result.get("end_to_end_mapping_rows", [])).rename(columns={
         "tabela_mapeada": "Tabela Mapeada", "camada_mapeada": "Camada Mapeada",
-        "dominio": "Domínio", "status_fim_a_fim": "Status Fim a Fim",
+        "dominio": "Domínio", "sistema_origem": "Sistema de Origem",
+        "evidencia_sistema_origem": "Evidência Sistema de Origem",
+        "status_fim_a_fim": "Status Fim a Fim",
         "chega_dashboard": "Chega a Dashboard", "etapa_alcancada": "Etapa Alcançada",
         "qtd_dashboards": "Qtd. Dashboards", "dashboards_amostra": "Dashboards (amostra)",
         "tabela_endpoint": "Tabela Endpoint", "caminho_exemplo": "Caminho Exemplo",

@@ -183,6 +183,32 @@ def test_read_excel_tables_quarantines_noncanonical_mapping_values(tmp_path):
     }]
 
 
+def test_read_excel_tables_preserves_source_system_separately_from_domain(tmp_path):
+    import openpyxl
+
+    sharedpoint_root = tmp_path / "sharedpoint"
+    sharedpoint_root.mkdir()
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Tabelas"
+    worksheet.cell(1, 2).value = "Domínio"
+    worksheet.cell(1, 4).value = "Tipo"
+    worksheet.cell(1, 5).value = "Sistema"
+    worksheet.cell(1, 10).value = "(2)\nCamada Bronze"
+    worksheet.cell(2, 2).value = "Suprimentos"
+    worksheet.cell(2, 4).value = "Tabela"
+    worksheet.cell(2, 5).value = "Oracle ERP"
+    worksheet.cell(2, 10).value = "PO_HEADERS_ALL"
+    workbook.save(sharedpoint_root / "Projeto Lakehouse - Tabelas e Pipelines.xlsx")
+
+    result = read_excel_tables(str(sharedpoint_root))
+
+    assert result["source_systems_by_table"] == {"PO_HEADERS_ALL": {"Oracle ERP"}}
+    assert result["source_types_by_table"] == {"PO_HEADERS_ALL": {"Tabela"}}
+    assert result["rows"][0]["dominio"] == "Suprimentos"
+    assert result["rows"][0]["sistema_origem"] == "Oracle ERP"
+
+
 def test_mapped_table_graph_follows_view_alias_and_deduplicates_sources(tmp_path):
     sharedpoint_root = tmp_path / "sharedpoint"
     stage = sharedpoint_root / "1 - Oracle ERP" / "6. Camada Gold"
@@ -380,6 +406,27 @@ def test_end_to_end_mapping_reports_complete_partial_and_orphan_paths():
     assert by_table["BRONZE_ORPHAN"]["status_fim_a_fim"] == "ORFAO_SEM_ARESTA"
 
 
+def test_end_to_end_mapping_reports_direct_and_inherited_source_systems():
+    rows = _build_end_to_end_mapping_rows(
+        client_tables={"BRONZE_FUSION", "DM_MAXIMO"},
+        client_layers_by_table={"BRONZE_FUSION": {"Bronze"}, "DM_MAXIMO": {"Gold"}},
+        client_domains_by_table={},
+        client_sources_by_table={
+            "BRONZE_FUSION": {"Oracle ERP"},
+            "MAXIMO_RAW": {"MAXIMO"},
+        },
+        dependencies_by_target={"DM_MAXIMO": {"DW_MAXIMO"}, "DW_MAXIMO": {"MAXIMO_RAW"}},
+        dashboard_endpoints={},
+        classify=lambda table: ("Gold" if table.startswith("DM_") else "Bronze", ""),
+    )
+    by_table = {row["tabela_mapeada"]: row for row in rows}
+
+    assert by_table["BRONZE_FUSION"]["sistema_origem"] == "Oracle ERP (Fusion)"
+    assert by_table["BRONZE_FUSION"]["evidencia_sistema_origem"].startswith("Mapping")
+    assert by_table["DM_MAXIMO"]["sistema_origem"] == "Máximo"
+    assert by_table["DM_MAXIMO"]["evidencia_sistema_origem"].startswith("Herdado")
+
+
 def test_end_to_end_mapping_does_not_confirm_low_confidence_model_name():
     key = ("ws-1", "Workspace", "rp-1", "Dashboard", "ds-1", "Dataset")
     rows = _build_end_to_end_mapping_rows(
@@ -443,6 +490,8 @@ def test_dashboard_lineage_html_is_offline_searchable_and_escapes_script(tmp_pat
         "end_to_end_mapping_rows": [{
             "tabela_mapeada": "BRONZE_</script><script>alert(1)</script>",
             "camada_mapeada": "Bronze", "dominio": "SUPPLY",
+            "sistema_origem": "Oracle ERP (Fusion)",
+            "evidencia_sistema_origem": "Mapping do cliente (coluna Sistema)",
             "status_fim_a_fim": "COMPLETO", "chega_dashboard": "Sim",
             "etapa_alcancada": "Dashboard", "qtd_dashboards": 1,
             "dashboards_amostra": "Workspace / Dashboard", "tabela_endpoint": "DM_OK",
@@ -460,6 +509,8 @@ def test_dashboard_lineage_html_is_offline_searchable_and_escapes_script(tmp_pat
 
     assert "Mapa fim a fim de linhagem" in content
     assert "BRONZE_<\\/script><script>alert(1)<\\/script>" in content
+    assert "Sistema fonte" in content
+    assert "Oracle ERP (Fusion)" in content
     assert "https://" not in content
     assert "const DATA=" in content
 
