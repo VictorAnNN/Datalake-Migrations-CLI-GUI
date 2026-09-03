@@ -1,0 +1,6596 @@
+{
+  "excel_found": true,
+  "excel_path": "/app/manifests/dashboard/escopo_estendido_escopo_20260902_195441.xlsx",
+  "camadas": [
+    {
+      "camada": "Bronze",
+      "existente_excel": 369,
+      "descobertas_sql": 64,
+      "total": 433
+    },
+    {
+      "camada": "Gold",
+      "existente_excel": 147,
+      "descobertas_sql": 28,
+      "total": 175
+    },
+    {
+      "camada": "Silver",
+      "existente_excel": 85,
+      "descobertas_sql": 76,
+      "total": 161
+    }
+  ],
+  "total_tabelas": 769,
+  "rows": [
+    {
+      "tabela": "USERS",
+      "camada": "Bronze",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GROUPS",
+      "camada": "Bronze",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ACTIVE-PROBLEMS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "BARRIER-OVERRIDES",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "BARRIER-TIMELINE",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CHANGE-HISTORY",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GUARDIAN-RESPONSES",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SENSOR-HISTORY",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WELL-EVENTS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CUSTO_ADIAMENTO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RELATORIO ANP",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HISTORICO DE MOVIMENTACAO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "TRABALHADORES EMBARCADOS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PERFIL ACESSO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "BUSCAR_PESSOAS_PERFIS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXPORTAR_CARTAO_ALERTA",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LISTAR_DOCUMENTOS_GED",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LISTAR_DOCUMENTO_CONTROLADO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LISTAR_PESSOA",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LISTAR_PLANO_ACAO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LISTAR_TERMOS_CONHECIMENTO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VINCULADOR_A_QSMS_VIEW",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VINCULADOR_CARTAO_ALERTA_VIEW",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VINCULADOR_CARTAO_A_VIEW",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VINCULADOR_GED_VIEW",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VINCULADOR_PESSOA_VIEW",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VINCULADOR_TECNICO_VIEW",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_CARTAO_ALERTA",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_GED_DOC",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_GED_DOC_COMUNICADOS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_GED_DOC_TERMO",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_GED_RESPS_GRUPOS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_GED_RESPS_PESSOAS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_BI_PRV_PROVA_EXEC_LISTAR",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_DOCUMENTOS_REFERENCIADOS",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VW_RI",
+      "camada": "Bronze",
+      "dominio": "QSMS",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SYNONYMDOMAIN",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CRIAR TABELA SA",
+      "camada": "Silver",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_STATUS_OS",
+      "camada": "Gold",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FILES NO LAKEHOUSE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_DM_TIPO_OS",
+      "camada": "Silver",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_OS",
+      "camada": "Gold",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WORKORDER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ORDEM_SERVICO",
+      "camada": "Silver",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_IND_KPI_MANUT_OS_MES",
+      "camada": "Gold",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ASSETMETER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ASSETSTATUS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ASSET",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CHARPOINTACTION",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "COMPANIES",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "COMPMASTER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CRAFT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARHIERARCHY",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARRULE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARSEGCERT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARSEGCRAFT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARSEGLOC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARSEGPROC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARSEGTHCO",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARSEG",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARTHREATCONS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTBARTOPEVENT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTETSLOG",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTETSPR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTETSWO",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTETS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTINVENTORYLOG",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTJPMEASURE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTMOCANSWER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTMOCFORM",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTRSESONDAS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CSTTERMSKNOWLEDGE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DOCINFO",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DOCLINKS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FAILURECODE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FAILURELIST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FAILUREREPORT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HAZARDPREC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HAZARD",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INVBALANCES",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INVCOST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INVENTORY",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INVVENDOR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ITEM",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "JOBITEM",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "JOBLABOR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "JOBMATERIAL",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "JOBPLAN",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "JOBSERVICE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "JOBTASK",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LABORQUAL",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LABOR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LABTRANS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LOCANCESTOR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LOCATIONMETER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LOCATIONS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LOCHIERARCHY",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LOCOPER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LOCSYSTEM",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LONGDESCRIPTION",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "MATUSETRANS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "MEASUREMENT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "MEASUREPOINT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "METERREADING",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "METER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "MULTIASSETLOCCI",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PERSON",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSCJPSTATUS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGCERT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGCFW",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGHAZRISKPREC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGHAZRISK",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGMOCAPPRLIST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGMOCAUTHLIST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGMOCPOSTLIST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGMOCRVLST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGMOC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERMITWORK",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKAPPR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKCFW",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKEMGACT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKHAZMAT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKLOCS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKPROC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPERWORKWRKPT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGPROCEDURE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGRISKASSESS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PLUSGSTDACT",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMFORECASTJP",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMFORECAST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMMETER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMSEQUENCE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PM",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POINTWO",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PRECAUTION",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PRLINE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_BHALINE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_BHA",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBMDETAILS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBMTASK",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBM",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBODETAILS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBODRILL",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOEQANC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOEQMP",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOEQTENS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOEQTHR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOEVENTS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOLOG",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOOILWELL",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBOWASH",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_DBO",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_JUSTIFICATIONLIST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_MISCDETAILS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_MISCLANC",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_MOCJUST",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_PERWORKMULTITYPES",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QGOG_REJSCALESHIPPING",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QG_APRPERSON",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QG_APRTASK",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "REJSCALESHIPPING",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RELATEDRECORD",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ROUTES",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ROUTE_STOP",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SAFETYLEXICON",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SERVICEITEMS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SERVRECTRANS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SPAREPART",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "TOOLTRANS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WOMETER",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WORKLOG",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WOSTATUS",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WPLABOR",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WPMATERIAL",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WPSERVICE",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "WPTOOL",
+      "camada": "Bronze",
+      "dominio": "Operação",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_ACCEPTANCE_REQUIRED_D_TL",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_ACCEPTANCE_REQUIRED",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_INV_SUBINVENTORY_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_ARMAZEM",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_FA_ASSET_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_ATIVO_FIXO",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_BUSINESS_UNIT_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_BUSINESS_UNIT",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_CATEGORY_BUYER_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CATEGORY_BUYER",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "UNIDADE E CENTRO DE RESULTADO",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CENTRO_CUSTO",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_NATURAL_ACCOUNT_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CONTA_CONTABIL",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_SEGMENT4_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CONTRATO",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_CONVERSION_RATE_TYPE_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CONVERSION_RATE_TYPE",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_COST_CENTER_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_COST_CENTER",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_CURRENCY_DETAILS_D_TL",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CURRENCY_DETAILS",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_CUSTOMER_ACCOUNT_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CUSTOMER_ACCOUNT",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_BALANCING_SEGMENT_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_EMPRESA",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_FA_LOCATIONS_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FA_LOCATIONS",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_SEGMENT1_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FILIAL_EMPRESA",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_REL_FORNECEDOR_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FORNECEDOR",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_CODE_COMBINATION_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_GL_CODE_COMBINATION",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GROUP_ACC_LKP_TL",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_GROUP_ACC_LKP_TL",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_INTERNAL_ORG_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_INTERNAL_ORG",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_INV_ORGANIZATION_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_INV_ORGANIZATION",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_ITEM_CATEGORY_SETS_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_ITEM_CATEGORY_SETS",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_LEGAL_ENTITY_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_LEGAL_ENTITY",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PERSON_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PERSON",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PERSON_FUNCAO_CF",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PERSON_ASSIGMENTS",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_REL_CONSULTA_ITEM_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PRODUTO",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PRODUTO_INTERCLASSE_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PRODUTO_INTERCLASSE",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PRODUTO_INTRACLASSE_CF",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PRODUTO_INTRACLASSE",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PROJECT",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_ELEMENT_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PROJECT_ELEMENT",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_EXPENDITURE_TYPE_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PROJECT_EXPENDITURE",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_TASK_HIERARCHY_DH",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PROJECT_TASK_HIERARCHY",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_SUPPLIER_SITE",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_SEGMENT2_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_UNID_RESULT",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_UNIT_OF_MEASURE_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_UNIT_OF_MEASURE",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_USER_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_USER",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_WORKER_LOCATION_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_WORKER_LOCATION",
+      "camada": "Gold",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_REQUISITION_APPROVAL_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_AGREEMENT_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_AGREEMENT",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_AP_INVOICE_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_AP_INVOICE",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PAYABLES_ADT_DUE_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_AP_PAYABLES_ADT_DUE",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PAYABLES_DUE_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_AP_PAYABLES_DUE",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_AP_SLA_PAYMENTS_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_AP_SLA_PAYMENTS",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_AR_REVENUE_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_AR_REVENUE",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_BC_BALANCE_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_BUDGET_CONTROL",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_CST_INV_VALUATION_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_CST_INV_VALUATION",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_CST_ITEM_COST_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_CST_ITEM_COST",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_DOC_FISCAL_VALIDATE_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_DOC_FISCAL_VALIDATE",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_EMPLOYEE_EXPENSE_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_EMPLOYEE_EXPENSE",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_FDC_DOCUMENTS_PAYMENTS_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_FDC_DOCUMENTS_PAYMENTS",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_BALANCE_CF",
+      "camada": "Silver",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_GL_BALANCE",
+      "camada": "Gold",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_DISTRIBUTION_CF",
+      "camada": "Silver",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_GL_DISTRIBUTION",
+      "camada": "Gold",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GL_JOURNAL_CF",
+      "camada": "Silver",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_GL_JOURNAL",
+      "camada": "Gold",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_GLOBAL_EXCH_RATE_CG",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_GLOBAL_EXCH_RATE",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_INDICADOR_ECONOMICO_DIA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_INDICADOR_ECONOMICO_MES",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_INVOICE_SPEND_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_INVOICE_SPEND",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_ITEM_COST_UNIT_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ITEM_COST_UNIT",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_COMMITMENT_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PROJECT_COMMITMENT",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_COST_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PROJECT_COST",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PROJECT_PLAN_LINE_DETAIL_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PROJECT_PLAN_LINE_DETAIL",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PURCHASE_CHANGE_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PURCHASE_CHANGE",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PURCHASE_NEGOTIATION_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PURCHASE_NEGOTIATION",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PURCHASE_ORDER_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PURCHASE_ORDER",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PURCHASE_ORDER_APPROVAL_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PURCHASE_ORDER_APPROVAL",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_PURCHASE_ORDER_VAL_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_PURCHASE_ORDER_VAL",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_RECEIPT_ORDER_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_RECEIPT_ORDER",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_REL_ADI_FUNCIONARIO_CF",
+      "camada": "Silver",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_REL_ADI_FUNCIONARIO",
+      "camada": "Gold",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_REQUISITION_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_REQUISITION",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_SUPPLIER_APP_AUTH_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_SUPPLIER_APP_AUTH",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_SUPPLIER_DUE_DILIGENCE_CF",
+      "camada": "Silver",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_SUPPLIER_DUE_DILIGENCE_CF",
+      "camada": "Gold",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_EXPENSE_REPORTS_CF",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DW_REL_CONSULTA_ITEM_VAL_D",
+      "camada": "Silver",
+      "dominio": "Master Data",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_CHECKS_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_INVOICE_DISTRIBUTIONS_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_INVOICE_LINES_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_INVOICE_PAYMENTS_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_INVOICES_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_PAYMENT_SCHEDULES_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_TERMS_TL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CE_BANK_BRANCHES_V",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CMF_FD_HEADERS_INT",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CMF_FDS_WITH_PO_DTLS_V",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CMF_FISCAL_DOC_ASSOCTNS_TL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CMF_FISCAL_DOC_HEADERS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CMF_FISCAL_DOC_LINES_VL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CMF_FISCAL_DOC_SCHEDULES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CONST_AP_ADIANTA",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CST_ATTR_ONHAND_DETAILS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "CST_ATTR_ONHAND_VALUATIONS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGO_ITEM_EFF_PUB_V",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_CATEGORIES_B",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_CATEGORIES_TL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_CATEGORIES_VL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_CATEGORY_SETS_B",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_ITEM_CATEGORIES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_ITEM_CLASSES_B",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_ITEM_RELATIONSHIPS_VL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_MFG_PART_NUMBERS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_SYSTEM_ITEMS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_SYSTEM_ITEMS_B",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EGP_SYSTEM_ITEMS_TL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_CASH_ADV_APPLICATIONS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_CASH_ADV_HISTORY",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_CASH_ADVANCES",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_EXP_REP_PROCESSING",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_EXPENSE_DISTS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_EXPENSE_REPORTS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "EXM_EXPENSES",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FA_ADDITIONS_B",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FA_ADDITIONS_TL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FA_DISTRIBUTION_HISTORY",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FA_FUSION_SOAINFRA.WFTASK",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FA_LOCATIONS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_CURRENCIES_TL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_FLEX_VALUE_SETS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_FLEX_VALUES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_FLEX_VALUES_VL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_ID_FLEX_SEGMENTS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_LOOKUP_VALUES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FND_LOOKUP_VALUES_TL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FUN_ALL_BUSINESS_UNITS_V",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "FUN_NAMES_BUSINESS_UNITS_V",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_BALANCES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_CODE_COMBINATIONS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_DAILY_CONVERSION_TYPES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_DAILY_RATES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_IMPORT_REFERENCES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_JE_BATCHES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_JE_HEADERS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_JE_LINES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_LEDGER_CONFIG_DETAILS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_LEDGERS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "GL_PERIOD_STATUSES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HR_ALL_ORGANIZATION_UNITS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HR_ALL_ORGANIZATION_UNITS_F_VL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HR_LOCATIONS_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HR_OPERATING_UNITS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HZ_CODE_ASSIGNMENTS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HZ_CUST_ACCOUNTS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HZ_CUST_ACCT_SITES_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HZ_PARTIES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "IBY_EXT_BANK_ACCOUNTS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "IBY_EXTERNAL_PAYEES_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "IBY_PMT_INSTR_USES_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_ORG_PARAMETERS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_SECONDARY_INVENTORIES",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_UNITS_OF_MEASURE_B",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_UNITS_OF_MEASURE_TL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_UOM_CLASS_CONVERSIONS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_UOM_CONVERSIONS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "INV_UOMINTRACLASS_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PER_ALL_ASSIGNMENTS_M",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PER_ALL_PEOPLE_F",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PER_PERSON_NAMES_F",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PER_PERSON_NAMES_F_V",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PER_PERSONS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PER_USERS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJC_COMMITMENT_TXNS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJC_COST_DIST_LINES_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJC_EXP_ITEMS_ALL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJC_EXP_TYPES_CCW_V",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_EXP_TYPES_B",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_PROJ_ELEMENTS_B",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_PROJ_ELEMENTS_TL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_PROJECT_STATUSES_TL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_PROJECT_TYPES_B PRT",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_PROJECTS_ALL_B",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_PROJECTS_ALL_TL",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJF_TASKS_V",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJO_PLAN_LINE_DETAILS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJO_PLAN_LINES",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJO_PLAN_VERSIONS_B",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PJO_PLANNING_ELEMENTS",
+      "camada": "Bronze",
+      "dominio": "Financeiro",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_ACTION_HISTORY",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_BUYER_ASSIGNMENT_RULES",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_DISTRIBUTIONS_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_HEADERS_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_LINE_LOCATIONS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_LINE_LOCATIONS_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_LINE_TYPES_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_LINES_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_LINES_ALLL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PO_VERSIONS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PON_AUCTION_HEADERS_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PON_AUCTION_HEADERS_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POQ_INITIATIVES",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POQ_QUAL_MODELS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POQ_QUALIFICATIONS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POQ_QUESTNAIRE_RESP_HEADERS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POR_REQ_DISTRIBUTIONS_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POR_REQUISITION_HEADERS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POR_REQUISITION_HEADERS_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POR_REQUISITION_LINES_ALL",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_APPROVAL_HISTORY",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_SPEND_AUTH_REQUESTS",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_SUPPLIER_ADDRESS_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_SUPPLIER_CONTACTS_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_SUPPLIER_SITES_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_SUPPLIERS_PII",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "POZ_SUPPLIERS_V",
+      "camada": "Bronze",
+      "dominio": "Suprimentos",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RA_BATCH_SOURCES_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RA_CUST_TRX_LINE_GL_DIST_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RA_CUST_TRX_TYPES_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RA_CUSTOMER_TRX_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "RA_CUSTOMER_TRX_LINES_ALL",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XCC_BALANCES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XCC_BUDGET_ACCOUNTS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XCC_CONTROL_BUDGETS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XLA_AE_HEADERS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XLA_AE_LINES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XLA_DISTRIBUTION_LINKS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XLA_MAPPING_SET_VALUES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XLE_ENTITY_PROFILES",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "XLE_REGISTRATIONS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ZX_PARTY_TAX_PROFILE",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ZX_REGISTRATIONS",
+      "camada": "Bronze",
+      "dominio": "Controladoria",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "V_OTRS_TICKETS_CONSOLIDADO",
+      "camada": "Silver",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_OTRS_TICKET",
+      "camada": "Gold",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "TICKET",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ARTICLE",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "ARTICLE_DATA_MIME",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DYNAMIC_FIELD_VALUE",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DYNAMIC_FIELD",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "QUEUE",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "TICKET_STATE",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "TICKET_PRIORITY",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SERVICE",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SLA",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "TICKET_TYPE",
+      "camada": "Bronze",
+      "dominio": "TI",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCODCATTRAB",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CATEGORIA_TRABALHO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PENCARGO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_ENCARGO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCODESTCIVIL",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_ESTADO_CIVIL",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PEVENTO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_EVENTO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FAIXA_TEMPO_CASA",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PFUNCAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FUNCAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PFUNC",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FUNCIONARIO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCODINSTRUCAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_GRAU_INSTRUCAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCONTAS",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_GRP_CONTA_RH",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AHORARIO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_HORARIO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMOTADMISSAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_MOTIVO_ADMISSAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMOTDEMISSAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_MOTIVO_DEMISSAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMOTMUDFUNCAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_MOTIVO_MUDA_FUNCAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMOTMUDSAL",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_MOTIVO_MUDA_SALARIO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PMOTMUDSECAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_MOTIVO_MUDA_SECAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCODNACAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_NACIONALIDADE",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PPESSOA",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PESSOA_RH",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCORRACA",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_RACA",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PSECAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_SECAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCODSEXO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_SEXO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTPADMISSAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_ADMISSAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOAFASTAMENTO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_AFASTAMENTO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PCODTIPOCONTRATO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_CONTRATO_EMPREGADO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPODEMISSAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_DEMISSAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOENCARGO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_ENCARGO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOFUNC",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_FUNCIONARIO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOMUDSITUACAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_MUDA_SITUACAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOOCOR",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_OCOR_TRAB",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPORECEB",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_RECEB",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOSITUACAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_SITUACAO_EMPREGADO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PTIPOSITUACAO_RH",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_TIPO_SITUACAO_RH",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PVINCULO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_VINCULO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_ADVERTENCIA",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ADVERTENCIA",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_ENCARGO",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ENCARGO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PENCARGOCOMPL",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ENCARGO_COMPLEMENTO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PFICHAFINANC",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_FICHA_FINANC_FUNC",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_FICHA_FINANC_FUNC",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_HEADCOUNT",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PAFASTAMENTO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_HISTORICO_AFASTAMENTO",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_HISTORICO_AFASTAMENTO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_HISTORICO_FUNCAO",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_HISTORICO_FUNCAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PSALARIO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_HISTORICO_SALARIO",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_HISTORICO_SALARIO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_HISTORICO_SECAO",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_HISTORICO_SECAO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "LCTLOTE",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_LCTLOTE",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_LCTLOTE",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_PR_RATEIO_FUNC_CCUSTO",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_RATEIO_FUNC_CCUSTO",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_SPC_HIERARQUIA",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SHAREPOINT",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_VACANCY_BACKLOG",
+      "camada": "Silver",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_VACANCY_BACKLOG",
+      "camada": "Gold",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VPUNICAO",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VMOTADVERT",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "VADVERTENCIA",
+      "camada": "Bronze",
+      "dominio": "RH",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_CLAUSULA_CONTRATO_OPER",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_EQUIPAMENTO_V2",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_FALHA_EQUIPAMENTO_V2",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_GRUPO_ACESSO_MAXIMO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_GRUPO_USUARIO_MAXIMO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_LOCAL_EQUIPAMENTO_V2",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PESSOA_MAXIMO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PLANO_TAREFA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_PLANO_TRABALHO_V2",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_POCO_BDO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DM_USUARIO_MAXIMO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "DOLAR_MEDIO_MOVIM_ESTOQUE",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ATUAL_PLANO_POCO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_BOLETIM_DIARIO_OPER_BDO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "BM_BVS_JAN-ABR26.XLSX",
+      "camada": "Bronze",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_BOLETIM_MEDICAO",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_BOLETIM_MEDICAO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_INVENTORY_MAXIMO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_INVENTORY_MAXIMO_TOT",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ITEM_REQUISICAO_COMPRA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_MANUTENCAO_PREVENTIVA_V2",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_MOVIM_ESTOQUE",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_MOVIM_MAO_OBRA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_ORDEM_SERVICO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_REQUISICAO_COMPRA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_RESUMO_OPER_DIA_BDO",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "HORAS_DISPUTA_2023.XLSX",
+      "camada": "Bronze",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_BOLETIM_MEDICAO_AJUSTE",
+      "camada": "Silver",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_RESUMO_OPER_DIA_BDO_AJUSTE",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_RESUMO_OPER_DIA_BDO_VIGENCIA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "PR_SALDO_ESTOQUE",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_UNID_NEG_COD_SONDA",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "SA_UNID_NEG_NIV_3_SITE",
+      "camada": "Gold",
+      "dominio": "",
+      "origem": "Excel",
+      "detalhe": ""
+    },
+    {
+      "tabela": "AP_HOLDS_ALL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DML_ETL_Pagamentos.sql"
+    },
+    {
+      "tabela": "IBY_PAYMENT_METHODS_VL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_FDC_Document_Payments.sql"
+    },
+    {
+      "tabela": "PJF_PROJECT_TYPES_TL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Projects.sql"
+    },
+    {
+      "tabela": "EGP_ITEM_RELATIONSHIPS_B_V",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Rel_Consulta_Item.sql"
+    },
+    {
+      "tabela": "EGP_SYSTEM_ITEMS_V",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Rel_Consulta_Item.sql"
+    },
+    {
+      "tabela": "INV_UNITS_OF_MEASURE_ALL_VL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Rel_Consulta_Item.sql"
+    },
+    {
+      "tabela": "WFTASK",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Requisition_Order_Approval.sql"
+    },
+    {
+      "tabela": "CT_FUSION_CARGA_EPM",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / ct_fusion_carga_epm.tab"
+    },
+    {
+      "tabela": "CT_FUSION_LAST_UPDATE",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / ct_fusion_last_update.tab"
+    },
+    {
+      "tabela": "DW_PURCHASE_ORDER_APPROVAL_HIST_CF",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / dw_purchase_order_approval_hist_cf.tab"
+    },
+    {
+      "tabela": "SA_DEPARA_CR_CC",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / sa_depara_cr_cc.tab"
+    },
+    {
+      "tabela": "VW_DW_ACCEPTANCE_REQUIRED",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_acceptance_required.vw"
+    },
+    {
+      "tabela": "VW_DW_AGREEMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_agreement.vw"
+    },
+    {
+      "tabela": "VW_DW_AP_INVOICE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_ap_invoice.vw"
+    },
+    {
+      "tabela": "VW_DW_AP_SLA_PAYMENTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_ap_sla_payments.vw"
+    },
+    {
+      "tabela": "VW_DW_AR_REVENUE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_ar_revenue.vw"
+    },
+    {
+      "tabela": "VW_DW_BALANCING_SEGMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_balancing_segment.vw"
+    },
+    {
+      "tabela": "VW_DW_BC_BALANCE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_bc_balance.vw"
+    },
+    {
+      "tabela": "VW_DW_BUSINESS_UNIT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_business_unit.vw"
+    },
+    {
+      "tabela": "VW_DW_CATEGORY_BUYER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_category_buyer.vw"
+    },
+    {
+      "tabela": "VW_DW_CONVERSION_RATE_TYPE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_conversion_rate_type.vw"
+    },
+    {
+      "tabela": "VW_DW_COST_CENTER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cost_center.vw"
+    },
+    {
+      "tabela": "DM_INV_SUBINVENTORY",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_inv_valuation.vw"
+    },
+    {
+      "tabela": "VW_DW_CST_INV_VALUATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_inv_valuation.vw"
+    },
+    {
+      "tabela": "DM_INVENTORY_ITEM",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_inv_valuation.vw"
+    },
+    {
+      "tabela": "VW_DW_CST_ITEM_COST",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_item_cost.vw"
+    },
+    {
+      "tabela": "VW_DW_CURRENCY_DETAILS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_currency_details.vw"
+    },
+    {
+      "tabela": "VW_DW_CUSTOMER_ACCOUNT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_customer_account.vw"
+    },
+    {
+      "tabela": "VW_DW_DOC_FISCAL_VALIDATE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_doc_fiscal_validate.vw"
+    },
+    {
+      "tabela": "VW_DW_EMPLOYEE_EXPENSE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_employee_expense.vw"
+    },
+    {
+      "tabela": "VW_DW_EXPENSE_REPORTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_expense_reports.vw"
+    },
+    {
+      "tabela": "VW_DW_FA_ASSET",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_fa_asset.vw"
+    },
+    {
+      "tabela": "VW_DW_FA_LOCATIONS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_fa_locations.vw"
+    },
+    {
+      "tabela": "VW_DW_FDC_DOCUMENTS_PAYMENTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_fdc_documents_payments.vw"
+    },
+    {
+      "tabela": "VW_DW_GLOBAL_EXCH_RATE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_global_exch_rate.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_BALANCE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_balance.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_CODE_COMBINATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_code_combination.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_JOURNAL_FROM_OIC",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_journal.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_JOURNAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_journal.vw"
+    },
+    {
+      "tabela": "DM_GL_LEDGER",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_journal_from_oic.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_SEGMENT1",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_segment1.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_SEGMENT2",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_segment2.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_SEGMENT4",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_segment4.vw"
+    },
+    {
+      "tabela": "VW_DW_GROUP_ACC_LKP",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_group_acc_lkp.vw"
+    },
+    {
+      "tabela": "VW_DW_INDICADOR_ECONOMICO_DIA",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_indicador_economico_dia.vw"
+    },
+    {
+      "tabela": "VW_DW_INDICADOR_ECONOMICO_MES_DOLAR_MEDIO",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_indicador_economico_mes_dolar_medio.vw"
+    },
+    {
+      "tabela": "VW_DW_INDICADOR_ECONOMICO_MES_DOLAR_PONTA",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_indicador_economico_mes_dolar_ponta.vw"
+    },
+    {
+      "tabela": "VW_DW_INTERNAL_ORG",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_internal_org.vw"
+    },
+    {
+      "tabela": "VW_DW_INVOICE_SPEND",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_invoice_spend.vw"
+    },
+    {
+      "tabela": "VW_DW_INV_ORGANIZATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_inv_organization.vw"
+    },
+    {
+      "tabela": "VW_DW_INV_SUBINVENTORY",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_inv_subinventory.vw"
+    },
+    {
+      "tabela": "VW_DW_ITEM_CATEGORY_SETS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_item_category_sets.vw"
+    },
+    {
+      "tabela": "VW_DW_ITEM_COST_UNIT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_item_cost_unit.vw"
+    },
+    {
+      "tabela": "VW_DW_LEGAL_ENTITY",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_legal_entity.vw"
+    },
+    {
+      "tabela": "VW_DW_NATURAL_ACCOUNT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_natural_account.vw"
+    },
+    {
+      "tabela": "DM_TIPO_CONTA_CONTABIL",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_natural_account.vw"
+    },
+    {
+      "tabela": "VW_DW_PAYABLES_ADT_DUE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_payables_adt_due.vw"
+    },
+    {
+      "tabela": "VW_DW_PAYABLES_DUE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_payables_due.vw"
+    },
+    {
+      "tabela": "VW_DW_PERSON",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_person.vw"
+    },
+    {
+      "tabela": "VW_DW_PERSON_ASSIGMENTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_person_assigments.vw"
+    },
+    {
+      "tabela": "VW_DW_PRODUTO_INTERCLASSE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_produto_interclasse.vw"
+    },
+    {
+      "tabela": "VW_DW_PRODUTO_INTRACLASSE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_produto_intraclasse.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_COMMITMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_commitment.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_COST",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_cost.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_ELEMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_element.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_EXPENDITURE_TYPE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_expenditure_type.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_PLAN_LINE_DETAIL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_plan_line_detail.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_CHANGE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_change.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_NEGOTIATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_negotiation.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER_APPROVAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order_approval.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER_APPROVAL_HIST",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order_approval_hist.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER_VAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order_val.vw"
+    },
+    {
+      "tabela": "VW_DW_RECEIPT_ORDER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_receipt_order.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_ADI_FUNCIONARIO",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_adi_funcionario.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_CONSULTA_ITEM",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_consulta_item.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_FORNECEDOR",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_fornecedor.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_FORNECEDORXX",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_fornecedorxx.vw"
+    },
+    {
+      "tabela": "VW_DW_REQUISITION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_requisition.vw"
+    },
+    {
+      "tabela": "VW_DW_REQUISITION_APPROVAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_requisition_approval.vw"
+    },
+    {
+      "tabela": "VW_DW_SUPPLIER_APP_AUTH",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_supplier_app_auth.vw"
+    },
+    {
+      "tabela": "VW_DW_SUPPLIER_DUE_DILIGENCE_CF",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_supplier_due_diligence_cf.vw"
+    },
+    {
+      "tabela": "VW_DW_SUPPLIER_SITE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_supplier_site.vw"
+    },
+    {
+      "tabela": "VW_DW_UNIT_OF_MEASURE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_unit_of_measure.vw"
+    },
+    {
+      "tabela": "VW_DW_USER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_user.vw"
+    },
+    {
+      "tabela": "VW_DW_WORKER_LOCATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_worker_location.vw"
+    },
+    {
+      "tabela": "CT_NUMERACAO_BI_ALFA",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_numeracao_alfa.prc"
+    },
+    {
+      "tabela": "DW_GL_JOURNAL_CF_FROM_FILE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / vw_dw_gl_journal_from_file.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_JOURNAL_FROM_FILE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / vw_dw_gl_journal_from_file.vw"
+    },
+    {
+      "tabela": "PR_PURCHASE_ORDER_APPROVAL_HIST",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "VW_DW_UNID_CENTRO_RESULT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "DM_GRUPO_PE_18",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "NO",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "CT_NUMERACAO_BI_ALFA_PROD",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "DM_INDICADOR_ECONOMICO",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_indicador_economico.tab"
+    },
+    {
+      "tabela": "DM_EPM_RUBRICA_CTA",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_epm_rubrica_cta.tab"
+    },
+    {
+      "tabela": "DM_EXPENSE_REPORTS",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_expense_reports.tab"
+    },
+    {
+      "tabela": "DM_FINANCIAL_CATEGORY",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_financial_category.tab"
+    },
+    {
+      "tabela": "DM_FISCAL_PERIOD",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_fiscal_period.tab"
+    },
+    {
+      "tabela": "DM_FLEET",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_fleet.tab"
+    },
+    {
+      "tabela": "DM_FLEET_RIG",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_fleet_rig.tab"
+    },
+    {
+      "tabela": "DM_GL_SEGMENT",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_gl_segment.tab"
+    },
+    {
+      "tabela": "DM_ITEM_CATEGORIES",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_item_categories.tab"
+    },
+    {
+      "tabela": "DM_ITEM_CAT_ASSIGNMENTS",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_item_cat_assignments.tab"
+    },
+    {
+      "tabela": "DM_PARTY",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_party.tab"
+    },
+    {
+      "tabela": "DM_PROJECT_TYPE",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_project_type.tab"
+    },
+    {
+      "tabela": "DM_RIG",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_rig.tab"
+    },
+    {
+      "tabela": "DM_STATUS_COMMITMENTS",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_status_commitments.tab"
+    },
+    {
+      "tabela": "COM",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / BI_SA_PARM_SONDA_MAXIMO.prc"
+    },
+    {
+      "tabela": "V_BI_EXT_CLAUSULA_BDP",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_CLAUSULA_CONTRATO_OPER.prc"
+    },
+    {
+      "tabela": "DM_LOCAL_EQUIPAMENTO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_EQUIPAMENTO_V2.prc"
+    },
+    {
+      "tabela": "SA_DM_EQUIPAMENTO",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_EQUIPAMENTO_V2.prc"
+    },
+    {
+      "tabela": "V_ASSET",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_EQUIPAMENTO_V2.prc"
+    },
+    {
+      "tabela": "SA_PESSOA_MAXIMO",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_GRUPO_ACESSO_MAXIMO.prc"
+    },
+    {
+      "tabela": "CT_BDO_CONTROLE_EXEC",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_GRUPO_ACESSO_MAXIMO.prc"
+    },
+    {
+      "tabela": "V_PMSEQUENCE",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_PLANO_TAREFA.prc"
+    },
+    {
+      "tabela": "DM_PLANO_TRABALHO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_PLANO_TAREFA.prc"
+    },
+    {
+      "tabela": "SA_DM_PLANO_TAREFA",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_PLANO_TAREFA.prc"
+    },
+    {
+      "tabela": "V_QGOG_DBOOILWELL",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_POCO_BDO.prc"
+    },
+    {
+      "tabela": "DM_POCO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_POCO_BDO.prc"
+    },
+    {
+      "tabela": "SA_ORDEM_SERVICO",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "SA_PR_ORDEM_SERVICO_TEMP",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "DM_EQUIPAMENTO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "DM_FALHA_EQUIPAMENTO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "SA_DEPARA_EMPR_FILIAL_RH",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_encargo.prc"
+    },
+    {
+      "tabela": "V_PFUNCAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_funcao.prc"
+    },
+    {
+      "tabela": "V_PFUNC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_funcionario.prc"
+    },
+    {
+      "tabela": "V_PMOTMUDSAL",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_motivo_muda_salario.prc"
+    },
+    {
+      "tabela": "DM_UNIDADE_FEDERATIVA",
+      "camada": "Gold",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_pessoa_rh.prc"
+    },
+    {
+      "tabela": "V_PPESSOA",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_pessoa_rh.prc"
+    },
+    {
+      "tabela": "V_PSECAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_secao.prc"
+    },
+    {
+      "tabela": "PCODAFAST",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_afastamento.prc"
+    },
+    {
+      "tabela": "BI_EXT_RH_EMPR_ORCADO_MES_2013",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "ALL_TABLES",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "DM_TIPO_CONTRATO_EMPREGADO_TMP",
+      "camada": "Gold",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "BI_EXT_RH_EMPR_REAL_MES",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "PTPDEMISSAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_demissao.prc"
+    },
+    {
+      "tabela": "PTPENCARGO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_encargo.prc"
+    },
+    {
+      "tabela": "PTPFUNC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_funcionario.prc"
+    },
+    {
+      "tabela": "PMUDSITUACAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_muda_situacao.prc"
+    },
+    {
+      "tabela": "PCODOCORTRAB",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_ocor_trab.prc"
+    },
+    {
+      "tabela": "PCODRECEB",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_receb.prc"
+    },
+    {
+      "tabela": "DM_TIPO_SITUACAO_EMPREGADO_TMP",
+      "camada": "Gold",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_situacao_empregado.prc"
+    },
+    {
+      "tabela": "PCODSITUACAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_situacao_rh.prc"
+    },
+    {
+      "tabela": "PCODVINCULO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_vinculo.prc"
+    },
+    {
+      "tabela": "PFFINANC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_encargo.prc"
+    },
+    {
+      "tabela": "PFENCARGO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_encargo.prc"
+    },
+    {
+      "tabela": "BI_EXT_RH_ENCARGO_COMPLEMENTO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_encargo_complemento.prc"
+    },
+    {
+      "tabela": "PFMOVCC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_ficha_financ_func.prc"
+    },
+    {
+      "tabela": "PFHSTAFT",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_afastamento.prc"
+    },
+    {
+      "tabela": "PFHSTFCO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_funcao.prc"
+    },
+    {
+      "tabela": "V_PFHSTSAL",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_salario.prc"
+    },
+    {
+      "tabela": "PFHSTSAL",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_salario.prc"
+    },
+    {
+      "tabela": "PFHSTSEC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_secao.prc"
+    },
+    {
+      "tabela": "CLCTLOTE",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_lctlote.prc"
+    },
+    {
+      "tabela": "V_PFRATEIOFIXO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_rateio_func_ccusto.prc"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET_PRIORITY",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_USERS",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_SLA",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_SERVICE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "OTRS_TICKET_ARTICLE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "V_OTRS_TICKET_DT_REF",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET_TYPE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET_STATE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "OTRS_TICKET_DYNAMIC_FIELD",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_QUEUE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    }
+  ],
+  "descobertas_sql": [
+    {
+      "tabela": "AP_HOLDS_ALL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DML_ETL_Pagamentos.sql"
+    },
+    {
+      "tabela": "IBY_PAYMENT_METHODS_VL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_FDC_Document_Payments.sql"
+    },
+    {
+      "tabela": "PJF_PROJECT_TYPES_TL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Projects.sql"
+    },
+    {
+      "tabela": "EGP_ITEM_RELATIONSHIPS_B_V",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Rel_Consulta_Item.sql"
+    },
+    {
+      "tabela": "EGP_SYSTEM_ITEMS_V",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Rel_Consulta_Item.sql"
+    },
+    {
+      "tabela": "INV_UNITS_OF_MEASURE_ALL_VL",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Rel_Consulta_Item.sql"
+    },
+    {
+      "tabela": "WFTASK",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_ETL_Requisition_Order_Approval.sql"
+    },
+    {
+      "tabela": "CT_FUSION_CARGA_EPM",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / ct_fusion_carga_epm.tab"
+    },
+    {
+      "tabela": "CT_FUSION_LAST_UPDATE",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / ct_fusion_last_update.tab"
+    },
+    {
+      "tabela": "DW_PURCHASE_ORDER_APPROVAL_HIST_CF",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / dw_purchase_order_approval_hist_cf.tab"
+    },
+    {
+      "tabela": "SA_DEPARA_CR_CC",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "4. Camada Silver / sa_depara_cr_cc.tab"
+    },
+    {
+      "tabela": "VW_DW_ACCEPTANCE_REQUIRED",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_acceptance_required.vw"
+    },
+    {
+      "tabela": "VW_DW_AGREEMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_agreement.vw"
+    },
+    {
+      "tabela": "VW_DW_AP_INVOICE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_ap_invoice.vw"
+    },
+    {
+      "tabela": "VW_DW_AP_SLA_PAYMENTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_ap_sla_payments.vw"
+    },
+    {
+      "tabela": "VW_DW_AR_REVENUE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_ar_revenue.vw"
+    },
+    {
+      "tabela": "VW_DW_BALANCING_SEGMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_balancing_segment.vw"
+    },
+    {
+      "tabela": "VW_DW_BC_BALANCE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_bc_balance.vw"
+    },
+    {
+      "tabela": "VW_DW_BUSINESS_UNIT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_business_unit.vw"
+    },
+    {
+      "tabela": "VW_DW_CATEGORY_BUYER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_category_buyer.vw"
+    },
+    {
+      "tabela": "VW_DW_CONVERSION_RATE_TYPE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_conversion_rate_type.vw"
+    },
+    {
+      "tabela": "VW_DW_COST_CENTER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cost_center.vw"
+    },
+    {
+      "tabela": "DM_INV_SUBINVENTORY",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_inv_valuation.vw"
+    },
+    {
+      "tabela": "VW_DW_CST_INV_VALUATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_inv_valuation.vw"
+    },
+    {
+      "tabela": "DM_INVENTORY_ITEM",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_inv_valuation.vw"
+    },
+    {
+      "tabela": "VW_DW_CST_ITEM_COST",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_cst_item_cost.vw"
+    },
+    {
+      "tabela": "VW_DW_CURRENCY_DETAILS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_currency_details.vw"
+    },
+    {
+      "tabela": "VW_DW_CUSTOMER_ACCOUNT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_customer_account.vw"
+    },
+    {
+      "tabela": "VW_DW_DOC_FISCAL_VALIDATE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_doc_fiscal_validate.vw"
+    },
+    {
+      "tabela": "VW_DW_EMPLOYEE_EXPENSE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_employee_expense.vw"
+    },
+    {
+      "tabela": "VW_DW_EXPENSE_REPORTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_expense_reports.vw"
+    },
+    {
+      "tabela": "VW_DW_FA_ASSET",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_fa_asset.vw"
+    },
+    {
+      "tabela": "VW_DW_FA_LOCATIONS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_fa_locations.vw"
+    },
+    {
+      "tabela": "VW_DW_FDC_DOCUMENTS_PAYMENTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_fdc_documents_payments.vw"
+    },
+    {
+      "tabela": "VW_DW_GLOBAL_EXCH_RATE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_global_exch_rate.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_BALANCE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_balance.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_CODE_COMBINATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_code_combination.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_JOURNAL_FROM_OIC",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_journal.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_JOURNAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_journal.vw"
+    },
+    {
+      "tabela": "DM_GL_LEDGER",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_journal_from_oic.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_SEGMENT1",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_segment1.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_SEGMENT2",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_segment2.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_SEGMENT4",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_gl_segment4.vw"
+    },
+    {
+      "tabela": "VW_DW_GROUP_ACC_LKP",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_group_acc_lkp.vw"
+    },
+    {
+      "tabela": "VW_DW_INDICADOR_ECONOMICO_DIA",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_indicador_economico_dia.vw"
+    },
+    {
+      "tabela": "VW_DW_INDICADOR_ECONOMICO_MES_DOLAR_MEDIO",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_indicador_economico_mes_dolar_medio.vw"
+    },
+    {
+      "tabela": "VW_DW_INDICADOR_ECONOMICO_MES_DOLAR_PONTA",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_indicador_economico_mes_dolar_ponta.vw"
+    },
+    {
+      "tabela": "VW_DW_INTERNAL_ORG",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_internal_org.vw"
+    },
+    {
+      "tabela": "VW_DW_INVOICE_SPEND",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_invoice_spend.vw"
+    },
+    {
+      "tabela": "VW_DW_INV_ORGANIZATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_inv_organization.vw"
+    },
+    {
+      "tabela": "VW_DW_INV_SUBINVENTORY",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_inv_subinventory.vw"
+    },
+    {
+      "tabela": "VW_DW_ITEM_CATEGORY_SETS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_item_category_sets.vw"
+    },
+    {
+      "tabela": "VW_DW_ITEM_COST_UNIT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_item_cost_unit.vw"
+    },
+    {
+      "tabela": "VW_DW_LEGAL_ENTITY",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_legal_entity.vw"
+    },
+    {
+      "tabela": "VW_DW_NATURAL_ACCOUNT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_natural_account.vw"
+    },
+    {
+      "tabela": "DM_TIPO_CONTA_CONTABIL",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_natural_account.vw"
+    },
+    {
+      "tabela": "VW_DW_PAYABLES_ADT_DUE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_payables_adt_due.vw"
+    },
+    {
+      "tabela": "VW_DW_PAYABLES_DUE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_payables_due.vw"
+    },
+    {
+      "tabela": "VW_DW_PERSON",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_person.vw"
+    },
+    {
+      "tabela": "VW_DW_PERSON_ASSIGMENTS",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_person_assigments.vw"
+    },
+    {
+      "tabela": "VW_DW_PRODUTO_INTERCLASSE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_produto_interclasse.vw"
+    },
+    {
+      "tabela": "VW_DW_PRODUTO_INTRACLASSE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_produto_intraclasse.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_COMMITMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_commitment.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_COST",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_cost.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_ELEMENT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_element.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_EXPENDITURE_TYPE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_expenditure_type.vw"
+    },
+    {
+      "tabela": "VW_DW_PROJECT_PLAN_LINE_DETAIL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_project_plan_line_detail.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_CHANGE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_change.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_NEGOTIATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_negotiation.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER_APPROVAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order_approval.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER_APPROVAL_HIST",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order_approval_hist.vw"
+    },
+    {
+      "tabela": "VW_DW_PURCHASE_ORDER_VAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_purchase_order_val.vw"
+    },
+    {
+      "tabela": "VW_DW_RECEIPT_ORDER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_receipt_order.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_ADI_FUNCIONARIO",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_adi_funcionario.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_CONSULTA_ITEM",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_consulta_item.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_FORNECEDOR",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_fornecedor.vw"
+    },
+    {
+      "tabela": "VW_DW_REL_FORNECEDORXX",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_rel_fornecedorxx.vw"
+    },
+    {
+      "tabela": "VW_DW_REQUISITION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_requisition.vw"
+    },
+    {
+      "tabela": "VW_DW_REQUISITION_APPROVAL",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_requisition_approval.vw"
+    },
+    {
+      "tabela": "VW_DW_SUPPLIER_APP_AUTH",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_supplier_app_auth.vw"
+    },
+    {
+      "tabela": "VW_DW_SUPPLIER_DUE_DILIGENCE_CF",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_supplier_due_diligence_cf.vw"
+    },
+    {
+      "tabela": "VW_DW_SUPPLIER_SITE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_supplier_site.vw"
+    },
+    {
+      "tabela": "VW_DW_UNIT_OF_MEASURE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_unit_of_measure.vw"
+    },
+    {
+      "tabela": "VW_DW_USER",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_user.vw"
+    },
+    {
+      "tabela": "VW_DW_WORKER_LOCATION",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "4. Camada Silver / vw_dw_worker_location.vw"
+    },
+    {
+      "tabela": "CT_NUMERACAO_BI_ALFA",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_numeracao_alfa.prc"
+    },
+    {
+      "tabela": "DW_GL_JOURNAL_CF_FROM_FILE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / vw_dw_gl_journal_from_file.vw"
+    },
+    {
+      "tabela": "VW_DW_GL_JOURNAL_FROM_FILE",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "VW (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / vw_dw_gl_journal_from_file.vw"
+    },
+    {
+      "tabela": "PR_PURCHASE_ORDER_APPROVAL_HIST",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "VW_DW_UNID_CENTRO_RESULT",
+      "camada": "Silver",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "DM_GRUPO_PE_18",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "NO",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "CT_NUMERACAO_BI_ALFA_PROD",
+      "camada": "Bronze",
+      "dominio": "1 - Oracle ERP",
+      "origem": "DSX (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / Export_DataStage_Jobs_Oracle.dsx"
+    },
+    {
+      "tabela": "DM_INDICADOR_ECONOMICO",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_indicador_economico.tab"
+    },
+    {
+      "tabela": "DM_EPM_RUBRICA_CTA",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_epm_rubrica_cta.tab"
+    },
+    {
+      "tabela": "DM_EXPENSE_REPORTS",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_expense_reports.tab"
+    },
+    {
+      "tabela": "DM_FINANCIAL_CATEGORY",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_financial_category.tab"
+    },
+    {
+      "tabela": "DM_FISCAL_PERIOD",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_fiscal_period.tab"
+    },
+    {
+      "tabela": "DM_FLEET",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_fleet.tab"
+    },
+    {
+      "tabela": "DM_FLEET_RIG",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_fleet_rig.tab"
+    },
+    {
+      "tabela": "DM_GL_SEGMENT",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_gl_segment.tab"
+    },
+    {
+      "tabela": "DM_ITEM_CATEGORIES",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_item_categories.tab"
+    },
+    {
+      "tabela": "DM_ITEM_CAT_ASSIGNMENTS",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_item_cat_assignments.tab"
+    },
+    {
+      "tabela": "DM_PARTY",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_party.tab"
+    },
+    {
+      "tabela": "DM_PROJECT_TYPE",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_project_type.tab"
+    },
+    {
+      "tabela": "DM_RIG",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_rig.tab"
+    },
+    {
+      "tabela": "DM_STATUS_COMMITMENTS",
+      "camada": "Gold",
+      "dominio": "1 - Oracle ERP",
+      "origem": "TAB (não estava no Excel)",
+      "detalhe": "6. Camada Gold / dm_status_commitments.tab"
+    },
+    {
+      "tabela": "COM",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / BI_SA_PARM_SONDA_MAXIMO.prc"
+    },
+    {
+      "tabela": "V_BI_EXT_CLAUSULA_BDP",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_CLAUSULA_CONTRATO_OPER.prc"
+    },
+    {
+      "tabela": "DM_LOCAL_EQUIPAMENTO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_EQUIPAMENTO_V2.prc"
+    },
+    {
+      "tabela": "SA_DM_EQUIPAMENTO",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_EQUIPAMENTO_V2.prc"
+    },
+    {
+      "tabela": "V_ASSET",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_EQUIPAMENTO_V2.prc"
+    },
+    {
+      "tabela": "SA_PESSOA_MAXIMO",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_GRUPO_ACESSO_MAXIMO.prc"
+    },
+    {
+      "tabela": "CT_BDO_CONTROLE_EXEC",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_GRUPO_ACESSO_MAXIMO.prc"
+    },
+    {
+      "tabela": "V_PMSEQUENCE",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_PLANO_TAREFA.prc"
+    },
+    {
+      "tabela": "DM_PLANO_TRABALHO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_PLANO_TAREFA.prc"
+    },
+    {
+      "tabela": "SA_DM_PLANO_TAREFA",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_PLANO_TAREFA.prc"
+    },
+    {
+      "tabela": "V_QGOG_DBOOILWELL",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_POCO_BDO.prc"
+    },
+    {
+      "tabela": "DM_POCO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / DM_POCO_BDO.prc"
+    },
+    {
+      "tabela": "SA_ORDEM_SERVICO",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "SA_PR_ORDEM_SERVICO_TEMP",
+      "camada": "Bronze",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "DM_EQUIPAMENTO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "DM_FALHA_EQUIPAMENTO",
+      "camada": "Gold",
+      "dominio": "2 - Maximo",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / PR_ORDEM_SERVICO_TEMP.prc"
+    },
+    {
+      "tabela": "SA_DEPARA_EMPR_FILIAL_RH",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_encargo.prc"
+    },
+    {
+      "tabela": "V_PFUNCAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_funcao.prc"
+    },
+    {
+      "tabela": "V_PFUNC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_funcionario.prc"
+    },
+    {
+      "tabela": "V_PMOTMUDSAL",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_motivo_muda_salario.prc"
+    },
+    {
+      "tabela": "DM_UNIDADE_FEDERATIVA",
+      "camada": "Gold",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_pessoa_rh.prc"
+    },
+    {
+      "tabela": "V_PPESSOA",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_pessoa_rh.prc"
+    },
+    {
+      "tabela": "V_PSECAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_secao.prc"
+    },
+    {
+      "tabela": "PCODAFAST",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_afastamento.prc"
+    },
+    {
+      "tabela": "BI_EXT_RH_EMPR_ORCADO_MES_2013",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "ALL_TABLES",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "DM_TIPO_CONTRATO_EMPREGADO_TMP",
+      "camada": "Gold",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "BI_EXT_RH_EMPR_REAL_MES",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_contrato_empregado.prc"
+    },
+    {
+      "tabela": "PTPDEMISSAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_demissao.prc"
+    },
+    {
+      "tabela": "PTPENCARGO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_encargo.prc"
+    },
+    {
+      "tabela": "PTPFUNC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_funcionario.prc"
+    },
+    {
+      "tabela": "PMUDSITUACAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_muda_situacao.prc"
+    },
+    {
+      "tabela": "PCODOCORTRAB",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_ocor_trab.prc"
+    },
+    {
+      "tabela": "PCODRECEB",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_receb.prc"
+    },
+    {
+      "tabela": "DM_TIPO_SITUACAO_EMPREGADO_TMP",
+      "camada": "Gold",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_situacao_empregado.prc"
+    },
+    {
+      "tabela": "PCODSITUACAO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_tipo_situacao_rh.prc"
+    },
+    {
+      "tabela": "PCODVINCULO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_dm_vinculo.prc"
+    },
+    {
+      "tabela": "PFFINANC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_encargo.prc"
+    },
+    {
+      "tabela": "PFENCARGO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_encargo.prc"
+    },
+    {
+      "tabela": "BI_EXT_RH_ENCARGO_COMPLEMENTO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_encargo_complemento.prc"
+    },
+    {
+      "tabela": "PFMOVCC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_ficha_financ_func.prc"
+    },
+    {
+      "tabela": "PFHSTAFT",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_afastamento.prc"
+    },
+    {
+      "tabela": "PFHSTFCO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_funcao.prc"
+    },
+    {
+      "tabela": "V_PFHSTSAL",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_salario.prc"
+    },
+    {
+      "tabela": "PFHSTSAL",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_salario.prc"
+    },
+    {
+      "tabela": "PFHSTSEC",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_historico_secao.prc"
+    },
+    {
+      "tabela": "CLCTLOTE",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_lctlote.prc"
+    },
+    {
+      "tabela": "V_PFRATEIOFIXO",
+      "camada": "Bronze",
+      "dominio": "3 - RM",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "5. Script Silver x Gold / bi_pr_rateio_func_ccusto.prc"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET_PRIORITY",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_USERS",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_SLA",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_SERVICE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "OTRS_TICKET_ARTICLE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "V_OTRS_TICKET_DT_REF",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET_TYPE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_TICKET_STATE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "OTRS_TICKET_DYNAMIC_FIELD",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    },
+    {
+      "tabela": "MV_OTRS_QUEUE",
+      "camada": "Bronze",
+      "dominio": "6 - OTRS",
+      "origem": "SQL (não estava no Excel)",
+      "detalhe": "3. Script Bronze x Silver / V_OTRS_TICKETS_CONSOLIDADO.sql"
+    }
+  ],
+  "dashboard_target": {
+    "total": 428,
+    "fonte_sheet": "Entregáveis LKH",
+    "fonte_texto": "Reapontamento dos 428 dashboards"
+  },
+  "extended": true,
+  "batch_id": "escopo_20260902_195441",
+  "generated_at": "2026-09-02 19:54:41"
+}

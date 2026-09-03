@@ -10,6 +10,12 @@ projeto inteiro.
 Sempre que a página abre, carrega o artefato mais recente já gerado em
 `manifests/dashboard/` (não reprocessa Excel/SQL a cada acesso) — clique em
 "🔎 Rodar diagnóstico" para recalcular do zero e gerar um artefato novo.
+
+O botão gera DOIS artefatos de uma vez: o original (acima) e um segundo,
+"Escopo Estendido" (abaixo), que roda o MESMO processo mas também vasculha
+`.tab`/`.vw`/`.dsx` (além de `.sql`/`.prc`) e as pastas '2. Camada Bronze'/
+'6. Camada Gold' — seguido de um confronto lado a lado apontando as
+diferenças de contagem e onde cada tabela extra foi encontrada.
 """
 from __future__ import annotations
 
@@ -85,27 +91,41 @@ artifacts_dir = profile.paths.manifests_root / "dashboard"
 
 if st.button(
     "🔎 Rodar diagnóstico", type="primary",
-    help="Reprocessa o Excel + scripts SQL de input/sharedpoint do zero e gera um novo artefato. Sem clicar "
-         "aqui, a página carrega sempre o último artefato já gerado (não reprocessa a cada acesso).",
+    help="Reprocessa o Excel + scripts SQL de input/sharedpoint do zero e gera DOIS artefatos novos: o "
+         "original (FROM/JOIN em .sql/.prc) e o estendido (também .tab/.vw/.dsx). Sem clicar aqui, a "
+         "página carrega sempre os últimos artefatos já gerados (não reprocessa a cada acesso).",
 ):
-    with st.spinner("Lendo Excel + vasculhando scripts SQL em input/sharedpoint..."):
+    with st.spinner("Lendo Excel + vasculhando scripts em input/sharedpoint (artefato original)..."):
         scope = compute_global_scope(sharedpoint_input)
+    with st.spinner("Vasculhando .sql/.prc/.tab/.vw/.dsx em input/sharedpoint (artefato estendido)..."):
+        scope_extended = compute_global_scope(sharedpoint_input, extended=True)
     if not scope["excel_found"]:
         st.error(f"Excel não encontrado em `{scope['excel_path']}`.")
     else:
         batch_id = f"escopo_{datetime.now():%Y%m%d_%H%M%S}"
         paths = export_global_scope_report(scope, artifacts_dir, batch_id)
+        paths_ext = export_global_scope_report(scope_extended, artifacts_dir, batch_id)
         st.session_state["scope_result"] = {
             **scope, "batch_id": batch_id,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "excel_path": paths["excel_path"],
         }
-        st.success(f"✅ Artefato gerado: `{paths['excel_path']}`")
+        st.session_state["scope_result_extended"] = {
+            **scope_extended, "batch_id": batch_id,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "excel_path": paths_ext["excel_path"],
+        }
+        st.success(f"✅ Artefatos gerados: `{paths['excel_path']}` + `{paths_ext['excel_path']}`")
 
 if "scope_result" not in st.session_state:
     latest = load_latest_scope_snapshot(artifacts_dir)
     if latest:
         st.session_state["scope_result"] = latest
+
+if "scope_result_extended" not in st.session_state:
+    latest_ext = load_latest_scope_snapshot(artifacts_dir, extended=True)
+    if latest_ext:
+        st.session_state["scope_result_extended"] = latest_ext
 
 result = st.session_state.get("scope_result")
 
@@ -181,6 +201,122 @@ with st.expander("🗂️ Todas as tabelas do escopo (Excel + SQL)"):
             shown.rename(columns={
                 "tabela": "Tabela", "camada": "Camada", "dominio": "Domínio", "origem": "Origem", "detalhe": "Detalhe",
             })[["Tabela", "Camada", "Domínio", "Origem", "Detalhe"]],
+            use_container_width=True, hide_index=True,
+        )
+
+# ---------------------------------------------------------------------------
+# Segundo artefato: escopo ESTENDIDO (também vasculha .prc/.tab/.vw/.dsx)
+# ---------------------------------------------------------------------------
+st.markdown("---")
+st.markdown("### 🧬 Escopo Estendido (também vasculha `.prc`/`.tab`/`.vw`/`.dsx`)")
+st.caption(
+    "Mesmo processo do artefato acima, mas a busca por tabelas não mapeadas no Excel também abre "
+    "arquivos `.tab`/`.vw` (DDL de tabela/view Oracle) e `.dsx` (jobs DataStage exportados), além das "
+    "pastas '2. Camada Bronze' e '6. Camada Gold'."
+)
+
+if st.button(
+    "🧬 Rodar diagnóstico estendido", key="run_extended_scope",
+    help="Reprocessa só o artefato estendido (vasculha .sql/.prc/.tab/.vw/.dsx) sem recalcular o "
+         "artefato original acima. Use para atualizar o confronto sem esperar o diagnóstico completo.",
+):
+    with st.spinner("Vasculhando .sql/.prc/.tab/.vw/.dsx em input/sharedpoint (artefato estendido)..."):
+        scope_extended = compute_global_scope(sharedpoint_input, extended=True)
+    if not scope_extended["excel_found"]:
+        st.error(f"Excel não encontrado em `{scope_extended['excel_path']}`.")
+    else:
+        batch_id_ext = f"escopo_{datetime.now():%Y%m%d_%H%M%S}"
+        paths_ext = export_global_scope_report(scope_extended, artifacts_dir, batch_id_ext)
+        st.session_state["scope_result_extended"] = {
+            **scope_extended, "batch_id": batch_id_ext,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "excel_path": paths_ext["excel_path"],
+        }
+        st.success(f"✅ Artefato estendido gerado: `{paths_ext['excel_path']}`")
+
+result_ext = st.session_state.get("scope_result_extended")
+
+if not result_ext:
+    st.info(
+        "Nenhum artefato estendido encontrado ainda. Clique em **🔎 Rodar diagnóstico** acima para gerar "
+        "os dois artefatos (original + estendido) de uma vez."
+    )
+else:
+    st.caption(f"Última geração: {result_ext['generated_at']} — artefato: `{result_ext['excel_path']}`")
+
+    camadas_ext_ordenadas = _ordenar_camadas(result_ext["camadas"])
+    dashboard_target_ext = result_ext.get("dashboard_target")
+    cols_ext = st.columns(len(camadas_ext_ordenadas) + 1 + (1 if dashboard_target_ext else 0))
+    with cols_ext[0]:
+        st.metric("Total de tabelas", result_ext["total_tabelas"])
+    for col, c in zip(cols_ext[1:], camadas_ext_ordenadas):
+        with col:
+            extra = f"+{c['descobertas_sql']} via SQL/DDL/DSX" if c["descobertas_sql"] else None
+            st.metric(_camada_label(c["camada"]), c["total"], extra, delta_color="off")
+    if dashboard_target_ext:
+        with cols_ext[-1]:
+            st.metric("Total de dashboards", dashboard_target_ext["total"], help=dashboard_target_ext["fonte_texto"])
+
+    if result_ext["descobertas_sql"]:
+        with st.expander(f"🔍 {len(result_ext['descobertas_sql'])} tabela(s) descoberta(s) no modo estendido (não estavam no Excel)"):
+            descobertas_ext_df = pd.DataFrame(result_ext["descobertas_sql"])
+            descobertas_ext_df["camada"] = descobertas_ext_df["camada"].map(_camada_label)
+            st.dataframe(
+                descobertas_ext_df.rename(columns={
+                    "tabela": "Tabela", "camada": "Camada (por prefixo)", "dominio": "Domínio",
+                    "origem": "Origem", "detalhe": "Encontrada em",
+                })[["Tabela", "Camada (por prefixo)", "Domínio", "Origem", "Encontrada em"]],
+                use_container_width=True, hide_index=True,
+            )
+
+    # -----------------------------------------------------------------
+    # Confronto: original vs. estendido
+    # -----------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("### ⚖️ Confronto: Artefato Original vs. Estendido")
+
+    camadas_by_nome_orig = {c["camada"]: c for c in result["camadas"]}
+    camadas_by_nome_ext = {c["camada"]: c for c in result_ext["camadas"]}
+    todas_camadas = sorted(set(camadas_by_nome_orig) | set(camadas_by_nome_ext), key=lambda n: CAMADA_ORDER.get(n.strip().lower(), 99))
+
+    confronto_rows = []
+    for nome in todas_camadas:
+        total_orig = camadas_by_nome_orig.get(nome, {}).get("total", 0)
+        total_ext = camadas_by_nome_ext.get(nome, {}).get("total", 0)
+        confronto_rows.append({
+            "Camada": _camada_label(nome), "Total (Original)": total_orig,
+            "Total (Estendido)": total_ext, "Diferença": total_ext - total_orig,
+        })
+    confronto_rows.append({
+        "Camada": "TOTAL GERAL", "Total (Original)": result["total_tabelas"],
+        "Total (Estendido)": result_ext["total_tabelas"],
+        "Diferença": result_ext["total_tabelas"] - result["total_tabelas"],
+    })
+    confronto_df = pd.DataFrame(confronto_rows)
+    confronto_df.insert(0, "", confronto_df["Diferença"].apply(lambda d: "🟡" if d != 0 else "🟢"))
+
+    st.dataframe(confronto_df, use_container_width=True, hide_index=True)
+
+    # Tabelas que só apareceram graças à busca estendida (.tab/.vw/.dsx ou
+    # pastas extras) — não estavam nem no Excel, nem no artefato original.
+    tabelas_originais = {r["tabela"] for r in result["rows"]}
+    somente_no_estendido = [d for d in result_ext["descobertas_sql"] if d["tabela"] not in tabelas_originais]
+
+    if not somente_no_estendido:
+        st.success("Nenhuma tabela nova encontrada só pela busca estendida — os dois artefatos concordam.")
+    else:
+        st.warning(
+            f"🆕 {len(somente_no_estendido)} tabela(s) só foram encontradas graças à busca estendida "
+            "(.tab/.vw/.dsx ou pastas '2. Camada Bronze'/'6. Camada Gold') — sinalizado abaixo onde cada "
+            "uma foi encontrada."
+        )
+        somente_df = pd.DataFrame(somente_no_estendido)
+        somente_df["camada"] = somente_df["camada"].map(_camada_label)
+        st.dataframe(
+            somente_df.rename(columns={
+                "tabela": "Tabela", "camada": "Camada (por prefixo)", "dominio": "Domínio",
+                "origem": "Origem (tipo de arquivo)", "detalhe": "Onde foi encontrada",
+            })[["Tabela", "Camada (por prefixo)", "Domínio", "Origem (tipo de arquivo)", "Onde foi encontrada"]],
             use_container_width=True, hide_index=True,
         )
 

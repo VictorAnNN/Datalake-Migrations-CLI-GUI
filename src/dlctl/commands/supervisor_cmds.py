@@ -11,6 +11,7 @@ import typer
 
 from dlctl.commands.common import console, get_profile, print_table
 from dlctl.core import state as state_db
+from dlctl.core.dashboard_lineage import build_dashboard_lineage, export_dashboard_lineage_report
 from dlctl.core.global_scope import compute_global_scope, export_global_scope_report
 from dlctl.core.project_scan import (
     export_supervisor_report,
@@ -139,21 +140,23 @@ def set_workspace_prefixes(
 def scope_export(
     profile: str = typer.Option(None, "--profile"),
     sharedpoint_input: str = typer.Option("input/sharedpoint", "--sharedpoint-input", help="Pasta com o Excel 'Projeto Lakehouse - Tabelas e Pipelines.xlsx' + x_Estrutura/."),
+    extended: bool = typer.Option(False, "--extended", help="Também vasculha .tab/.vw/.dsx (além de .sql/.prc) e as pastas '2. Camada Bronze'/'6. Camada Gold' — gera o artefato 'estendido' em vez do original."),
 ):
     """Calcula o escopo TOTAL do projeto (quantas tabelas precisam ser
     migradas ao todo, por camada — Bronze/Silver/Gold/outras), a partir do
     Excel do cliente em `input/sharedpoint` + tabelas descobertas via SQL
     (FROM/JOIN) que não estão mapeadas no Excel, e exporta o artefato
     (Excel com abas Resumo/Tabelas/Descobertas via SQL) para
-    `manifests/dashboard/`."""
+    `manifests/dashboard/`. Com `--extended`, gera o artefato estendido
+    (também .tab/.vw/.dsx) em vez do original."""
     p = get_profile(profile)
-    scope = compute_global_scope(sharedpoint_input)
+    scope = compute_global_scope(sharedpoint_input, extended=extended)
     if not scope["excel_found"]:
         console.print(f"[bold red]Falha:[/bold red] Excel não encontrado em {scope['excel_path']}")
         raise typer.Exit(code=1)
 
     print_table(
-        "Escopo TOTAL do projeto (input/sharedpoint)",
+        f"Escopo {'ESTENDIDO' if extended else 'TOTAL'} do projeto (input/sharedpoint)",
         ["camada", "existente no excel", "descobertas via sql", "total"],
         [[c["camada"], c["existente_excel"], c["descobertas_sql"], c["total"]] for c in scope["camadas"]],
     )
@@ -168,3 +171,38 @@ def scope_export(
     paths = export_global_scope_report(scope, p.paths.manifests_root / "dashboard", batch_id)
     console.print(f"\n[green]OK[/green]: artefato exportado (batch [bold]{batch_id}[/bold])")
     console.print(f"Excel: {paths['excel_path']}")
+
+
+@app.command("dashboard-lineage-export")
+def dashboard_lineage_export(
+    profile: str = typer.Option(None, "--profile"),
+    workspaces_input: str = typer.Option("input/Workspaces", "--workspaces-input", help="Pasta ou .zip com os JSONs do Fabric Scanner API (Report -> Dataset -> Dataflow)."),
+    scan_input: str = typer.Option("input/scan", "--scan-input", help="Pasta com os exports brutos de Dataflow (código M/Power Query embutido, usado para achar as tabelas físicas reais)."),
+    sharedpoint_input: str = typer.Option("input/sharedpoint", "--sharedpoint-input", help="Pasta com o Excel 'Projeto Lakehouse - Tabelas e Pipelines.xlsx' + scripts .sql/.prc/.tab/.vw/.dsx, usada só de apoio para classificar camada/domínio."),
+):
+    """Descobre a linhagem de TODOS os dashboards/relatórios do tenant:
+    Dashboard -> Dataset -> (Dataflow, quando existir) -> tabela física ->
+    camada (Bronze/Silver/Gold, pelo prefixo) -> domínio. Exporta um Excel
+    com as abas 'Resumo' (total de dashboards, total de tabelas distintas,
+    total por camada), 'Linhagem Dashboards' e 'Dataset e Dataflows'
+    (agregado, no estilo da aba homônima usada como referência).
+
+    Limitações: quando o Dataset não usa Dataflow, a tabela vem do nome do
+    próprio modelo Power BI (pode não bater com o nome físico real);
+    Dataflows sem export correspondente em `--scan-input` ficam sem tabela
+    identificada."""
+    result = build_dashboard_lineage(workspaces_input, scan_input, sharedpoint_input)
+    summary = result["summary"]
+
+    console.print(f"[bold]Total de dashboards/relatórios:[/bold] {summary['total_dashboards']}")
+    console.print(f"[bold]Total de tabelas físicas distintas:[/bold] {summary['total_tabelas_distintas']}")
+    print_table(
+        "Tabelas por camada",
+        ["camada", "total"],
+        [[camada, total] for camada, total in sorted(summary["tabelas_por_camada"].items())],
+    )
+
+    p = get_profile(profile)
+    batch_id = f"linhagem_{datetime.now():%Y%m%d_%H%M%S}"
+    paths = export_dashboard_lineage_report(result, p.paths.manifests_root / "dashboard", batch_id)
+    console.print(f"\n[green]OK[/green]: artefato exportado em {paths['excel_path']}")

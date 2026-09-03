@@ -11,6 +11,8 @@ import pytest
 
 from dlctl.core import lineage_graph
 from dlctl.core import state as state_db
+from dlctl.core.global_scope import read_excel_pipeline_edges
+from dlctl.core.table_lineage_graph import build_mapped_table_dependency_graph
 from dlctl.generators.lineage_generator import (
     build_sharepoint_dependency_trail,
     build_workspace_inventory,
@@ -86,6 +88,61 @@ def test_process_lakehouse_dev_parses_silver_and_gold(lakehouse_dev_fixture):
 def test_process_lakehouse_dev_empty_dir_returns_empty(tmp_path):
     result = process_lakehouse_dev(str(tmp_path / "does-not-exist"))
     assert result == {"tabelas": [], "linhagem": []}
+
+
+def test_read_excel_pipeline_edges_preserves_links_when_layer_is_empty(tmp_path):
+    import openpyxl
+
+    sharedpoint_root = tmp_path / "sharedpoint"
+    sharedpoint_root.mkdir()
+    workbook_path = sharedpoint_root / "Projeto Lakehouse - Tabelas e Pipelines.xlsx"
+    workbook = openpyxl.Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Tabelas"
+    worksheet.cell(1, 7).value = "(0)\nSource"
+    worksheet.cell(1, 10).value = "(2)\nCamada Bronze"
+    worksheet.cell(1, 16).value = "(4)\nCamada Silver"
+    worksheet.cell(1, 24).value = "(6)\nCamada Gold"
+    worksheet.cell(2, 10).value = "BRONZE_TABLE"
+    worksheet.cell(2, 24).value = "DM_GOLD_TABLE"
+    worksheet.cell(3, 10).value = "BRONZE_TABLE"
+    worksheet.cell(3, 16).value = "DW_SILVER_TABLE"
+    worksheet.cell(3, 24).value = "DM_GOLD_TABLE"
+    workbook.save(workbook_path)
+
+    assert read_excel_pipeline_edges(str(sharedpoint_root)) == {
+        ("BRONZE_TABLE", "DM_GOLD_TABLE"),
+        ("BRONZE_TABLE", "DW_SILVER_TABLE"),
+        ("DW_SILVER_TABLE", "DM_GOLD_TABLE"),
+    }
+
+
+def test_mapped_table_graph_follows_view_alias_and_deduplicates_sources(tmp_path):
+    sharedpoint_root = tmp_path / "sharedpoint"
+    stage = sharedpoint_root / "1 - Oracle ERP" / "6. Camada Gold"
+    stage.mkdir(parents=True)
+    other_root = tmp_path / "other_sources"
+    other_root.mkdir()
+    (stage / "DM_GOLD_TABLE.sql").write_text(
+        "SELECT * FROM DW_SILVER_TABLE", encoding="utf-8"
+    )
+    (stage / "VW_DW_SILVER_TABLE.vw").write_text(
+        "CREATE VIEW VW_DW_SILVER_TABLE AS SELECT * FROM BRONZE_TABLE",
+        encoding="utf-8",
+    )
+    (other_root / "DW_SILVER_TABLE.vw").write_text(
+        "CREATE VIEW DW_SILVER_TABLE AS SELECT * FROM BRONZE_TABLE",
+        encoding="utf-8",
+    )
+
+    graph = build_mapped_table_dependency_graph(
+        str(sharedpoint_root), {"DM_GOLD_TABLE"}
+    )
+
+    assert graph == {
+        "DM_GOLD_TABLE": {"DW_SILVER_TABLE"},
+        "DW_SILVER_TABLE": {"BRONZE_TABLE"},
+    }
 
 
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):

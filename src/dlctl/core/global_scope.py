@@ -21,8 +21,8 @@ Silver", "4. Camada Silver", "5. Script Silver x Gold"), procurando tabelas
 referenciadas via `FROM`/`JOIN` que não apareçam em nenhuma coluna de camada
 do Excel. Essas tabelas "descobertas" são incluídas no total e classificadas
 pela convenção de prefixo do cliente:
-- `DW`  -> Silver (Prata)
-- `DM` ou `PR` -> Gold
+- `DW_`  -> Silver (Prata)
+- `DM_` ou `PR_` -> Gold
 - fora da regra -> Bronze
 Se a tabela vier como view (`VW_`/`V_` na frente), o prefixo de view é
 ignorado e a classificação segue o prefixo mapeado logo depois
@@ -68,12 +68,55 @@ SQL_SCAN_FOLDERS = [
     "5. Script Silver x Gold",
 ]
 
+# Modo "estendido" (segundo artefato do Supervisor): além das pastas/arquivos
+# acima, também vasculha "2. Camada Bronze" e "6. Camada Gold" (onde vivem os
+# .tab de criação de tabela) e os arquivos .prc/.tab/.vw/.dsx (procedures,
+# DDLs de tabela/view Oracle e exports de job DataStage), que o modo padrão
+# ignora. É uma superfície de busca maior — não substitui o artefato
+# original, é comparado a ele na tela do Supervisor.
+EXTENDED_SCAN_FOLDERS = SQL_SCAN_FOLDERS + ["2. Camada Bronze", "6. Camada Gold"]
+DEFAULT_SCAN_EXTENSIONS = (".sql", ".prc")
+EXTENDED_SCAN_EXTENSIONS = (".sql", ".prc", ".tab", ".vw", ".dsx")
+
+# Fonte extra (modo estendido): pasta solta `input/other_sources/` (irmã de
+# `input/sharedpoint/`), sem a estrutura "sistema fonte / pasta de estágio"
+# — vasculhada por inteiro (rglob), com `.txt` a mais na lista de extensões
+# porque alguns scripts lá foram salvos com nome tipo "X.prc.txt". Pode ter
+# conteúdo duplicado do que já existe em input/sharedpoint; a deduplicação
+# por nome de tabela (`discovered`/`known_tables`) já cobre isso.
+OTHER_SOURCES_DIR_NAME = "other_sources"
+OTHER_SOURCES_SCAN_EXTENSIONS = (".sql", ".prc", ".tab", ".vw", ".dsx", ".txt")
+
 _IGNORED_TABLE_VALUES = {"", "NA", "N/A", "TBD", "-"}
 _SQL_TABLE_STOPLIST = {"DUAL"}
 _FROM_JOIN_PATTERN = re.compile(
     r"\b(?:FROM|JOIN)\s+([A-Za-z_][A-Za-z0-9_$#]*(?:\.[A-Za-z_][A-Za-z0-9_$#]*)?)",
     re.IGNORECASE,
 )
+
+# Nome do próprio objeto criado num .tab/.vw (ex.: "create table FSSUPRI.PR_X"
+# ou "CREATE OR REPLACE FORCE VIEW FUSION.VW_X AS") — só usado no modo
+# estendido, para capturar a tabela/view definida no arquivo, não apenas o
+# que ela referencia via FROM/JOIN.
+_CREATE_OBJECT_PATTERN = re.compile(
+    r"\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:FORCE\s+)?(?:TABLE|VIEW)\s+"
+    r"[A-Za-z_][A-Za-z0-9_$#]*\.([A-Za-z_][A-Za-z0-9_$#]*)",
+    re.IGNORECASE,
+)
+
+# Tabelas referenciadas em jobs DataStage exportados (.dsx), ex.:
+# TableDef "Database\og05des\FUSION.VW_DW_PURCHASE_ORDER_APPROVAL_HIST" —
+# só usado no modo estendido.
+_DSX_TABLEDEF_PATTERN = re.compile(
+    r'TableDef\s+"[^"\\]*\\[A-Za-z_][A-Za-z0-9_$#]*\.([A-Za-z_][A-Za-z0-9_$#]*)"',
+    re.IGNORECASE,
+)
+
+# Nome de uma CTE ("WITH nome AS (...)", ou o próximo bloco encadeado por
+# vírgula "..., outro_nome AS (...)") — é só um apelido de subquery em
+# memória, não uma tabela física, então nunca deve ser tratado como tabela
+# descoberta mesmo quando reaparece num FROM/JOIN mais abaixo no mesmo script.
+_CTE_ALIAS_PATTERN = re.compile(r"\b([A-Za-z_][A-Za-z0-9_$#]*)\s+AS\s*\(", re.IGNORECASE)
 
 
 def _norm(name: str) -> str:
@@ -82,8 +125,9 @@ def _norm(name: str) -> str:
 
 def _classify_by_prefix(table_name: str) -> str:
     """Regra de prefixo do cliente, usada só para tabelas descobertas via SQL
-    (que não têm uma coluna de camada própria no Excel): DW -> Silver, DM/PR
-    -> Gold, qualquer outra coisa -> Bronze.
+    (que não têm uma coluna de camada própria no Excel): DW_ -> Silver, DM_/
+    PR_ -> Gold, qualquer outra coisa -> Bronze. O prefixo TEM que vir
+    seguido de "_" (ex.: "DW_X" conta, "DWQTE_X" não é DW_ e cai em Bronze).
 
     Se o nome vier prefixado com `VW_`/`V_` (view sobre uma tabela DW/DM/PR),
     o prefixo de view é descartado antes de checar a convenção, já que a
@@ -93,9 +137,9 @@ def _classify_by_prefix(table_name: str) -> str:
         name = name[len("VW_"):]
     elif name.startswith("V_"):
         name = name[len("V_"):]
-    if name.startswith("DW"):
+    if name.startswith("DW_"):
         return "Silver"
-    if name.startswith("DM") or name.startswith("PR"):
+    if name.startswith("DM_") or name.startswith("PR_"):
         return "Gold"
     return "Bronze"
 
@@ -209,69 +253,193 @@ def read_excel_tables(sharedpoint_input: str) -> dict:
     return result
 
 
-def _extract_tables_from_sql(content: str) -> set[str]:
+_IDENTIFIER_LIKE_PATTERN = re.compile(r"^[A-Z0-9_\-\.]+$")
+
+
+def read_excel_pipeline_edges(sharedpoint_input: str) -> set[tuple[str, str]]:
+    """Lê a aba 'Tabelas' de novo, mas capturando a LIGAÇÃO entre as colunas
+    de camada de cada linha (mesma linha = mesmo pipeline do cliente): se
+    duas colunas de camada consecutivas (na ordem em que aparecem no
+    cabeçalho, ex. Bronze -> Silver -> Gold) tiverem valor preenchido na
+    mesma linha, vira uma aresta tabela_origem -> tabela_destino. É a
+    linhagem Bronze/Silver/Gold já mapeada manualmente pelo cliente na
+    planilha — mais confiável que qualquer heurística sobre os scripts
+    (usada como fonte extra de linhagem em `dlctl.core.table_lineage_graph`).
+
+    Valores que não parecem nome de tabela/objeto (com espaço, frase livre
+    tipo "Criar Tabela SA") são descartados — só entram identificadores
+    (letras/números/`_`/`-`/`.`)."""
+    excel_path = Path(sharedpoint_input) / EXCEL_RELATIVE_PATH
+    edges: set[tuple[str, str]] = set()
+    if not excel_path.exists():
+        return edges
+
+    wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
+    if SHEET_NAME not in wb.sheetnames:
+        return edges
+    ws = wb[SHEET_NAME]
+
+    rows_iter = ws.iter_rows(values_only=True)
+    try:
+        header_row = next(rows_iter)
+    except StopIteration:
+        return edges
+
+    camada_cols = _find_camada_columns(header_row)
+    if len(camada_cols) < 2:
+        return edges
+    ordered_col_indexes = [col_idx for _, col_idx in sorted(camada_cols.items(), key=lambda kv: kv[1])]
+
+    def _clean(value) -> str:
+        if not value or not isinstance(value, str):
+            return ""
+        text = _norm(value)
+        if text in _IGNORED_TABLE_VALUES or not _IDENTIFIER_LIKE_PATTERN.match(text):
+            return ""
+        return text
+
+    for row in rows_iter:
+        values = [
+            _clean(row[col_idx] if col_idx < len(row) else None)
+            for col_idx in ordered_col_indexes
+        ]
+        values = [value for value in values if value]
+        for source, target in zip(values, values[1:]):
+            if source and target and source != target:
+                edges.add((source, target))
+    return edges
+
+
+def _extract_tables_from_sql(content: str, suffix: str = "") -> set[str]:
+    """Extrai nomes de tabela de um arquivo de script. No modo padrão, só
+    olha para FROM/JOIN (SQL/PL-SQL). No modo estendido (`suffix` de um
+    arquivo .tab/.vw/.dsx), também captura o nome do próprio objeto criado
+    (.tab/.vw) e tabelas referenciadas em jobs DataStage (.dsx).
+
+    Nomes de CTE (bloco `WITH nome AS (...)`) nunca entram como tabela
+    descoberta — são só apelidos de subquery em memória, mesmo quando
+    reaparecem num FROM/JOIN mais abaixo no script (ex.: `LEFT JOIN
+    DMSUBINV`, onde DMSUBINV é a CTE, não uma tabela física)."""
+    cte_aliases = {_norm(m.group(1)) for m in _CTE_ALIAS_PATTERN.finditer(content)}
+
     tables: set[str] = set()
     for match in _FROM_JOIN_PATTERN.finditer(content):
         raw = match.group(1)
         name = raw.split(".")[-1]
         name = _norm(name)
-        if name and name not in _SQL_TABLE_STOPLIST:
+        if name and name not in _SQL_TABLE_STOPLIST and name not in cte_aliases:
             tables.add(name)
+
+    suffix = suffix.lower()
+    if suffix in (".tab", ".vw"):
+        for match in _CREATE_OBJECT_PATTERN.finditer(content):
+            name = _norm(match.group(1))
+            if name and name not in _SQL_TABLE_STOPLIST:
+                tables.add(name)
+    elif suffix == ".dsx":
+        for match in _DSX_TABLEDEF_PATTERN.finditer(content):
+            name = _norm(match.group(1))
+            if name and name not in _SQL_TABLE_STOPLIST:
+                tables.add(name)
     return tables
 
 
-def discover_tables_from_sql(sharedpoint_input: str, known_tables: set[str]) -> list[dict]:
+def discover_tables_from_sql(sharedpoint_input: str, known_tables: set[str], extended: bool = False) -> list[dict]:
     """Vasculha, dentro de CADA pasta de sistema fonte em `input/sharedpoint/`
     (ex.: `1 - Oracle ERP/`, `2 - Maximo/`, ...), as subpastas de estágio em
     `SQL_SCAN_FOLDERS` (ex.: `1. Script Source x Bronze/**/*.sql`/`.prc`) por
     tabelas citadas via FROM/JOIN que ainda não estão em `known_tables`
     (união de tudo já encontrado no Excel) — essas são tabelas que precisam
-    ser migradas mas não estão mapeadas na planilha."""
+    ser migradas mas não estão mapeadas na planilha.
+
+    Com `extended=True` (segundo artefato do Supervisor), também vasculha
+    `EXTENDED_SCAN_FOLDERS` e os arquivos `.tab`/`.vw`/`.dsx` além de
+    `.sql`/`.prc` — cobre DDLs de tabela/view Oracle e jobs DataStage
+    exportados que o modo padrão não olha. Além disso, também vasculha por
+    inteiro a pasta solta `input/other_sources/` (irmã de `sharedpoint_input`,
+    sem a estrutura de sistema fonte/est\u00e1gio), incluindo `.txt` — mesmo que
+    tenha conteúdo duplicado do que já existe em sharedpoint, cada tabela só
+    entra uma vez (dedup por nome, via `known_tables`/`discovered`)."""
     root = Path(sharedpoint_input)
     discovered: dict[str, dict] = {}
     if not root.exists():
         return []
 
+    scan_folders = EXTENDED_SCAN_FOLDERS if extended else SQL_SCAN_FOLDERS
+    scan_extensions = EXTENDED_SCAN_EXTENSIONS if extended else DEFAULT_SCAN_EXTENSIONS
+
     for domain_dir in sorted(p for p in root.iterdir() if p.is_dir()):
-        for stage_folder_name in SQL_SCAN_FOLDERS:
+        for stage_folder_name in scan_folders:
             stage_root = domain_dir / stage_folder_name
             if not stage_root.exists():
                 continue
-            for sql_path in list(stage_root.rglob("*.sql")) + list(stage_root.rglob("*.prc")):
+            scanned_paths = []
+            for ext in scan_extensions:
+                scanned_paths.extend(stage_root.rglob(f"*{ext}"))
+            for sql_path in scanned_paths:
                 try:
                     content = sql_path.read_text(encoding="utf-8", errors="replace")
                 except Exception:
                     continue
 
-                for table_name in _extract_tables_from_sql(content):
+                for table_name in _extract_tables_from_sql(content, sql_path.suffix):
                     if table_name in known_tables or table_name in discovered:
                         continue
+                    origem = "SQL (não estava no Excel)"
+                    if sql_path.suffix.lower() in (".tab", ".vw", ".dsx"):
+                        origem = f"{sql_path.suffix.lstrip('.').upper()} (não estava no Excel)"
                     discovered[table_name] = {
                         "tabela": table_name, "camada": _classify_by_prefix(table_name),
-                        "dominio": domain_dir.name, "origem": "SQL (não estava no Excel)",
+                        "dominio": domain_dir.name, "origem": origem,
                         "detalhe": f"{stage_folder_name} / {sql_path.name}",
+                    }
+
+    if extended:
+        other_root = root.parent / OTHER_SOURCES_DIR_NAME
+        if other_root.exists():
+            scanned_paths = []
+            for ext in OTHER_SOURCES_SCAN_EXTENSIONS:
+                scanned_paths.extend(other_root.rglob(f"*{ext}"))
+            for sql_path in scanned_paths:
+                try:
+                    content = sql_path.read_text(encoding="utf-8", errors="replace")
+                except Exception:
+                    continue
+
+                for table_name in _extract_tables_from_sql(content, sql_path.suffix):
+                    if table_name in known_tables or table_name in discovered:
+                        continue
+                    ext_label = sql_path.suffix.lstrip(".").upper() or "SQL"
+                    discovered[table_name] = {
+                        "tabela": table_name, "camada": _classify_by_prefix(table_name),
+                        "dominio": "", "origem": f"{ext_label} (input/other_sources)",
+                        "detalhe": f"other_sources / {sql_path.relative_to(other_root)}",
                     }
     return list(discovered.values())
 
 
 
-def compute_global_scope(sharedpoint_input: str = "input/sharedpoint") -> dict:
+def compute_global_scope(sharedpoint_input: str = "input/sharedpoint", extended: bool = False) -> dict:
     """Calcula o escopo TOTAL do projeto (quantas tabelas precisam ser
     migradas ao todo, por camada), a partir do Excel do cliente + descoberta
-    via SQL de tabelas referenciadas que não estão mapeadas na planilha."""
+    via SQL de tabelas referenciadas que não estão mapeadas na planilha.
+
+    Com `extended=True`, a descoberta também vasculha `.tab`/`.vw`/`.dsx`
+    (além de `.sql`/`.prc`) e as pastas `2. Camada Bronze`/`6. Camada Gold` —
+    ver `discover_tables_from_sql`."""
     excel_data = read_excel_tables(sharedpoint_input)
     if not excel_data["excel_found"]:
         return {
             "excel_found": False, "excel_path": excel_data["excel_path"],
             "camadas": [], "total_tabelas": 0, "rows": [], "descobertas_sql": [],
-            "dashboard_target": None,
+            "dashboard_target": None, "extended": extended,
         }
 
     known_tables: set[str] = set()
     for tables in excel_data["tables_by_camada"].values():
         known_tables |= tables
 
-    descobertas_sql = discover_tables_from_sql(sharedpoint_input, known_tables)
+    descobertas_sql = discover_tables_from_sql(sharedpoint_input, known_tables, extended=extended)
 
     camada_counts: dict[str, int] = {
         nome: len(tables) for nome, tables in excel_data["tables_by_camada"].items()
@@ -297,6 +465,7 @@ def compute_global_scope(sharedpoint_input: str = "input/sharedpoint") -> dict:
         "rows": excel_data["rows"] + descobertas_sql,
         "descobertas_sql": descobertas_sql,
         "dashboard_target": read_dashboard_target(sharedpoint_input),
+        "extended": extended,
     }
 
 
@@ -321,10 +490,16 @@ def _autofit(ws_sheet) -> None:
 def export_global_scope_report(scope_result: dict, output_dir: Path, batch_id: str) -> dict[str, str]:
     """Exporta o escopo total do projeto para `manifests/dashboard/`: um
     Excel com abas Resumo/Tabelas/Descobertas via SQL (esta última só para
-    conferência discreta de gaps do Excel oficial)."""
+    conferência discreta de gaps do Excel oficial).
+
+    Se `scope_result["extended"]` for True (artefato do modo estendido —
+    também vasculha .tab/.vw/.dsx), o artefato é salvo com o prefixo
+    `escopo_estendido_` em vez de `escopo_total_`, para não se misturar com
+    o histórico do artefato original."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    excel_path = output_dir / f"escopo_total_{batch_id}.xlsx"
+    prefix = "escopo_estendido" if scope_result.get("extended") else "escopo_total"
+    excel_path = output_dir / f"{prefix}_{batch_id}.xlsx"
 
     wb = openpyxl.Workbook()
     ws_resumo = wb.active
@@ -359,21 +534,23 @@ def export_global_scope_report(scope_result: dict, output_dir: Path, batch_id: s
     snapshot["batch_id"] = batch_id
     snapshot["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     snapshot["excel_path"] = str(excel_path)
-    json_path = output_dir / f"escopo_total_{batch_id}.json"
+    json_path = output_dir / f"{prefix}_{batch_id}.json"
     json_path.write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return {"excel_path": str(excel_path), "json_path": str(json_path)}
 
 
-def load_latest_scope_snapshot(output_dir: Path) -> Optional[dict]:
-    """Carrega o snapshot (`escopo_total_*.json`) mais recente já exportado em
-    `output_dir`, para o dashboard sempre abrir com o último artefato gerado
-    sem precisar reprocessar Excel/SQL — só recalcula quando o usuário pedir
+def load_latest_scope_snapshot(output_dir: Path, extended: bool = False) -> Optional[dict]:
+    """Carrega o snapshot (`escopo_total_*.json`, ou `escopo_estendido_*.json`
+    se `extended=True`) mais recente já exportado em `output_dir`, para o
+    dashboard sempre abrir com o último artefato gerado sem precisar
+    reprocessar Excel/SQL — só recalcula quando o usuário pedir
     explicitamente (botão de gerar novo artefato)."""
     output_dir = Path(output_dir)
     if not output_dir.exists():
         return None
-    candidates = sorted(output_dir.glob("escopo_total_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    prefix = "escopo_estendido" if extended else "escopo_total"
+    candidates = sorted(output_dir.glob(f"{prefix}_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not candidates:
         return None
     try:
@@ -382,16 +559,20 @@ def load_latest_scope_snapshot(output_dir: Path) -> Optional[dict]:
         return None
 
 
-def list_scope_snapshots(output_dir: Path) -> list[dict]:
+def list_scope_snapshots(output_dir: Path, extended: bool = False) -> list[dict]:
     """Lista todos os snapshots já gerados (mais recente primeiro) — usado
-    pelo histórico de gerações do dashboard."""
+    pelo histórico de gerações do dashboard. Com `extended=True`, lista os
+    snapshots do artefato estendido (`escopo_estendido_*.json`) em vez do
+    original (`escopo_total_*.json`)."""
     output_dir = Path(output_dir)
     if not output_dir.exists():
         return []
+    prefix = "escopo_estendido" if extended else "escopo_total"
     snapshots = []
-    for p in sorted(output_dir.glob("escopo_total_*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+    for p in sorted(output_dir.glob(f"{prefix}_*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
         try:
             snapshots.append(json.loads(p.read_text(encoding="utf-8")))
         except (OSError, json.JSONDecodeError):
             continue
     return snapshots
+
