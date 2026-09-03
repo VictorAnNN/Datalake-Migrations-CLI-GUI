@@ -14,6 +14,7 @@ artefato novo.
 from __future__ import annotations
 
 import sys
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -46,7 +47,9 @@ COLOR_NEUTRAL = "#8492A6"     # cinza-ardósia
 CATEGORY_COLOR_SEQUENCE = [COLOR_PRIMARY, COLOR_SECONDARY, COLOR_SUCCESS, COLOR_WARNING, COLOR_NEUTRAL, COLOR_DANGER, "#3E5C76"]
 CAMADA_LABEL_PT = {"bronze": "Bronze", "silver": "Prata", "gold": "Ouro"}
 CAMADA_ORDER = {"bronze": 0, "silver": 1, "gold": 2}
-CAMADA_NODE_COLOR = {"Bronze": COLOR_WARNING, "Silver": COLOR_SECONDARY, "Gold": COLOR_SUCCESS}
+GRAPH_DASHBOARD_COLOR = "#2E8B57"
+GRAPH_DATASET_COLOR = "#2878C8"
+CAMADA_NODE_COLOR = {"Bronze": "#D64545", "Silver": "#A7ADB7", "Gold": "#E0B323"}
 
 
 def _camada_label(nome: str) -> str:
@@ -57,7 +60,7 @@ def _sort_camadas(items) -> list:
     return sorted(items, key=lambda kv: CAMADA_ORDER.get(str(kv[0]).strip().lower(), 99))
 
 
-def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
     dash_df = pd.DataFrame(result["dashboard_rows"]).rename(columns={
         "workspace": "Workspace", "dashboard": "Dashboard/Relatório", "dataset": "Dataset",
         "tabela": "Tabela", "camada": "Camada", "dominio": "Domínio", "origem": "Origem",
@@ -74,10 +77,19 @@ def _result_to_frames(result: dict) -> tuple[pd.DataFrame, pd.DataFrame, pd.Data
         "tabela_origem": "Tabela Origem", "camada_origem": "Camada Origem",
         "tabela_destino": "Tabela Destino", "camada_destino": "Camada Destino",
     })
-    return dash_df, dd_df, up_df, mapped_df, result["summary"]
+    crosswalk_df = pd.DataFrame(result.get("mapping_dashboard_rows", [])).rename(columns={
+        "tabela_mapeada": "Tabela Mapeada", "tabela_rastreada": "Tabela Rastreada",
+        "camada": "Camada", "workspace": "Workspace", "dashboard": "Dashboard/Relatório",
+        "dataset": "Dataset", "status": "Status",
+    })
+    sharepoint_df = pd.DataFrame(result.get("sharepoint_rows", [])).rename(columns={
+        "workspace": "Workspace", "dashboard": "Dashboard/Relatório", "dataset": "Dataset",
+        "tipo": "Tipo", "fonte": "Fonte", "observacao": "Observação",
+    })
+    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, result["summary"]
 
 
-def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
+def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, dict]:
     sheets = pd.read_excel(path, sheet_name=None)
     resumo_df = sheets.get("Resumo", pd.DataFrame())
     summary = {
@@ -86,6 +98,9 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
         "tabelas_por_camada_consolidado": {}, "tabelas_por_camada_excel_cliente": {},
         "tabelas_em_comum": 0, "tabelas_apenas_excel_cliente": 0,
         "tabelas_apenas_dashboards": 0,
+        "tabelas_excel_sem_dashboard": 0,
+        "dependencias_tabelas_excel_sem_dashboard": 0,
+        "total_fontes_sharepoint_bronze": 0, "total_dashboards_com_sharepoint": 0,
     }
     for _, row in resumo_df.iterrows():
         metric, valor = row.get("Métrica"), row.get("Valor")
@@ -105,6 +120,14 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
             summary["tabelas_apenas_excel_cliente"] = int(valor)
         elif metric == "Apenas nos dashboards":
             summary["tabelas_apenas_dashboards"] = int(valor)
+        elif metric == "Tabelas mapeadas pelo cliente sem ligação com dashboards":
+            summary["tabelas_excel_sem_dashboard"] = int(valor)
+        elif metric == "Dependências únicas dessas tabelas sem dashboards":
+            summary["dependencias_tabelas_excel_sem_dashboard"] = int(valor)
+        elif metric == "Fontes SharePoint na camada Bronze":
+            summary["total_fontes_sharepoint_bronze"] = int(valor)
+        elif metric == "Dashboards com fonte SharePoint":
+            summary["total_dashboards_com_sharepoint"] = int(valor)
         elif isinstance(metric, str) and metric.startswith("Consolidado na camada "):
             summary["tabelas_por_camada_consolidado"][metric.replace("Consolidado na camada ", "").strip()] = int(valor)
         elif isinstance(metric, str) and metric.startswith("Excel do cliente na camada "):
@@ -113,7 +136,11 @@ def _load_from_excel(path: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFra
     dd_df = sheets.get("Dataset e Dataflows", pd.DataFrame()).fillna("")
     up_df = sheets.get("Linhagem SQL (upstream)", pd.DataFrame()).fillna("")
     mapped_df = sheets.get("Dependências Mapeamento", pd.DataFrame()).fillna("")
-    return dash_df, dd_df, up_df, mapped_df, summary
+    crosswalk_df = sheets.get("Mapping até Dashboards", pd.DataFrame()).fillna("")
+    if "Camada Mapeada" not in crosswalk_df.columns and not crosswalk_df.empty:
+        crosswalk_df["Camada Mapeada"] = crosswalk_df["Camada"]
+    sharepoint_df = sheets.get("Fontes SharePoint Bronze", pd.DataFrame()).fillna("")
+    return dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary
 
 
 st.set_page_config(page_title="Supervisório — Constellation Migration Control", layout="wide", page_icon="🕸️")
@@ -159,9 +186,10 @@ if st.button(
         result = build_dashboard_lineage(workspaces_input, scan_input, sharedpoint_input)
     batch_id = f"linhagem_{datetime.now():%Y%m%d_%H%M%S}"
     paths = export_dashboard_lineage_report(result, artifacts_dir, batch_id)
-    dash_df, dd_df, up_df, mapped_df, summary = _result_to_frames(result)
+    dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary = _result_to_frames(result)
     st.session_state["linhagem_result"] = {
-        "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df, "summary": summary,
+        "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df,
+        "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "summary": summary,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "excel_path": paths["excel_path"],
     }
@@ -170,9 +198,10 @@ if st.button(
 if "linhagem_result" not in st.session_state:
     latest_path = find_latest_lineage_excel(artifacts_dir)
     if latest_path:
-        dash_df, dd_df, up_df, mapped_df, summary = _load_from_excel(latest_path)
+        dash_df, dd_df, up_df, mapped_df, crosswalk_df, sharepoint_df, summary = _load_from_excel(latest_path)
         st.session_state["linhagem_result"] = {
-            "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df, "summary": summary,
+            "dash_df": dash_df, "dd_df": dd_df, "up_df": up_df, "mapped_df": mapped_df,
+            "crosswalk_df": crosswalk_df, "sharepoint_df": sharepoint_df, "summary": summary,
             "generated_at": pd.Timestamp(latest_path.stat().st_mtime, unit="s").strftime("%Y-%m-%d %H:%M:%S"),
             "excel_path": str(latest_path),
         }
@@ -191,55 +220,93 @@ dash_df: pd.DataFrame = result["dash_df"]
 dd_df: pd.DataFrame = result["dd_df"]
 up_df: pd.DataFrame = result.get("up_df", pd.DataFrame())
 mapped_df: pd.DataFrame = result.get("mapped_df", pd.DataFrame())
+crosswalk_df: pd.DataFrame = result.get("crosswalk_df", pd.DataFrame())
+sharepoint_df: pd.DataFrame = result.get("sharepoint_df", pd.DataFrame())
 summary: dict = result["summary"]
 camadas_ordenadas = _sort_camadas(summary["tabelas_por_camada"].items())
 
-# ---------------------------------------------------------------------------
-# Visão consolidada: obrigação do cliente + necessidade dos dashboards
-# ---------------------------------------------------------------------------
-st.markdown("### Visão consolidada do escopo")
-st.caption(
-    "União deduplicada das tabelas mapeadas pelo cliente no Excel com as tabelas "
-    "alcançadas pelo rastreio Dashboard → camadas."
-)
-consolidated_cols = st.columns(4)
-with consolidated_cols[0]:
-    st.metric("Tabelas únicas consolidadas", summary.get("total_tabelas_consolidado", summary["total_tabelas_distintas"]))
-with consolidated_cols[1]:
-    st.metric("Mapeadas no Excel do cliente", summary.get("total_tabelas_excel_cliente", 0))
-with consolidated_cols[2]:
-    st.metric("Alcançadas pelos dashboards", summary["total_tabelas_distintas"])
-with consolidated_cols[3]:
-    st.metric("Tabelas em comum", summary.get("tabelas_em_comum", 0))
+if dash_df.empty:
+    st.info("Nenhuma linha de linhagem de dashboards no artefato carregado.")
+    st.stop()
 
-consolidated_layer_items = _sort_camadas(summary.get("tabelas_por_camada_consolidado", {}).items())
-layer_rows = []
-for camada, total in consolidated_layer_items:
-    layer_rows.append({
-        "Camada": _camada_label(camada),
-        "Excel do cliente": summary.get("tabelas_por_camada_excel_cliente", {}).get(camada, 0),
-        "Dashboards": summary.get("tabelas_por_camada", {}).get(camada, 0),
-        "Consolidado único": total,
-    })
-st.dataframe(pd.DataFrame(layer_rows), use_container_width=True, hide_index=True)
-st.caption(
-    f"Somente no Excel: {summary.get('tabelas_apenas_excel_cliente', 0)} | "
-    f"Somente nos dashboards: {summary.get('tabelas_apenas_dashboards', 0)}"
+dash_df = dash_df.copy()
+dash_df["_label"] = dash_df["Workspace"].astype(str) + " / " + dash_df["Dashboard/Relatório"].astype(str)
+labels = sorted(dash_df["_label"].unique())
+picked = [label for label in st.session_state.get("dashboard_filter", []) if label in labels]
+filtered = dash_df[dash_df["_label"].isin(picked)] if picked else dash_df
+tabelas_validas = filtered[filtered["Tabela"].astype(str) != ""]
+dashboard_tables = set(tabelas_validas["Tabela"])
+
+if not crosswalk_df.empty:
+    crosswalk_df = crosswalk_df.copy()
+    crosswalk_df["_label"] = crosswalk_df["Workspace"].astype(str) + " / " + crosswalk_df["Dashboard/Relatório"].astype(str)
+    crosswalk_selected = crosswalk_df[crosswalk_df["_label"].isin(picked)] if picked else crosswalk_df
+else:
+    crosswalk_selected = crosswalk_df
+
+if not sharepoint_df.empty:
+    sharepoint_df = sharepoint_df.copy()
+    sharepoint_df["_label"] = sharepoint_df["Workspace"].astype(str) + " / " + sharepoint_df["Dashboard/Relatório"].astype(str)
+    sharepoint_selected = sharepoint_df[sharepoint_df["_label"].isin(picked)] if picked else sharepoint_df
+else:
+    sharepoint_selected = sharepoint_df
+
+client_tables = set(crosswalk_selected["Tabela Mapeada"]) if not crosswalk_selected.empty else set()
+mapping_tables_with_dashboard = set(
+    crosswalk_selected.loc[crosswalk_selected["Dashboard/Relatório"].astype(str) != "", "Tabela Mapeada"]
+) if not crosswalk_selected.empty else set()
+mapping_traced_tables = set(crosswalk_selected["Tabela Rastreada"]) if not crosswalk_selected.empty else set()
+client_layers = {}
+if not crosswalk_selected.empty:
+    for _, row in crosswalk_selected.drop_duplicates("Tabela Mapeada").iterrows():
+        client_layers[row["Tabela Mapeada"]] = row.get("Camada Mapeada", row.get("Camada", ""))
+
+st.markdown("#### Modo dos cards totalizadores")
+card_mode = st.radio(
+    "Selecionar visão", ["Totais Gerais", "Tabelas Vinculadas a Dashboards", "Exclusivo Mapping do Cliente"],
+    horizontal=True, label_visibility="collapsed",
 )
 
-# ---------------------------------------------------------------------------
-# Cards totalizadores do projeto INTEIRO
-# ---------------------------------------------------------------------------
-cols_total = st.columns(2 + len(camadas_ordenadas))
-with cols_total[0]:
-    st.metric("Total de dashboards encontrados", summary["total_dashboards"])
-with cols_total[1]:
-    st.metric("Total de tabelas distintas", summary["total_tabelas_distintas"])
-for col, (camada, total) in zip(cols_total[2:], camadas_ordenadas):
+if card_mode == "Totais Gerais":
+    card_tables = dashboard_tables | client_tables | mapping_traced_tables
+    card_layer_by_table = {row["Tabela"]: row["Camada"] for _, row in tabelas_validas.drop_duplicates("Tabela").iterrows()}
+    card_layer_by_table.update({table: client_layers.get(table, "") for table in client_tables})
+    card_dashboard_count = filtered["_label"].nunique()
+    card_extra = None
+elif card_mode == "Tabelas Vinculadas a Dashboards":
+    card_tables = dashboard_tables
+    card_layer_by_table = {row["Tabela"]: row["Camada"] for _, row in tabelas_validas.drop_duplicates("Tabela").iterrows()}
+    card_dashboard_count = filtered.loc[filtered["Tabela"].astype(str) != "", "_label"].nunique()
+    card_extra = None
+else:
+    card_tables = client_tables
+    card_layer_by_table = client_layers
+    card_dashboard_count = crosswalk_selected.loc[
+        crosswalk_selected["Dashboard/Relatório"].astype(str) != "", "_label"
+    ].nunique() if not crosswalk_selected.empty else 0
+    card_extra = len(mapping_tables_with_dashboard)
+
+card_layer_counts = Counter(card_layer_by_table.get(table, "") for table in card_tables)
+card_layer_counts.pop("", None)
+card_layer_items = _sort_camadas(card_layer_counts.items())
+
+sharepoint_count = sharepoint_selected["Fonte"].nunique() if not sharepoint_selected.empty else 0
+st.markdown("### Indicadores da visão selecionada")
+card_cols = st.columns(2 + len(camadas_ordenadas) + (1 if card_extra is not None else 0) + 1)
+with card_cols[0]:
+    st.metric("Total de dashboards", int(card_dashboard_count))
+with card_cols[1]:
+    st.metric("Total de tabelas únicas", len(card_tables))
+for col, (camada, _) in zip(card_cols[2:], camadas_ordenadas):
     with col:
-        st.metric(_camada_label(camada), total)
+        st.metric(_camada_label(camada), int(card_layer_counts.get(camada, 0)))
+if card_extra is not None:
+    with card_cols[2 + len(camadas_ordenadas)]:
+        st.metric("Tabelas que chegam a dashboards", card_extra)
+with card_cols[-1]:
+    st.metric("Fontes SharePoint (Bronze)", int(sharepoint_count))
 
-st.markdown("---")
+st.markdown("#### Distribuição por camada")
 col_bar, col_pie = st.columns(2)
 camada_chart_df = pd.DataFrame(camadas_ordenadas, columns=["camada", "total"])
 camada_chart_df["camada"] = camada_chart_df["camada"].map(_camada_label)
@@ -256,58 +323,62 @@ with col_pie:
     st.plotly_chart(pie_fig, use_container_width=True)
 
 # ---------------------------------------------------------------------------
-# Linhagem de um (ou vários) dashboard(s) — cards recalculam com a seleção
+# Linhagem de um (ou vários) dashboard(s)
 # ---------------------------------------------------------------------------
 st.markdown("---")
 st.markdown("### 🎯 Linhagem de um (ou vários) dashboard(s)")
 st.caption(
-    "Escolha um ou mais dashboards para recalcular os cards abaixo (total de tabelas e por camada) só "
+    "Escolha um ou mais dashboards para recalcular os cards acima (total de tabelas e por camada) só "
     "com o que ELES usam, e ver o rastreio da linhagem (Dashboard → Dataset → Tabela)."
 )
-
-if dash_df.empty:
-    st.info("Nenhuma linha de linhagem de dashboards no artefato carregado.")
-    st.stop()
-
-dash_df = dash_df.copy()
-dash_df["_label"] = dash_df["Workspace"].astype(str) + " / " + dash_df["Dashboard/Relatório"].astype(str)
-labels = sorted(dash_df["_label"].unique())
-picked = st.multiselect(
+st.multiselect(
     "Dashboard(s)/Relatório(s)", labels,
-    help="Deixe vazio para ver o total geral do projeto (mesmos números dos cards acima).",
+    key="dashboard_filter",
+    help="Deixe vazio para visualizar o universo completo.",
 )
+graph_slot = st.empty()
 
-filtered = dash_df[dash_df["_label"].isin(picked)] if picked else dash_df
-tabelas_validas = filtered[filtered["Tabela"].astype(str) != ""]
-distinct_sel = tabelas_validas["Tabela"].nunique()
-camada_counts_sel = tabelas_validas.drop_duplicates("Tabela").groupby("Camada").size().to_dict()
-# Sempre mostra as mesmas camadas do total do projeto (com 0 quando a
-# seleção não tiver nenhuma tabela naquela camada), pra não "sumir" o card.
-camada_sel = [(camada, camada_counts_sel.get(camada, 0)) for camada, _ in camadas_ordenadas]
+# ---------------------------------------------------------------------------
+# Visão consolidada: obrigação do cliente + necessidade dos dashboards
+# ---------------------------------------------------------------------------
+with st.expander("Visão consolidada do escopo", expanded=False):
+    st.caption(
+        "União deduplicada das tabelas mapeadas pelo cliente no Excel com as tabelas "
+        "alcançadas pelo rastreio Dashboard → camadas."
+    )
+    consolidated_cols = st.columns(4)
+    with consolidated_cols[0]:
+        st.metric("Tabelas únicas consolidadas", summary.get("total_tabelas_consolidado", summary["total_tabelas_distintas"]))
+    with consolidated_cols[1]:
+        st.metric("Mapeadas no Excel do cliente", summary.get("total_tabelas_excel_cliente", 0))
+    with consolidated_cols[2]:
+        st.metric("Alcançadas pelos dashboards", summary["total_tabelas_distintas"])
+    with consolidated_cols[3]:
+        st.metric("Tabelas em comum", summary.get("tabelas_em_comum", 0))
 
-cols_sel = st.columns(1 + max(len(camada_sel), 1))
-with cols_sel[0]:
-    st.metric("Tabelas distintas (seleção)", distinct_sel)
-for col, (camada, total) in zip(cols_sel[1:], camada_sel):
-    with col:
-        st.metric(_camada_label(camada), int(total))
+    consolidated_layer_items = _sort_camadas(summary.get("tabelas_por_camada_consolidado", {}).items())
+    layer_rows = []
+    for camada, total in consolidated_layer_items:
+        layer_rows.append({
+            "Camada": _camada_label(camada),
+            "Excel do cliente": summary.get("tabelas_por_camada_excel_cliente", {}).get(camada, 0),
+            "Dashboards": summary.get("tabelas_por_camada", {}).get(camada, 0),
+            "Consolidado único": total,
+        })
+    st.dataframe(pd.DataFrame(layer_rows), use_container_width=True, hide_index=True)
+    st.caption(
+        f"Somente no Excel: {summary.get('tabelas_apenas_excel_cliente', 0)} | "
+        f"Somente nos dashboards: {summary.get('tabelas_apenas_dashboards', 0)}"
+    )
+
+distinct_sel = len(dashboard_tables)
 
 st.dataframe(
     filtered.drop(columns=["_label"]), use_container_width=True, hide_index=True,
 )
 st.caption(f"{len(filtered)} linha(s) — {filtered['Dashboard/Relatório'].nunique()} dashboard(s), {distinct_sel} tabela(s) distinta(s).")
-st.download_button(
-    "⬇️ Baixar linhagem filtrada (CSV)", filtered.drop(columns=["_label"]).to_csv(index=False).encode("utf-8"),
-    file_name="linhagem_dashboards_filtrado.csv", mime="text/csv",
-)
-
-st.markdown("#### 🕸️ Rastreio da linhagem (Dashboard → Dataset → Tabela Gold → Silver → Bronze)")
-if not picked:
-    st.info(
-        "Selecione ao menos um dashboard acima para desenhar o grafo de rastreio — com o projeto inteiro "
-        "o grafo fica grande demais para ler (milhares de tabelas)."
-    )
-else:
+with graph_slot.container():
+    st.markdown("#### 🕸️ Rastreio da linhagem (Dashboard → Dataset → Tabela)")
     graph = nx.DiGraph()
     for _, row in filtered.iterrows():
         dash_node = f"RPT::{row['Workspace']}::{row['Dashboard/Relatório']}"
@@ -348,7 +419,12 @@ else:
     if graph.number_of_nodes() == 0:
         st.info("Nenhum nó para desenhar com a seleção atual.")
     else:
-        pos = nx.spring_layout(graph, seed=42, k=0.6)
+        try:
+            pos = nx.spring_layout(graph, seed=42, k=0.6)
+        except ModuleNotFoundError as exc:
+            if exc.name != "scipy":
+                raise
+            pos = nx.circular_layout(graph)
         edge_x, edge_y = [], []
         for u, v in graph.edges():
             x0, y0 = pos[u]
@@ -367,9 +443,9 @@ else:
             if data["kind"] == "tabela":
                 node_color.append(CAMADA_NODE_COLOR.get(data.get("camada", ""), COLOR_DANGER))
             elif data["kind"] == "dataset":
-                node_color.append(COLOR_NEUTRAL)
+                node_color.append(GRAPH_DATASET_COLOR)
             else:
-                node_color.append(COLOR_PRIMARY)
+                node_color.append(GRAPH_DASHBOARD_COLOR)
         node_trace = go.Scatter(
             x=node_x, y=node_y, mode="markers+text", text=node_label, textposition="top center",
             hovertext=node_text, hoverinfo="text",
@@ -397,3 +473,17 @@ with st.expander("📋 Dependências das tabelas mapeadas pelo cliente"):
         "incluindo dependências que não alimentam nenhum dashboard conhecido."
     )
     st.dataframe(mapped_df, use_container_width=True, hide_index=True)
+
+with st.expander("🔗 Mapping do cliente → camadas → dashboards"):
+    st.caption(
+        "Cruza cada tabela do Excel e suas dependências .sql/.vw com os dashboards "
+        "que contêm o mesmo nome completo na linhagem direcional."
+    )
+    st.dataframe(crosswalk_df, use_container_width=True, hide_index=True)
+
+with st.expander("🌐 Fontes SharePoint identificadas na camada Bronze"):
+    st.caption(
+        "Sites e URLs SharePoint presentes nos datasets; representam fontes de entrada "
+        "que serão carregadas por ingestão para Bronze."
+    )
+    st.dataframe(sharepoint_selected.drop(columns=["_label"], errors="ignore"), use_container_width=True, hide_index=True)

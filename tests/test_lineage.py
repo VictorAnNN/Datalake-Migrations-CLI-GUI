@@ -12,6 +12,7 @@ import pytest
 from dlctl.core import lineage_graph
 from dlctl.core import state as state_db
 from dlctl.core.global_scope import read_excel_pipeline_edges
+from dlctl.core.dashboard_lineage import _is_physical_table_name, build_dashboard_lineage
 from dlctl.core.table_lineage_graph import build_mapped_table_dependency_graph
 from dlctl.generators.lineage_generator import (
     build_sharepoint_dependency_trail,
@@ -143,6 +144,37 @@ def test_mapped_table_graph_follows_view_alias_and_deduplicates_sources(tmp_path
         "DM_GOLD_TABLE": {"DW_SILVER_TABLE"},
         "DW_SILVER_TABLE": {"BRONZE_TABLE"},
     }
+
+
+def test_dashboard_lineage_classifies_sharepoint_and_ignores_spaced_labels(tmp_path):
+    workspaces_root = tmp_path / "Workspaces"
+    workspaces_root.mkdir()
+    payload = {
+        "datasourceInstances": [{
+            "datasourceType": "SharePointList",
+            "connectionDetails": {"sharePointSiteUrl": "https://contoso.sharepoint.com/sites/data"},
+            "datasourceId": "sp-1",
+        }],
+        "workspaces": [{
+            "id": "ws-1", "name": "Workspace",
+            "reports": [{"name": "Dashboard", "datasetId": "ds-1"}],
+            "datasets": [{
+                "id": "ds-1", "name": "Dataset",
+                "tables": [{"name": "LINHAS DE RC"}, {"name": "DM_REAL_TABLE"}],
+                "datasourceUsages": [{"datasourceInstanceId": "sp-1"}],
+            }],
+            "dataflows": [],
+        }],
+    }
+    (workspaces_root / "workspace.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    result = build_dashboard_lineage(str(workspaces_root), str(tmp_path / "scan"), str(tmp_path / "sharedpoint"))
+
+    assert _is_physical_table_name("DM_REAL_TABLE")
+    assert not _is_physical_table_name("LINHAS DE RC")
+    assert {row["tabela"] for row in result["dashboard_rows"] if row["tabela"]} == {"DM_REAL_TABLE"}
+    assert result["summary"]["total_fontes_sharepoint_bronze"] == 1
+    assert result["sharepoint_rows"][0]["observacao"].startswith("Fonte SharePoint")
 
 
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):
