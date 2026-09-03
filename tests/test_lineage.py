@@ -213,6 +213,10 @@ def test_dashboard_lineage_classifies_sharepoint_and_ignores_spaced_labels(tmp_p
 
     assert _is_physical_table_name("DM_REAL_TABLE")
     assert not _is_physical_table_name("LINHAS DE RC")
+    assert not _is_physical_table_name("TASKS")
+    assert not _is_physical_table_name("CALENDAR")
+    assert not _is_physical_table_name("FEATURES")
+    assert not _is_physical_table_name("MEASUREMENTS")
     assert {row["tabela"] for row in result["dashboard_rows"] if row["tabela"]} == {"DM_REAL_TABLE"}
     model_row = next(row for row in result["dashboard_rows"] if row["tabela"] == "DM_REAL_TABLE")
     assert model_row["tipo_evidencia"] == "NOME_MODELO_CANDIDATO"
@@ -382,6 +386,20 @@ def test_end_to_end_mapping_surfaces_layer_conflict_without_hiding_completion():
 
     assert rows[0]["status_fim_a_fim"] == "COMPLETO_DIRETO"
     assert rows[0]["alertas"] == "CONFLITO_CAMADA: Gold, Silver"
+
+
+def test_cte_aliases_are_never_counted_as_physical_tables():
+    content = """
+    WITH first_cte (id) AS (SELECT id FROM BRONZE_A),
+         \"QuotedCte\" AS (SELECT id FROM BRONZE_B)
+    SELECT * FROM first_cte
+    JOIN QuotedCte ON QuotedCte.id = first_cte.id
+    JOIN SILVER_REAL ON SILVER_REAL.id = first_cte.id
+    """
+
+    assert _extract_tables_from_sql(content) == {
+        "BRONZE_A", "BRONZE_B", "SILVER_REAL"
+    }
 
 
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):

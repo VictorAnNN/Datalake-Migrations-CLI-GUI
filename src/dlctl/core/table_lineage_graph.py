@@ -45,6 +45,7 @@ from dlctl.core.global_scope import (
     OTHER_SOURCES_SCAN_EXTENSIONS,
     _CREATE_OBJECT_PATTERN,
     _CTE_ALIAS_PATTERN,
+    _cte_aliases,
     _extract_tables_from_sql,
     _FROM_JOIN_PATTERN,
     _SQL_TABLE_STOPLIST,
@@ -79,7 +80,7 @@ def _extract_dsx_lineage(content: str) -> set[tuple[str, str]]:
 
 
 def _extract_targets_and_sources(content: str, suffix: str) -> tuple[set[str], set[str]]:
-    cte_aliases = {_norm(m.group(1)) for m in _CTE_ALIAS_PATTERN.finditer(content)}
+    cte_aliases = _cte_aliases(content)
 
     sources: set[str] = set()
     for match in _FROM_JOIN_PATTERN.finditer(content):
