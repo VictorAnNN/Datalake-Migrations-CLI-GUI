@@ -178,6 +178,34 @@ def test_dashboard_lineage_classifies_sharepoint_and_ignores_spaced_labels(tmp_p
     assert result["sharepoint_rows"][0]["observacao"].startswith("Fonte SharePoint")
 
 
+def test_dashboard_lineage_counts_same_name_reports_by_canonical_id(tmp_path):
+    workspaces_root = tmp_path / "Workspaces"
+    workspaces_root.mkdir()
+    payload = {
+        "datasourceInstances": [],
+        "workspaces": [{
+            "id": "ws-1", "name": "Workspace",
+            "reports": [
+                {"id": "rp-1", "name": "Mesmo nome", "datasetId": "ds-1"},
+                {"id": "rp-2", "name": "Mesmo nome", "datasetId": "ds-2"},
+            ],
+            "datasets": [
+                {"id": "ds-1", "name": "Dataset 1", "tables": [{"name": "DM_A"}]},
+                {"id": "ds-2", "name": "Dataset 2", "tables": [{"name": "DM_B"}]},
+            ],
+            "dataflows": [],
+        }],
+    }
+    (workspaces_root / "workspace.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    result = build_dashboard_lineage(
+        str(workspaces_root), str(tmp_path / "scan"), str(tmp_path / "sharedpoint")
+    )
+
+    assert result["summary"]["total_dashboards"] == 2
+    assert {row["report_id"] for row in result["dashboard_rows"]} == {"rp-1", "rp-2"}
+
+
 def test_expand_transitive_lineage_bridges_bronze_to_gold(lakehouse_dev_fixture):
     linhagem = process_lakehouse_dev(str(lakehouse_dev_fixture))["linhagem"]
     expanded = expand_transitive_lineage(linhagem)
