@@ -17,7 +17,9 @@ from dlctl.core.dashboard_lineage import (
     _is_physical_table_name,
     _load_scan_dataflows,
     build_dashboard_lineage,
+    export_dashboard_lineage_report,
 )
+from dlctl.core.dashboard_lineage_html import export_dashboard_lineage_html
 from dlctl.core.table_lineage_graph import build_mapped_table_dependency_graph
 from dlctl.generators.lineage_generator import (
     build_sharepoint_dependency_trail,
@@ -427,6 +429,53 @@ def test_end_to_end_mapping_explains_rejected_mapping_entries():
         "FONTE_ARQUIVO_NAO_TABELA", "NOME_QUALIFICADO_NAO_NORMALIZADO",
         "ALIAS_EM_NOME_TABELA", "ROTULO_NAO_CANONICO",
     }
+
+
+def test_dashboard_lineage_html_is_offline_searchable_and_escapes_script(tmp_path):
+    result = {
+        "summary": {
+            "total_tabelas_excel_cliente": 1,
+            "total_fim_a_fim_confirmado": 1,
+            "total_fim_a_fim_parcial": 0,
+            "total_fim_a_fim_orfao": 0,
+            "total_fim_a_fim_entrada_nao_canonica": 0,
+        },
+        "end_to_end_mapping_rows": [{
+            "tabela_mapeada": "BRONZE_</script><script>alert(1)</script>",
+            "camada_mapeada": "Bronze", "dominio": "SUPPLY",
+            "status_fim_a_fim": "COMPLETO", "chega_dashboard": "Sim",
+            "etapa_alcancada": "Dashboard", "qtd_dashboards": 1,
+            "dashboards_amostra": "Workspace / Dashboard", "tabela_endpoint": "DM_OK",
+            "caminho_exemplo": "BRONZE_OK -> DW_OK -> DM_OK", "workspace_id": "ws-1",
+            "workspace": "Workspace", "report_id": "rp-1", "dashboard": "Dashboard",
+            "dataset_id": "ds-1", "dataset": "Dataset",
+            "tipo_evidencia_endpoint": "REFERENCIA_M_QUERY", "confianca": "Alta",
+            "codigo_motivo": "COMPLETO", "observacao": "Relação estática.",
+            "acao_recomendada": "Validar runtime.", "alertas": "",
+        }],
+        "dashboard_quality_rows": [],
+    }
+    output = export_dashboard_lineage_html(result, tmp_path / "lineage.html")
+    content = output.read_text(encoding="utf-8")
+
+    assert "Mapa fim a fim de linhagem" in content
+    assert "BRONZE_<\\/script><script>alert(1)<\\/script>" in content
+    assert "https://" not in content
+    assert "const DATA=" in content
+
+
+def test_dashboard_lineage_report_exports_excel_and_html(tmp_path):
+    result = {
+        "summary": {
+            "total_dashboards": 0, "total_tabelas_distintas": 0,
+            "tabelas_por_camada": {},
+        },
+        "dashboard_rows": [], "dataset_dataflow_rows": [],
+    }
+    paths = export_dashboard_lineage_report(result, tmp_path, "batch")
+
+    assert Path(paths["excel_path"]).exists()
+    assert Path(paths["html_path"]).exists()
 
 
 def test_cte_aliases_are_never_counted_as_physical_tables():

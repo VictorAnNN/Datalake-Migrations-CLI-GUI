@@ -216,4 +216,5 @@ def dashboard_lineage_export(
     p = get_profile(profile)
     batch_id = f"linhagem_{datetime.now():%Y%m%d_%H%M%S}"
     paths = export_dashboard_lineage_report(result, p.paths.manifests_root / "dashboard", batch_id)
-    console.print(f"\n[green]OK[/green]: artefato exportado em {paths['excel_path']}")
+    console.print(f"\n[green]OK[/green]: Excel exportado em {paths['excel_path']}")
+    console.print(f"HTML: {paths['html_path']}")

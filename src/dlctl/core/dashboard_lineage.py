@@ -45,6 +45,7 @@ from dlctl.core.table_lineage_graph import (
     build_table_dependency_graph,
     trace_upstream,
 )
+from dlctl.core.dashboard_lineage_html import export_dashboard_lineage_html
 from dlctl.generators.lineage_generator import _load_json_files, _read_json
 
 _TRAILING_NUMBER_SUFFIX = re.compile(r"\s+\d+$")
@@ -827,6 +828,7 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     excel_path = output_dir / f"linhagem_dashboards_{batch_id}.xlsx"
+    html_path = output_dir / f"linhagem_dashboards_{batch_id}.html"
 
     wb = openpyxl.Workbook()
     ws_resumo = wb.active
@@ -1039,7 +1041,8 @@ def export_dashboard_lineage_report(result: dict, output_dir: Path, batch_id: st
     _autofit(ws_conflicts)
 
     wb.save(str(excel_path))
-    return {"excel_path": str(excel_path)}
+    export_dashboard_lineage_html(result, html_path)
+    return {"excel_path": str(excel_path), "html_path": str(html_path)}
 
 
 def find_latest_lineage_excel(output_dir: Path) -> Path | None:
