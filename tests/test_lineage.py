@@ -30,6 +30,7 @@ from dlctl.generators.lineage_generator import (
     export_lineage_excel,
     find_latest_lineage_excel,
     generate_lineage_artifacts,
+    parse_semantic_mlv_notebook,
     process_lakehouse_dev,
 )
 from dlctl.core.project_scan import _dashboard_table_names, _dashboards_prontos
@@ -93,6 +94,49 @@ def test_process_lakehouse_dev_parses_silver_and_gold(lakehouse_dev_fixture):
     assert len(gold_rows) == 1
     assert gold_rows[0]["TABELA_ORIGEM"] == "DW_RECEIPT_ORDER_CF"
     assert gold_rows[0]["TABELA_DESTINO"] == "PR_RECEIPT_ORDER"
+
+
+def test_process_lakehouse_dev_parses_semantic_mlv_as_its_own_layer(tmp_path):
+    root = tmp_path / "lakehouse-dev"
+    nb_dir = root / "SUPRIMENTOS" / "semantic_notebooks" / "nb_mlv"
+    nb_dir.mkdir(parents=True)
+    (nb_dir / "notebook-content.sql").write_text(
+        """
+CREATE OR REPLACE MATERIALIZED LAKE VIEW semantic.DM_EMPRESAS_CONSTELLATION
+AS SELECT *
+FROM `LAKEHOUSE-HML`.LH_SUPRIMENTOS.bronze.oracle_empresas_constellation
+""",
+        encoding="utf-8",
+    )
+
+    parsed = parse_semantic_mlv_notebook(
+        (nb_dir / "notebook-content.sql").read_text(encoding="utf-8"), "SUPRIMENTOS"
+    )
+    assert parsed["target_schema"] == "semantic"
+    assert parsed["target_table"] == "DM_EMPRESAS_CONSTELLATION"
+    assert parsed["target_lakehouse"] == "LH_SUPRIMENTOS"
+    assert parsed["dependencies"] == [{
+        "layer": "bronze",
+        "lakehouse": "LH_SUPRIMENTOS",
+        "schema": "bronze",
+        "table": "oracle_empresas_constellation",
+        "environment": "LAKEHOUSE-HML",
+        "relation": "Fonte de MLV semântica",
+    }]
+
+    result = process_lakehouse_dev(str(root))
+    assert len(result["linhagem"]) == 1
+    row = result["linhagem"][0]
+    assert row["CAMADA_ORIGEM"] == "bronze"
+    assert row["CAMADA_DESTINO"] == "semantic"
+    assert row["TABELA_DESTINO"] == "DM_EMPRESAS_CONSTELLATION"
+    assert row["DESTINO_MATERIALIZADO_DEV"] == "Sim"
+    assert "ambiente=LAKEHOUSE-HML" in row["OBSERVACAO"]
+
+
+def test_lineage_graph_keeps_semantic_mlv_between_gold_and_other_layer():
+    assert lineage_graph.data_layer_name("semantic") == "semantic"
+    assert lineage_graph.DATA_LAYER_POSITION["gold"] < lineage_graph.DATA_LAYER_POSITION["semantic"]
 
 
 def test_process_lakehouse_dev_empty_dir_returns_empty(tmp_path):

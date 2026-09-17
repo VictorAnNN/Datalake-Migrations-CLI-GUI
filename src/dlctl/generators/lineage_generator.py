@@ -5,7 +5,8 @@ Skill-LineageFabric) a partir de:
 
 1. Notebooks locais de `input/lakehouse-dev` (parse de `notebook-content.py`)
    -> aba "Linhagem Tabelas" (18 colunas, com expansão transitiva) e aba
-   "Tabelas" (30 colunas).
+   "Tabelas" (30 colunas). A camada semântica de Materialized Lake Views
+   (MLV) é tratada separadamente de Gold.
 2. JSONs do Fabric Scanner API (`input/Workspaces` ou um .zip) -> trilha de
    dependência até fontes SharePoint (dataset/dashboard -> tabela -> fonte),
    com validação de existência.
@@ -243,6 +244,94 @@ def extract_explicit_table_references(content: str, excluded_tables: Optional[se
     return references
 
 
+_SQL_QUALIFIED_REFERENCE = re.compile(
+    r"(?i)\b(?:FROM|JOIN)\s+((?:`[^`]+`|[A-Za-z0-9_-]+)"
+    r"(?:\.(?:`[^`]+`|[A-Za-z0-9_-]+)){2,3})"
+)
+_MLV_TARGET = re.compile(
+    r"(?i)CREATE\s+OR\s+REPLACE\s+MATERIALIZED\s+LAKE\s+VIEW\s+"
+    r"((?:`[^`]+`|[A-Za-z0-9_-]+)(?:\.(?:`[^`]+`|[A-Za-z0-9_-]+)){1,3})"
+)
+
+
+def _unquote_sql_identifier(value: str) -> str:
+    value = str(value).strip()
+    if len(value) >= 2 and value[0] == "`" and value[-1] == "`":
+        return value[1:-1].replace("``", "`")
+    return value
+
+
+def _split_sql_qualified_reference(value: str) -> list[str]:
+    """Divide uma referência SQL qualificada sem perder backticks internos."""
+    parts: list[str] = []
+    current: list[str] = []
+    quoted = False
+    for char in str(value):
+        if char == "`":
+            quoted = not quoted
+            current.append(char)
+        elif char == "." and not quoted:
+            parts.append(_unquote_sql_identifier("".join(current)))
+            current = []
+        else:
+            current.append(char)
+    if current:
+        parts.append(_unquote_sql_identifier("".join(current)))
+    return [part.strip() for part in parts if part.strip()]
+
+
+def parse_semantic_mlv_notebook(content: str, domain: str) -> dict:
+    """Extrai uma MLV semântica e suas fontes físicas do SQL do notebook.
+
+    Fabric aceita referências com três partes (lakehouse.schema.tabela) e,
+    em payloads exportados, com quatro partes (ambiente.lakehouse.schema.tabela).
+    Na segunda forma, o ambiente fica na observação e o lakehouse continua no
+    campo próprio.
+    """
+    result = {
+        "type": "semantic_mlv", "domain": domain, "target_lakehouse": "",
+        "target_schema": "semantic", "target_table": "", "dependencies": [],
+    }
+    target_match = _MLV_TARGET.search(content)
+    if not target_match:
+        return result
+
+    target_parts = _split_sql_qualified_reference(target_match.group(1))
+    if len(target_parts) >= 2:
+        result["target_schema"] = target_parts[-2]
+        result["target_table"] = target_parts[-1]
+        if len(target_parts) >= 3:
+            result["target_lakehouse"] = target_parts[-3]
+
+    dependencies: list[dict] = []
+    seen: set[tuple[str, ...]] = set()
+    for match in _SQL_QUALIFIED_REFERENCE.finditer(content):
+        parts = _split_sql_qualified_reference(match.group(1))
+        environment = ""
+        if len(parts) == 4:
+            environment, lakehouse, schema, table = parts
+        elif len(parts) == 3:
+            lakehouse, schema, table = parts
+        else:
+            continue
+        if table.casefold() == str(result["target_table"]).casefold():
+            continue
+        key = tuple(part.casefold() for part in (lakehouse, schema, table))
+        if key in seen:
+            continue
+        seen.add(key)
+        layer = schema.casefold() if schema.casefold() in {"bronze", "silver", "gold"} else ""
+        dependencies.append({
+            "layer": layer, "lakehouse": lakehouse, "schema": schema,
+            "table": table, "environment": environment,
+            "relation": "Fonte de MLV semântica",
+        })
+        if not result["target_lakehouse"]:
+            result["target_lakehouse"] = lakehouse
+    result["dependencies"] = dependencies
+    return result
+
+
 def parse_silver_notebook(content: str, domain: str) -> dict:
     result = {"type": "silver", "domain": domain}
     m = re.search(r'TARGET_LAKEHOUSE_LOGICAL\s*=\s*["\']([^"\']+)["\']', content)
@@ -358,6 +447,8 @@ def extract_notebook_workspace(content: str) -> str:
 def classify_notebook(content: str) -> str:
     if "TABLE_CONFIG_ROWS_JSON" in content:
         return "config"
+    if _MLV_TARGET.search(content) and re.search(r"(?i)\bsemantic\.", content):
+        return "semantic_mlv"
     if "# G1_HEADER_METADATA" in content or "GOLD_LAKEHOUSE_LOGICAL" in content:
         return "gold"
     if "# C1_HEADER_METADATA" in content and "BRONZE -> SILVER" in content:
@@ -432,6 +523,39 @@ def process_lakehouse_dev(lakehouse_dev_path: str) -> dict:
                         "DESTINO_PUBLICADO_DEV": "", "DESTINO_MATERIALIZADO_DEV": "", "EXECUCAO_DESTINO_DEV": "",
                         "OBSERVACAO": dep.get("relation", ""),
                     })
+
+            elif nb_type == "semantic_mlv":
+                parsed = parse_semantic_mlv_notebook(content, domain)
+                target_table = parsed.get("target_table", "")
+                if target_table and parsed.get("dependencies"):
+                    for dep in parsed["dependencies"]:
+                        line_id += 1
+                        source_layer = str(dep.get("layer", "")).strip().lower()
+                        target_layer = str(parsed.get("target_schema") or "semantic").strip().lower()
+                        environment = str(dep.get("environment", "")).strip()
+                        note = str(dep.get("relation", ""))
+                        if environment:
+                            note += f"; ambiente={environment}"
+                        linhagem_rows.append({
+                            "ID": line_id,
+                            "TIPO_DEPENDENCIA": f"{source_layer.upper() or 'FONTE'} -> SEMANTIC MLV",
+                            "CAMADA_ORIGEM": source_layer,
+                            "LAKEHOUSE_ORIGEM": dep.get("lakehouse", ""),
+                            "SCHEMA_ORIGEM": dep.get("schema", ""),
+                            "TABELA_ORIGEM": dep.get("table", ""),
+                            "STATUS_ORIGEM": "",
+                            "ORIGEM_PUBLICADA_DEV": "",
+                            "ORIGEM_MATERIALIZADA_DEV": "",
+                            "CAMADA_DESTINO": target_layer,
+                            "LAKEHOUSE_DESTINO": parsed.get("target_lakehouse", ""),
+                            "SCHEMA_DESTINO": target_layer,
+                            "TABELA_DESTINO": target_table,
+                            "STATUS_DESTINO": "",
+                            "DESTINO_PUBLICADO_DEV": "",
+                            "DESTINO_MATERIALIZADO_DEV": "Sim",
+                            "EXECUCAO_DESTINO_DEV": "",
+                            "OBSERVACAO": note,
+                        })
 
             elif nb_type == "operacao":
                 parsed = parse_operacao_notebook(content, domain)

@@ -15,19 +15,21 @@ from typing import Iterable, Optional
 
 import networkx as nx
 
-DATA_LAYER_ORDER = ["bronze", "silver", "gold", "other_layer"]
+DATA_LAYER_ORDER = ["bronze", "silver", "gold", "semantic", "other_layer"]
 DATA_LAYER_POSITION = {name: index for index, name in enumerate(DATA_LAYER_ORDER)}
 
 DATA_LAYER_COLORS = {
     "bronze": "#B66A36",
     "silver": "#4EA5B7",
     "gold": "#D6A233",
+    "semantic": "#8B6FC7",
     "other_layer": "#8E8E93",
 }
 DATA_LAYER_LABELS = {
     "bronze": "Bronze",
     "silver": "Silver",
     "gold": "Gold",
+    "semantic": "Semântica (MLV)",
     "other_layer": "Outra camada / Fonte",
 }
 
