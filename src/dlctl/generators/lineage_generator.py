@@ -246,7 +246,7 @@ def extract_explicit_table_references(content: str, excluded_tables: Optional[se
 
 _SQL_QUALIFIED_REFERENCE = re.compile(
     r"(?i)\b(?:FROM|JOIN)\s+((?:`[^`]+`|[A-Za-z0-9_-]+)"
-    r"(?:\.(?:`[^`]+`|[A-Za-z0-9_-]+)){2,3})"
+    r"(?:\.(?:`[^`]+`|[A-Za-z0-9_-]+)){1,3})"
 )
 _MLV_TARGET = re.compile(
     r"(?i)CREATE\s+OR\s+REPLACE\s+MATERIALIZED\s+LAKE\s+VIEW\s+"
@@ -312,6 +312,9 @@ def parse_semantic_mlv_notebook(content: str, domain: str) -> dict:
             environment, lakehouse, schema, table = parts
         elif len(parts) == 3:
             lakehouse, schema, table = parts
+        elif len(parts) == 2:
+            lakehouse = str(result["target_lakehouse"])
+            schema, table = parts
         else:
             continue
         if table.casefold() == str(result["target_table"]).casefold():
@@ -320,7 +323,7 @@ def parse_semantic_mlv_notebook(content: str, domain: str) -> dict:
         if key in seen:
             continue
         seen.add(key)
-        layer = schema.casefold() if schema.casefold() in {"bronze", "silver", "gold"} else ""
+        layer = schema.casefold() if schema.casefold() in {"bronze", "silver", "gold", "semantic"} else ""
         dependencies.append({
             "layer": layer, "lakehouse": lakehouse, "schema": schema,
             "table": table, "environment": environment,
